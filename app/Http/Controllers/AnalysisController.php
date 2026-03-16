@@ -45,7 +45,7 @@ class AnalysisController extends Controller
 
         // 2. 会員毎にまとめて最終購入日、回数、合計金額を取得
         $subQuery = DB::table($subQuery)
-        ->groupBy('customer_id')
+        ->groupBy('customer_id', 'customer_name')
         ->selectRaw('customer_id, customer_name, 
         max(created_at) as recentDate, 
         datediff(now(), max(created_at)) as recency,
@@ -158,7 +158,7 @@ class AnalysisController extends Controller
 
         // 2. 会員毎にまとめて購入金額順にソートする
         $subQuery = DB::table($subQuery)
-        ->groupBy('customer_id')
+        ->groupBy('customer_id', 'customer_name')
         ->selectRaw('customer_id, customer_name, 
         sum(totalPerPurchase) as total')
         ->orderBy('total', 'desc');
@@ -256,7 +256,7 @@ class AnalysisController extends Controller
 
         // 2. 会員毎にまとめて最終購入日、回数、合計金額を取得
         $subQuery = DB::table($subQuery)
-        ->groupBy('customer_id')
+        ->groupBy('customer_id', 'customer_name')
         ->selectRaw('customer_id, customer_name, 
         max(created_at) as recentDate, 
         datediff(now(), max(created_at)) as recency,
