@@ -229,7 +229,7 @@ class AnalysisController extends Controller
 
         
         // 7 構成比
-        DB::statement("set @total = ${total} ;");
+        DB::statement("set @total = {$total} ;");
         $data = DB::table($subQuery)
         ->selectRaw('decile,
             average,

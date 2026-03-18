@@ -31,4 +31,16 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'model'   => env('OPENAI_MODEL', 'gpt-4o-mini'),
+        'timeout' => env('OPENAI_TIMEOUT', 30),
+    ],
+
+    'p_yoyaku' => [
+        'base_url'  => env('P_YOYAKU_BASE_URL', 'http://localhost:8080'),
+        'api_token' => env('P_YOYAKU_API_TOKEN'),
+        'timeout'   => env('P_YOYAKU_TIMEOUT', 5),
+    ],
+
 ];

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php:*)",
+      "Bash(/mnt/c/xampp/php/php.exe artisan:*)",
+      "Bash(/mnt/c/xampp/php/php.exe composer.phar require nesbot/carbon:\"^2.71\" --no-interaction 2>&1 | tail -10)",
+      "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \"SELECT users.email, staff.role, staff.is_active FROM staff JOIN users ON users.id = staff.user_id;\" 2>&1)",
+      "Bash(/mnt/c/xampp/php/php.exe -l /mnt/c/xampp/htdocs/laravel/laravel_uCRM/app/Http/Controllers/DashboardController.php)",
+      "Bash(find:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(npm run:*)",
+      "Bash(which node:*)",
+      "Bash(wait:*)",
+      "Bash(timeout:*)",
+      "Bash(grep:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "chrome-devtools"
+  ]
+}

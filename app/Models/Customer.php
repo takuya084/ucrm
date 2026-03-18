@@ -25,6 +25,8 @@ class Customer extends Model
                 ->orWhere('tel', 'like', $input . '%');
             } 
         }
+
+        return $query;
     }
 
     public function purchases()
