@@ -88,9 +88,6 @@ class SupportPlanController extends Controller
 
     private function authorizeChild(Child $child): void
     {
-        $facilityId = auth()->user()->staff?->facility_id;
-        if ($facilityId) {
-            abort_if($child->facility_id !== $facilityId, 403);
-        }
+        abort_if($child->facility_id !== $this->facilityId(), 403);
     }
 }

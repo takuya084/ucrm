@@ -17,31 +17,31 @@ class DashboardController extends Controller
     public function index()
     {
         $today = date('Y-m-d');
-        $facilityId = auth()->user()->staff?->facility_id;
+        $facilityId = $this->facilityId();
 
         // 今日の出席サマリー
-        $todayAttended = UsageRecord::when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+        $todayAttended = UsageRecord::where('facility_id', $facilityId)
             ->where('date', $today)
             ->where('status', 'attended')
             ->count();
 
-        $todayTotal = UsageRecord::when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+        $todayTotal = UsageRecord::where('facility_id', $facilityId)
             ->where('date', $today)
             ->count();
 
-        $todayWithSupport = UsageRecord::when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+        $todayWithSupport = UsageRecord::where('facility_id', $facilityId)
             ->where('date', $today)
             ->whereHas('supportRecord')
             ->count();
 
         // 利用児童数（アクティブ）
-        $activeChildren = Child::when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+        $activeChildren = Child::where('facility_id', $facilityId)
             ->where('contract_status', 'active')
             ->count();
 
         // 受給者証の期限アラート（30日以内）
         $expiringCertificates = RecipientCertificate::where('status', 'active')
-            ->when($facilityId, fn($q) => $q->whereHas('child', fn($q2) => $q2->where('facility_id', $facilityId)))
+            ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId))
             ->whereDate('valid_to', '>=', $today)
             ->whereDate('valid_to', '<=', date('Y-m-d', strtotime('+30 days')))
             ->with('child:id,name')
@@ -49,21 +49,21 @@ class DashboardController extends Controller
 
         // モニタリング期限アラート（30日以内 + 超過）
         $monitoringDue = MonitoringRecord::where('next_review_date', '<=', date('Y-m-d', strtotime('+30 days')))
-            ->when($facilityId, fn($q) => $q->whereHas('child', fn($q2) => $q2->where('facility_id', $facilityId)))
+            ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId))
             ->with('child:id,name')
             ->orderBy('next_review_date')
             ->get(['id', 'child_id', 'next_review_date', 'monitoring_date']);
 
         // 個別支援計画：同意待ち
         $pendingAgreements = SupportPlan::where('guardian_agreement', false)
-            ->when($facilityId, fn($q) => $q->whereHas('child', fn($q2) => $q2->where('facility_id', $facilityId)))
+            ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId))
             ->with('child:id,name')
             ->orderBy('valid_from')
             ->get(['id', 'child_id', 'valid_from', 'valid_to', 'plan_date']);
 
         // 問い合わせ：未対応
         $openInquiries = Inquiry::whereIn('status', ['open', 'in_progress'])
-            ->when($facilityId, fn($q) => $q->whereHas('child', fn($q2) => $q2->where('facility_id', $facilityId)))
+            ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId))
             ->with('child:id,name')
             ->orderBy('created_at', 'desc')
             ->limit(5)

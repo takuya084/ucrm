@@ -64,14 +64,14 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               </div>
             </section>
 
-            <!-- p-yoyaku 連携設定 -->
+            <!-- houkago-plus 連携設定 -->
             <section>
               <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">
                 送迎予約システム連携
               </h3>
               <div class="space-y-3">
                 <div>
-                  <label :class="labelClass">p-yoyaku 事業所ID</label>
+                  <label :class="labelClass">houkago-plus 事業所ID</label>
                   <input
                     v-model.number="form.yoyaku_business_id"
                     type="number"
@@ -80,7 +80,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                     placeholder="未入力の場合は固定スケジュールで動作"
                   />
                   <p class="text-xs text-gray-400 mt-1">
-                    p-yoyaku の管理者画面で確認できる事業所IDを入力してください。
+                    houkago-plus の管理者画面で確認できる事業所IDを入力してください。
                     未入力の場合、出席管理は登録された固定曜日スケジュールを使用します。
                   </p>
                 </div>
@@ -89,7 +89,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                 <div v-if="form.yoyaku_business_id"
                   class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
                   <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
-                  p-yoyaku 事業所ID {{ form.yoyaku_business_id }} と連携します
+                  houkago-plus 事業所ID {{ form.yoyaku_business_id }} と連携します
                 </div>
                 <div v-else
                   class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-500">

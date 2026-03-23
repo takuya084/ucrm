@@ -27,7 +27,7 @@ const CATEGORY_LABELS = {
         <Link :href="route('children.show', record.child_id)" class="text-gray-400 hover:text-gray-600 text-sm">
           ← {{ record.child?.name }}
         </Link>
-        <h2 class="font-semibold text-xl text-gray-800">支援記録 — {{ record.date }}</h2>
+        <h2 class="font-semibold text-xl text-gray-800">支援記録 — {{ record.date?.slice(0, 10) }}</h2>
         <span :class="['px-2 py-1 rounded-full text-xs font-medium', CONDITION[record.condition]?.class]">
           {{ CONDITION[record.condition]?.label }}
         </span>

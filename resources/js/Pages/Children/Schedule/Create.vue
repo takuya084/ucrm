@@ -6,8 +6,9 @@ import { reactive } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
 
 const props = defineProps({
-  child:          Object,
-  registeredDays: Array,  // 登録済み曜日（選択不可にする）
+  child:              Object,
+  registeredDays:     Array,   // 登録済み曜日（選択不可にする）
+  registeredSchedules: Array,  // 登録済みスケジュール [{id, day_of_week}]
 })
 
 const DAY_OPTIONS = [
@@ -42,6 +43,11 @@ const store = () => {
 
 const isRegistered = (day) => props.registeredDays.includes(day)
 
+const scheduleIdFor = (day) => {
+  const s = props.registeredSchedules?.find(s => s.day_of_week === day)
+  return s?.id
+}
+
 const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
@@ -66,7 +72,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
           <!-- 登録済み曜日の案内 -->
           <div v-if="registeredDays.length" class="mb-5 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700">
             <span class="font-medium">登録済み：</span>
-            {{ registeredDays.map(d => ({ mon:'月',tue:'火',wed:'水',thu:'木',fri:'金',sat:'土' })[d]).join('・') }}曜日
+            登録済みの曜日をクリックすると編集・削除できます
           </div>
 
           <form @submit.prevent="store" class="space-y-5">
@@ -75,28 +81,35 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             <div>
               <label :class="labelClass">利用曜日 <span class="text-red-500">*</span></label>
               <div class="grid grid-cols-3 gap-2 mt-1">
-                <label
-                  v-for="opt in DAY_OPTIONS"
-                  :key="opt.value"
-                  :class="[
-                    'flex items-center justify-center gap-2 px-3 py-3 border rounded cursor-pointer text-sm font-medium transition-colors',
-                    isRegistered(opt.value)
-                      ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : form.day_of_week === opt.value
+                <template v-for="opt in DAY_OPTIONS" :key="opt.value">
+                  <!-- 登録済み → Edit画面へのリンク -->
+                  <Link
+                    v-if="isRegistered(opt.value)"
+                    :href="route('children.schedules.edit', { child: child.id, schedule: scheduleIdFor(opt.value) })"
+                    class="flex items-center justify-center gap-2 px-3 py-3 border rounded text-sm font-medium transition-colors border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                  >
+                    {{ opt.label }}
+                    <span class="text-xs">（編集）</span>
+                  </Link>
+                  <!-- 未登録 → ラジオボタン -->
+                  <label
+                    v-else
+                    :class="[
+                      'flex items-center justify-center gap-2 px-3 py-3 border rounded cursor-pointer text-sm font-medium transition-colors',
+                      form.day_of_week === opt.value
                         ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                         : 'border-gray-300 hover:bg-gray-50'
-                  ]"
-                >
-                  <input
-                    type="radio"
-                    v-model="form.day_of_week"
-                    :value="opt.value"
-                    :disabled="isRegistered(opt.value)"
-                    class="sr-only"
-                  />
-                  {{ opt.label }}
-                  <span v-if="isRegistered(opt.value)" class="text-xs">（登録済）</span>
-                </label>
+                    ]"
+                  >
+                    <input
+                      type="radio"
+                      v-model="form.day_of_week"
+                      :value="opt.value"
+                      class="sr-only"
+                    />
+                    {{ opt.label }}
+                  </label>
+                </template>
               </div>
             </div>
 

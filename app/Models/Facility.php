@@ -16,6 +16,18 @@ class Facility extends Model
         'tel',
         'capacity_per_day',
         'yoyaku_business_id',
+        'billing_type',
+        'is_active',
+        'subscription_status',
+        'subscription_ended_at',
+        'stripe_checkout_session_id',
+        'stripe_customer_id',
+        'stripe_subscription_id',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'subscription_ended_at' => 'datetime',
     ];
 
     public function staff(): HasMany

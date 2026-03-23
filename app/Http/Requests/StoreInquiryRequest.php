@@ -21,6 +21,7 @@ class StoreInquiryRequest extends FormRequest
             'response'       => ['nullable', 'string', 'max:2000'],
             'status'         => ['required', 'in:open,in_progress,closed'],
             'is_escalated'   => ['boolean'],
+            'staff_id'       => ['nullable', 'integer', 'exists:staff,id'],
         ];
     }
 }

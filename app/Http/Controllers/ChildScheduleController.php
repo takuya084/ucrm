@@ -13,21 +13,25 @@ class ChildScheduleController extends Controller
     /** 登録フォーム */
     public function create(Child $child)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         // 既に登録済みの曜日を渡してUIで選択不可にする
-        $registeredDays = $child->schedules()
+        $registeredSchedules = $child->schedules()
             ->active()
-            ->pluck('day_of_week')
+            ->get(['id', 'day_of_week'])
+            ->map(fn($s) => ['id' => $s->id, 'day_of_week' => $s->day_of_week])
             ->toArray();
 
         return Inertia::render('Children/Schedule/Create', [
-            'child'           => $child->only('id', 'name'),
-            'registeredDays'  => $registeredDays,
+            'child'              => $child->only('id', 'name'),
+            'registeredDays'     => array_column($registeredSchedules, 'day_of_week'),
+            'registeredSchedules' => $registeredSchedules,
         ]);
     }
 
     /** 登録処理 */
     public function store(StoreChildScheduleRequest $request, Child $child)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         $child->schedules()->create($request->validated());
 
         return to_route('children.show', $child)
@@ -37,6 +41,7 @@ class ChildScheduleController extends Controller
     /** 編集フォーム */
     public function edit(Child $child, ChildSchedule $schedule)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         abort_if($schedule->child_id !== $child->id, 404);
 
         return Inertia::render('Children/Schedule/Edit', [
@@ -48,6 +53,7 @@ class ChildScheduleController extends Controller
     /** 更新処理 */
     public function update(UpdateChildScheduleRequest $request, Child $child, ChildSchedule $schedule)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         abort_if($schedule->child_id !== $child->id, 404);
 
         $schedule->update($request->validated());
@@ -59,6 +65,7 @@ class ChildScheduleController extends Controller
     /** 削除 */
     public function destroy(Child $child, ChildSchedule $schedule)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         abort_if($schedule->child_id !== $child->id, 404);
 
         $schedule->delete();

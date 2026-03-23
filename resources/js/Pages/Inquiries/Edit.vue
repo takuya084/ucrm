@@ -8,6 +8,7 @@ import { Inertia } from '@inertiajs/inertia'
 const props = defineProps({
   inquiry:             Object,
   children:            Array,
+  staffList:           Array,
   statusLabels:        Object,
   categoryLabels:      Object,
   contactMethodLabels: Object,
@@ -16,6 +17,7 @@ const props = defineProps({
 const form = reactive({
   child_id:       props.inquiry.child_id,
   guardian_id:    props.inquiry.guardian_id ?? null,
+  staff_id:       props.inquiry.staff_id ?? '',
   contact_method: props.inquiry.contact_method,
   contacted_at:   props.inquiry.contacted_at?.slice(0, 16),
   category:       props.inquiry.category,
@@ -71,6 +73,14 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   <option v-for="(label, val) in categoryLabels" :key="val" :value="val">{{ label }}</option>
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label :class="labelClass">対応者</label>
+              <select v-model="form.staff_id" :class="inputClass">
+                <option value="">選択してください</option>
+                <option v-for="s in staffList" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
             </div>
 
             <div>

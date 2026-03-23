@@ -67,6 +67,7 @@ const GENDER = { male: '男', female: '女', other: '他' }
                 class="bg-indigo-500 text-white px-4 py-2 rounded text-sm hover:bg-indigo-600"
               >検索</button>
               <Link
+                v-if="['admin','leader'].includes($page.props.auth.staff_role)"
                 :href="route('children.create')"
                 class="ml-auto bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600"
               >＋ 新規登録</Link>
@@ -82,7 +83,6 @@ const GENDER = { male: '男', female: '女', other: '他' }
                     <th class="px-4 py-3">性別</th>
                     <th class="px-4 py-3">学年</th>
                     <th class="px-4 py-3">学校</th>
-                    <th class="px-4 py-3">送迎</th>
                     <th class="px-4 py-3">契約状況</th>
                     <th class="px-4 py-3"></th>
                   </tr>
@@ -103,21 +103,17 @@ const GENDER = { male: '男', female: '女', other: '他' }
                     <td class="px-4 py-3">{{ child.grade ?? '―' }}</td>
                     <td class="px-4 py-3">{{ child.school?.name ?? '―' }}</td>
                     <td class="px-4 py-3">
-                      <span v-if="child.pickup_required" class="text-blue-600">あり</span>
-                      <span v-else class="text-gray-400">なし</span>
-                    </td>
-                    <td class="px-4 py-3">
                       <span
                         v-if="CONTRACT_STATUS[child.contract_status]"
                         :class="['px-2 py-1 rounded-full text-xs font-medium', CONTRACT_STATUS[child.contract_status].class]"
                       >{{ CONTRACT_STATUS[child.contract_status].label }}</span>
                     </td>
                     <td class="px-4 py-3">
-                      <Link :href="route('children.edit', child.id)" class="text-sm text-gray-500 hover:text-indigo-600">編集</Link>
+                      <Link v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('children.edit', child.id)" class="text-sm text-gray-500 hover:text-indigo-600">編集</Link>
                     </td>
                   </tr>
                   <tr v-if="children.data.length === 0">
-                    <td colspan="8" class="px-4 py-8 text-center text-gray-400">該当する児童がいません</td>
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-400">該当する児童がいません</td>
                   </tr>
                 </tbody>
               </table>

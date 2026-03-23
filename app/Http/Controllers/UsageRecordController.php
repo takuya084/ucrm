@@ -20,11 +20,11 @@ class UsageRecordController extends Controller
     {
         $date       = $request->input('date', date('Y-m-d'));
         $dayOfWeek  = $this->getDayOfWeek($date);
-        $facilityId = auth()->user()->staff?->facility_id;
+        $facilityId = $this->facilityId();
 
         // その日すでに出席記録が保存されているか
         $hasRecords = UsageRecord::where('date', $date)
-            ->when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+            ->where('facility_id', $facilityId)
             ->exists();
 
         $currentChildIds = [];
@@ -33,7 +33,7 @@ class UsageRecordController extends Controller
         if ($hasRecords) {
             // ── 保存済みモード: usage_records をソースにする ──────────────
             $savedRecords = UsageRecord::where('date', $date)
-                ->when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+                ->where('facility_id', $facilityId)
                 ->with(['child.school', 'supportRecord'])
                 ->get();
 
@@ -57,7 +57,7 @@ class UsageRecordController extends Controller
 
                 $templateChildren = Child::with('school')
                     ->whereIn('yoyaku_user_id', $yoyakuUserIds)
-                    ->when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+                    ->where('facility_id', $facilityId)
                     ->where('contract_status', 'active')
                     ->orderBy('name_kana')
                     ->get();
@@ -75,7 +75,7 @@ class UsageRecordController extends Controller
                     ->where('start_date', '<=', $date)
                     ->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', $date))
                     ->whereHas('child', fn($q) => $q
-                        ->when($facilityId, fn($q2) => $q2->where('facility_id', $facilityId))
+                        ->where('facility_id', $facilityId)
                         ->where('contract_status', 'active'))
                     ->get();
 
@@ -87,7 +87,7 @@ class UsageRecordController extends Controller
 
         // 追加候補の児童（現在リストにいない・契約中）
         $availableChildren = Child::where('contract_status', 'active')
-            ->when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+            ->where('facility_id', $facilityId)
             ->whereNotIn('id', $currentChildIds)
             ->with('school:id,name')
             ->orderBy('name_kana')
@@ -182,11 +182,9 @@ class UsageRecordController extends Controller
         ];
     }
 
-    private function getYoyakuBusinessId(?int $facilityId): ?int
+    private function getYoyakuBusinessId(int $facilityId): ?int
     {
-        $val = $facilityId
-            ? Facility::where('id', $facilityId)->value('yoyaku_business_id')
-            : Facility::value('yoyaku_business_id');
+        $val = Facility::where('id', $facilityId)->value('yoyaku_business_id');
         return $val ? (int) $val : null;
     }
 

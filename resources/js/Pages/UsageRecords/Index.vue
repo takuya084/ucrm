@@ -268,7 +268,7 @@ const rowBg = (status) => ({
 
               <!-- 送迎チェック（出席時のみ） -->
               <div v-if="row.status === 'attended' && row.pickup_required" class="mt-2 space-y-1">
-                <!-- 送迎予約情報（p-yoyaku連携時のみ） -->
+                <!-- 送迎予約情報（houkago-plus連携時のみ） -->
                 <div v-if="row.yoyaku_pickup_time || row.yoyaku_dropoff_time"
                   class="flex gap-4 text-xs text-blue-600 bg-blue-50 rounded px-2 py-1">
                   <span v-if="row.yoyaku_pickup_time">

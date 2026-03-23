@@ -65,7 +65,7 @@ class ProgramProgressController extends Controller
         // 今日出席の児童ID（status = attended）
         $todayChildIds = UsageRecord::where('date', date('Y-m-d'))
             ->where('status', 'attended')
-            ->when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+            ->where('facility_id', $facilityId)
             ->pluck('child_id')
             ->toArray();
 

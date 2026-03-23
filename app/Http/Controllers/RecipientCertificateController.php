@@ -13,6 +13,7 @@ class RecipientCertificateController extends Controller
     /** 登録フォーム */
     public function create(Child $child)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         return Inertia::render('Children/Certificate/Create', [
             'child' => $child->only('id', 'name'),
         ]);
@@ -21,6 +22,7 @@ class RecipientCertificateController extends Controller
     /** 登録処理 */
     public function store(StoreRecipientCertificateRequest $request, Child $child)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         // 新しくactiveにする場合、既存のactiveを expiredに更新
         if ($request->status === 'active') {
             $child->recipientCertificates()
@@ -37,7 +39,7 @@ class RecipientCertificateController extends Controller
     /** 編集フォーム */
     public function edit(Child $child, RecipientCertificate $certificate)
     {
-        // 子どもと受給者証の紐付き確認
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         abort_if($certificate->child_id !== $child->id, 404);
 
         return Inertia::render('Children/Certificate/Edit', [
@@ -52,6 +54,7 @@ class RecipientCertificateController extends Controller
         Child $child,
         RecipientCertificate $certificate
     ) {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         abort_if($certificate->child_id !== $child->id, 404);
 
         // 有効に変更する場合、他のactiveをexpiredに
@@ -71,6 +74,7 @@ class RecipientCertificateController extends Controller
     /** 削除 */
     public function destroy(Child $child, RecipientCertificate $certificate)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         abort_if($certificate->child_id !== $child->id, 404);
 
         $certificate->delete();

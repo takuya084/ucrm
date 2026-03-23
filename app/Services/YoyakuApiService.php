@@ -13,9 +13,9 @@ class YoyakuApiService
 
     public function __construct()
     {
-        $this->baseUrl  = config('services.p_yoyaku.base_url');
-        $this->token    = config('services.p_yoyaku.api_token') ?? '';
-        $this->timeout  = (int) config('services.p_yoyaku.timeout', 5);
+        $this->baseUrl  = config('services.houkago_plus.base_url');
+        $this->token    = config('services.houkago_plus.api_token') ?? '';
+        $this->timeout  = (int) config('services.houkago_plus.timeout', 5);
     }
 
     /**

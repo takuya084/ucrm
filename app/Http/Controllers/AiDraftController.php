@@ -12,6 +12,7 @@ class AiDraftController extends Controller
 
     public function supportPlan(Child $child): JsonResponse
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         $draft = $this->ai->generateSupportPlanDraft($child);
 
         if ($draft === null) {
@@ -23,6 +24,7 @@ class AiDraftController extends Controller
 
     public function monitoring(Child $child): JsonResponse
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         $draft = $this->ai->generateMonitoringDraft($child);
 
         if ($draft === null) {

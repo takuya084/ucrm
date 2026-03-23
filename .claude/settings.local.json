@@ -12,7 +12,14 @@
       "Bash(which node:*)",
       "Bash(wait:*)",
       "Bash(timeout:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(composer require:*)",
+      "mcp__chrome-devtools__list_console_messages",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__take_screenshot",
+      "Read(//mnt/c/xampp/**)",
+      "Bash(./mysql/bin/mysql.exe -u root ucrm -e \":*)"
     ]
   },
   "enableAllProjectMcpServers": true,

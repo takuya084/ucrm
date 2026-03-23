@@ -51,7 +51,7 @@ const destroy = () => {
         <FlashMessage />
 
         <!-- アクションボタン -->
-        <div class="flex justify-end gap-2">
+        <div v-if="['admin','leader'].includes($page.props.auth.staff_role)" class="flex justify-end gap-2">
           <Link :href="route('children.edit', child.id)" class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">
             編集
           </Link>
@@ -74,7 +74,7 @@ const destroy = () => {
             </div>
             <div>
               <dt class="text-gray-500">生年月日</dt>
-              <dd class="font-medium mt-1">{{ child.birthdate ?? '―' }}</dd>
+              <dd class="font-medium mt-1">{{ child.birthdate?.slice(0, 10) ?? '―' }}</dd>
             </div>
             <div>
               <dt class="text-gray-500">学年</dt>
@@ -84,17 +84,13 @@ const destroy = () => {
               <dt class="text-gray-500">学校</dt>
               <dd class="font-medium mt-1">{{ child.school?.name ?? '―' }}</dd>
             </div>
-            <div>
-              <dt class="text-gray-500">送迎</dt>
-              <dd class="font-medium mt-1">{{ child.pickup_required ? 'あり' : 'なし' }}</dd>
-            </div>
             <div v-if="child.pickup_address" class="col-span-2">
-              <dt class="text-gray-500">送迎先</dt>
+              <dt class="text-gray-500">送迎先住所</dt>
               <dd class="font-medium mt-1">{{ child.pickup_address }}</dd>
             </div>
             <div>
               <dt class="text-gray-500">契約開始日</dt>
-              <dd class="font-medium mt-1">{{ child.contract_start_date ?? '―' }}</dd>
+              <dd class="font-medium mt-1">{{ child.contract_start_date?.slice(0, 10) ?? '―' }}</dd>
             </div>
           </dl>
         </div>
@@ -129,22 +125,25 @@ const destroy = () => {
           <div class="flex justify-between items-center border-b pb-2 mb-4">
             <h3 class="text-base font-semibold text-gray-800">利用曜日</h3>
             <Link
+              v-if="['admin','leader'].includes($page.props.auth.staff_role)"
               :href="route('children.schedules.create', child.id)"
               class="text-xs px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
             >＋ 曜日を追加</Link>
           </div>
           <div v-if="child.schedules?.length" class="flex gap-2 flex-wrap">
-            <Link
+            <component
               v-for="s in child.schedules"
               :key="s.id"
-              :href="route('children.schedules.edit', { child: child.id, schedule: s.id })"
-              class="flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium hover:bg-indigo-200 transition-colors"
+              :is="['admin','leader'].includes($page.props.auth.staff_role) ? Link : 'span'"
+              :href="['admin','leader'].includes($page.props.auth.staff_role) ? route('children.schedules.edit', { child: child.id, schedule: s.id }) : undefined"
+              class="flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
+              :class="['admin','leader'].includes($page.props.auth.staff_role) ? 'hover:bg-indigo-200 transition-colors' : ''"
             >
               {{ DAY_LABELS[s.day_of_week] }}曜日
               <span v-if="s.pickup_required" class="text-xs text-indigo-500">（送迎）</span>
               <span v-if="s.status === 'trial'" class="text-xs bg-yellow-100 text-yellow-600 px-1 rounded">体験</span>
               <span v-if="s.status === 'temporary'" class="text-xs bg-orange-100 text-orange-600 px-1 rounded">一時</span>
-            </Link>
+            </component>
           </div>
           <p v-else class="text-sm text-gray-400">利用曜日が登録されていません</p>
         </div>
@@ -153,7 +152,7 @@ const destroy = () => {
         <div class="bg-white shadow-sm rounded-lg p-6">
           <div class="flex justify-between items-center border-b pb-2 mb-4">
             <h3 class="text-base font-semibold text-gray-800">受給者証</h3>
-            <div class="flex gap-2">
+            <div v-if="['admin','leader'].includes($page.props.auth.staff_role)" class="flex gap-2">
               <Link
                 v-if="child.active_recipient_certificate"
                 :href="route('children.certificates.edit', { child: child.id, certificate: child.active_recipient_certificate.id })"
@@ -182,7 +181,7 @@ const destroy = () => {
               <div>
                 <dt class="text-gray-500">有効期間</dt>
                 <dd class="font-medium mt-1">
-                  {{ child.active_recipient_certificate.valid_from }} 〜 {{ child.active_recipient_certificate.valid_to }}
+                  {{ child.active_recipient_certificate.valid_from?.slice(0, 10) }} 〜 {{ child.active_recipient_certificate.valid_to?.slice(0, 10) }}
                 </dd>
               </div>
               <div v-if="child.active_recipient_certificate.disability_support_category">
@@ -230,7 +229,7 @@ const destroy = () => {
               :key="r.id"
               class="flex items-center gap-4 text-sm py-2 border-b last:border-0"
             >
-              <span class="text-gray-600 w-24">{{ r.date }}</span>
+              <span class="text-gray-600 w-24 shrink-0">{{ r.date?.slice(0, 10) }}</span>
               <span :class="USAGE_STATUS[r.status]?.class ?? 'text-gray-600'">
                 {{ USAGE_STATUS[r.status]?.label ?? r.status }}
               </span>
@@ -245,6 +244,7 @@ const destroy = () => {
           <div class="flex justify-between items-center border-b pb-2 mb-4">
             <h3 class="text-base font-semibold text-gray-800">個別支援計画</h3>
             <Link
+              v-if="['admin','leader'].includes($page.props.auth.staff_role)"
               :href="route('children.support-plans.create', child.id)"
               class="text-xs px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
             >＋ 新規作成</Link>
@@ -257,7 +257,7 @@ const destroy = () => {
             >
               <div>
                 <Link :href="route('children.support-plans.show', [child.id, plan.id])" class="font-medium text-gray-800 hover:text-indigo-600">
-                  {{ plan.plan_date }} 〜 {{ plan.valid_to ?? '―' }}
+                  {{ plan.plan_date?.slice(0, 10) }} 〜 {{ plan.valid_to?.slice(0, 10) ?? '―' }}
                 </Link>
                 <div class="text-xs text-gray-500 mt-0.5 line-clamp-1">{{ plan.short_term_goal || plan.long_term_goal || '目標未記入' }}</div>
               </div>
@@ -277,6 +277,7 @@ const destroy = () => {
           <div class="flex justify-between items-center border-b pb-2 mb-4">
             <h3 class="text-base font-semibold text-gray-800">モニタリング記録</h3>
             <Link
+              v-if="['admin','leader'].includes($page.props.auth.staff_role)"
               :href="route('children.monitoring.create', child.id)"
               class="text-xs px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
             >＋ 記録する</Link>
@@ -289,13 +290,13 @@ const destroy = () => {
             >
               <div>
                 <Link :href="route('children.monitoring.show', [child.id, mon.id])" class="font-medium text-gray-800 hover:text-indigo-600">
-                  {{ mon.monitoring_date }}
+                  {{ mon.monitoring_date?.slice(0, 10) }}
                 </Link>
                 <span v-if="mon.period_from" class="text-xs text-gray-500 ml-2">
-                  （対象：{{ mon.period_from }} 〜 {{ mon.period_to }}）
+                  （対象：{{ mon.period_from?.slice(0, 10) }} 〜 {{ mon.period_to?.slice(0, 10) }}）
                 </span>
               </div>
-              <span v-if="mon.next_review_date" class="text-xs text-gray-500">次回：{{ mon.next_review_date }}</span>
+              <span v-if="mon.next_review_date" class="text-xs text-gray-500">次回：{{ mon.next_review_date?.slice(0, 10) }}</span>
             </div>
           </div>
           <p v-else class="text-sm text-gray-400">モニタリング記録がありません</p>

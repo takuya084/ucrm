@@ -24,13 +24,13 @@ class StoreChildRequest extends FormRequest
             'disability_note'     => ['nullable', 'string', 'max:1000'],
             'allergy_note'        => ['nullable', 'string', 'max:1000'],
             'care_note'           => ['nullable', 'string', 'max:1000'],
-            'pickup_required'     => ['boolean'],
             'pickup_address'      => ['nullable', 'string', 'max:200'],
-            'pickup_area'         => ['nullable', 'string', 'max:100'],
             'contract_start_date' => ['nullable', 'date'],
             'contract_status'     => ['required', 'in:active,suspended,ended'],
             'memo'                => ['nullable', 'string', 'max:2000'],
             'yoyaku_user_id'      => ['nullable', 'integer', 'min:1'],
+            'schedule_days'       => ['nullable', 'array'],
+            'schedule_days.*'     => ['in:mon,tue,wed,thu,fri,sat'],
         ];
     }
 
@@ -44,7 +44,6 @@ class StoreChildRequest extends FormRequest
             'grade'               => '学年',
             'school_id'           => '学校',
             'disability_type'     => '障がい種別',
-            'pickup_required'     => '送迎有無',
             'contract_start_date' => '契約開始日',
             'contract_status'     => '契約状況',
         ];

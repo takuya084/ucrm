@@ -12,9 +12,9 @@ class ProgramController extends Controller
     /** プログラム一覧 */
     public function index()
     {
-        $facilityId = auth()->user()->staff?->facility_id;
+        $facilityId = $this->facilityId();
 
-        $programs = Program::when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+        $programs = Program::where('facility_id', $facilityId)
             ->orderBy('category')
             ->orderBy('name')
             ->get(['id', 'name', 'category', 'duration_minutes', 'is_active']);
@@ -45,6 +45,7 @@ class ProgramController extends Controller
     /** 編集フォーム */
     public function edit(Program $program)
     {
+        abort_if($program->facility_id !== $this->facilityId(), 403);
         return Inertia::render('Programs/Edit', [
             'program' => $program->load('items'),
         ]);
@@ -53,6 +54,7 @@ class ProgramController extends Controller
     /** 更新処理 */
     public function update(UpdateProgramRequest $request, Program $program)
     {
+        abort_if($program->facility_id !== $this->facilityId(), 403);
         $program->update($request->validated());
 
         return to_route('programs.index')
@@ -62,6 +64,7 @@ class ProgramController extends Controller
     /** 削除 */
     public function destroy(Program $program)
     {
+        abort_if($program->facility_id !== $this->facilityId(), 403);
         $program->delete();
 
         return to_route('programs.index')

@@ -20,13 +20,21 @@ const form = reactive({
   disability_note: '',
   allergy_note: '',
   care_note: '',
-  pickup_required: false,
   pickup_address: '',
-  pickup_area: '',
   contract_start_date: '',
   contract_status: 'active',
   memo: '',
+  schedule_days: [],
 })
+
+const DAY_OPTIONS = [
+  { value: 'mon', label: '月' },
+  { value: 'tue', label: '火' },
+  { value: 'wed', label: '水' },
+  { value: 'thu', label: '木' },
+  { value: 'fri', label: '金' },
+  { value: 'sat', label: '土' },
+]
 
 const store = () => {
   Inertia.post(route('children.store'), form)
@@ -98,6 +106,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                     <option v-for="school in schools" :key="school.id" :value="school.id">{{ school.name }}</option>
                   </select>
                 </div>
+                <div class="md:col-span-2">
+                  <label :class="labelClass">送迎先住所</label>
+                  <input v-model="form.pickup_address" type="text" :class="inputClass" placeholder="例：〇〇市△△町1-2-3" />
+                </div>
               </div>
             </section>
 
@@ -124,27 +136,6 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               </div>
             </section>
 
-            <!-- 送迎情報 -->
-            <section>
-              <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">送迎情報</h3>
-              <div class="space-y-4">
-                <div class="flex items-center gap-2">
-                  <input v-model="form.pickup_required" type="checkbox" id="pickup_required" class="w-4 h-4" />
-                  <label for="pickup_required" class="text-sm text-gray-700">送迎が必要</label>
-                </div>
-                <div v-if="form.pickup_required" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label :class="labelClass">送迎先住所</label>
-                    <input v-model="form.pickup_address" type="text" :class="inputClass" />
-                  </div>
-                  <div>
-                    <label :class="labelClass">送迎エリア</label>
-                    <input v-model="form.pickup_area" type="text" :class="inputClass" placeholder="例：A地区、駅周辺" />
-                  </div>
-                </div>
-              </div>
-            </section>
-
             <!-- 契約情報 -->
             <section>
               <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">契約情報</h3>
@@ -161,6 +152,32 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                     <option value="ended">契約終了</option>
                   </select>
                 </div>
+              </div>
+            </section>
+
+            <!-- 利用曜日 -->
+            <section>
+              <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">利用曜日</h3>
+              <p class="text-xs text-gray-400 mb-3">登録後に個別の編集・削除もできます</p>
+              <div class="flex gap-3 flex-wrap">
+                <label
+                  v-for="opt in DAY_OPTIONS"
+                  :key="opt.value"
+                  :class="[
+                    'flex items-center justify-center w-14 h-14 border rounded-lg cursor-pointer text-sm font-medium transition-colors',
+                    form.schedule_days.includes(opt.value)
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-300 hover:bg-gray-50'
+                  ]"
+                >
+                  <input
+                    type="checkbox"
+                    :value="opt.value"
+                    v-model="form.schedule_days"
+                    class="sr-only"
+                  />
+                  {{ opt.label }}
+                </label>
               </div>
             </section>
 

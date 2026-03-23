@@ -103,7 +103,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               <div>
                 <label :class="labelClass">終了日</label>
                 <input v-model="form.end_date" type="date" :class="inputClass" />
-                <p class="text-xs text-gray-400 mt-1">終了日を設定すると「過去のスケジュール」として記録されます</p>
+                <p class="text-xs text-gray-400 mt-1">終了日を過ぎると利用曜日から非表示になります（履歴は残ります）</p>
               </div>
             </div>
 

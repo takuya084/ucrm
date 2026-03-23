@@ -100,6 +100,7 @@ class SupportRecordController extends Controller
     /** 支援記録詳細 */
     public function show(SupportRecord $supportRecord)
     {
+        abort_if($supportRecord->child->facility_id !== $this->facilityId(), 403);
         $supportRecord->load(['child', 'staff', 'programs.items']);
 
         // pivot の selected_item_ids を各プログラムに付与
@@ -116,6 +117,7 @@ class SupportRecordController extends Controller
     /** 編集フォーム */
     public function edit(SupportRecord $supportRecord)
     {
+        abort_if($supportRecord->child->facility_id !== $this->facilityId(), 403);
         $facilityId = $this->facilityId();
         $programs   = Program::where('facility_id', $facilityId)
             ->active()
@@ -146,6 +148,7 @@ class SupportRecordController extends Controller
     /** 更新処理 */
     public function update(UpdateSupportRecordRequest $request, SupportRecord $supportRecord)
     {
+        abort_if($supportRecord->child->facility_id !== $this->facilityId(), 403);
         DB::transaction(function () use ($request, $supportRecord) {
             $supportRecord->update([
                 'staff_id'                => $request->staff_id ?: $supportRecord->staff_id,

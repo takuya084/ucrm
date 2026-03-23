@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import BreezeApplicationLogo from '@/Components/ApplicationLogo.vue'
+
 import BreezeDropdown from '@/Components/Dropdown.vue'
 import BreezeDropdownLink from '@/Components/DropdownLink.vue'
 import BreezeNavLink from '@/Components/NavLink.vue'
@@ -12,8 +12,7 @@ const showingAttendanceDropdown = ref(false)
 
 const attendanceActive = () =>
   route().current('usage-records.index') ||
-  route().current('vacancy-adjustment.index') ||
-  route().current('children.*')
+  route().current('vacancy-adjustment.index')
 </script>
 
 <template>
@@ -24,13 +23,10 @@ const attendanceActive = () =>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between h-16">
             <div class="flex">
-              <!-- Logo + Title -->
-              <div class="shrink-0 flex items-center gap-2">
-                <Link :href="route('dashboard')">
-                  <BreezeApplicationLogo class="block w-10" />
-                </Link>
-                <Link :href="route('dashboard')" class="hidden sm:block text-sm font-semibold text-indigo-700 whitespace-nowrap">
-                  放デイ管理
+              <!-- Title -->
+              <div class="shrink-0 flex items-center">
+                <Link :href="route('dashboard')" class="text-lg font-extrabold tracking-tight whitespace-nowrap">
+                  <span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">ハグ</span><span class="text-gray-900">くむ</span>
                 </Link>
               </div>
 
@@ -40,7 +36,7 @@ const attendanceActive = () =>
                   ダッシュボード
                 </BreezeNavLink>
 
-                <!-- 出席管理ドロップダウン -->
+                <!-- 利用管理ドロップダウン -->
                 <div class="relative flex items-center h-full">
                   <BreezeDropdown align="left" width="48" @click.stop>
                     <template #trigger>
@@ -62,9 +58,6 @@ const attendanceActive = () =>
                     <template #content>
                       <BreezeDropdownLink :href="route('usage-records.index')">
                         出席管理
-                      </BreezeDropdownLink>
-                      <BreezeDropdownLink :href="route('children.index')">
-                        児童管理
                       </BreezeDropdownLink>
                       <BreezeDropdownLink :href="route('vacancy-adjustment.index')">
                         空き枠調整
@@ -96,13 +89,19 @@ const attendanceActive = () =>
                   </span>
                 </template>
                 <template #content>
-                  <BreezeDropdownLink :href="route('schools.index')">
+                  <BreezeDropdownLink v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('schools.index')">
                     学校マスタ
                   </BreezeDropdownLink>
                   <BreezeDropdownLink :href="route('programs.index')">
                     プログラムマスタ
                   </BreezeDropdownLink>
-                  <BreezeDropdownLink :href="route('facility.edit')">
+                  <BreezeDropdownLink :href="route('children.index')">
+                    児童管理
+                  </BreezeDropdownLink>
+                  <BreezeDropdownLink v-if="$page.props.auth.staff_role === 'admin'" :href="route('staff.index')">
+                    職員管理
+                  </BreezeDropdownLink>
+                  <BreezeDropdownLink v-if="$page.props.auth.staff_role === 'admin'" :href="route('facility.edit')">
                     施設設定
                   </BreezeDropdownLink>
                   <BreezeDropdownLink :href="route('logout')" method="post" as="button"
@@ -137,9 +136,6 @@ const attendanceActive = () =>
             <BreezeResponsiveNavLink :href="route('usage-records.index')" :active="route().current('usage-records.index')">
               出席管理
             </BreezeResponsiveNavLink>
-            <BreezeResponsiveNavLink :href="route('children.index')" :active="route().current('children.*')" class="pl-10">
-              └ 児童管理
-            </BreezeResponsiveNavLink>
             <BreezeResponsiveNavLink :href="route('vacancy-adjustment.index')" :active="route().current('vacancy-adjustment.index')" class="pl-10">
               └ 空き枠調整
             </BreezeResponsiveNavLink>
@@ -158,13 +154,19 @@ const attendanceActive = () =>
               <div class="font-medium text-sm text-gray-500">{{ $page.props.auth.user.email }}</div>
             </div>
             <div class="mt-3 space-y-1">
-              <BreezeResponsiveNavLink :href="route('schools.index')" :active="route().current('schools.*')">
+              <BreezeResponsiveNavLink v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('schools.index')" :active="route().current('schools.*')">
                 学校マスタ
               </BreezeResponsiveNavLink>
               <BreezeResponsiveNavLink :href="route('programs.index')" :active="route().current('programs.*')">
                 プログラムマスタ
               </BreezeResponsiveNavLink>
-              <BreezeResponsiveNavLink :href="route('facility.edit')" :active="route().current('facility.*')">
+              <BreezeResponsiveNavLink :href="route('children.index')" :active="route().current('children.*')">
+                児童管理
+              </BreezeResponsiveNavLink>
+              <BreezeResponsiveNavLink v-if="$page.props.auth.staff_role === 'admin'" :href="route('staff.index')" :active="route().current('staff.*')">
+                職員管理
+              </BreezeResponsiveNavLink>
+              <BreezeResponsiveNavLink v-if="$page.props.auth.staff_role === 'admin'" :href="route('facility.edit')" :active="route().current('facility.*')">
                 施設設定
               </BreezeResponsiveNavLink>
               <BreezeResponsiveNavLink :href="route('logout')" method="post" as="button"

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Inquiry;
 use App\Models\Child;
+use App\Models\Staff;
 use App\Http\Requests\StoreInquiryRequest;
 use App\Http\Requests\UpdateInquiryRequest;
 
@@ -13,10 +14,10 @@ class InquiryController extends Controller
 {
     public function index(Request $request)
     {
-        $facilityId = auth()->user()->staff?->facility_id;
+        $facilityId = $this->facilityId();
 
         $query = Inquiry::with(['child:id,name', 'staff:id,name'])
-            ->when($facilityId, fn($q) => $q->whereHas('child', fn($q2) => $q2->where('facility_id', $facilityId)))
+            ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId))
             ->orderBy('contacted_at', 'desc');
 
         if ($request->filled('status')) {
@@ -41,15 +42,22 @@ class InquiryController extends Controller
 
     public function create(Request $request)
     {
-        $facilityId = auth()->user()->staff?->facility_id;
+        $facilityId = $this->facilityId();
 
-        $children = Child::when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+        $children = Child::where('facility_id', $facilityId)
             ->where('contract_status', 'active')
             ->orderBy('name_kana')
             ->get(['id', 'name']);
 
+        $staffList = Staff::where('facility_id', $facilityId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return Inertia::render('Inquiries/Create', [
             'children'             => $children,
+            'staffList'            => $staffList,
+            'defaultStaffId'       => auth()->user()->staff?->id,
             'categoryLabels'       => Inquiry::CATEGORY_LABELS,
             'contactMethodLabels'  => Inquiry::CONTACT_METHOD_LABELS,
             'prefillChildId'       => $request->input('child_id') ? (int) $request->input('child_id') : null,
@@ -59,7 +67,7 @@ class InquiryController extends Controller
     public function store(StoreInquiryRequest $request)
     {
         $data = $request->validated();
-        $data['staff_id'] = auth()->user()->staff?->id;
+        $data['staff_id'] = $request->staff_id ?: auth()->user()->staff?->id;
 
         Inquiry::create($data);
 
@@ -85,10 +93,15 @@ class InquiryController extends Controller
     {
         $this->authorizeInquiry($inquiry);
 
-        $facilityId = auth()->user()->staff?->facility_id;
-        $children = Child::when($facilityId, fn($q) => $q->where('facility_id', $facilityId))
+        $facilityId = $this->facilityId();
+        $children = Child::where('facility_id', $facilityId)
             ->where('contract_status', 'active')
             ->orderBy('name_kana')
+            ->get(['id', 'name']);
+
+        $staffList = Staff::where('facility_id', $facilityId)
+            ->where('is_active', true)
+            ->orderBy('name')
             ->get(['id', 'name']);
 
         $inquiry->load(['child:id,name']);
@@ -96,6 +109,7 @@ class InquiryController extends Controller
         return Inertia::render('Inquiries/Edit', [
             'inquiry'            => $inquiry,
             'children'           => $children,
+            'staffList'          => $staffList,
             'statusLabels'       => Inquiry::STATUS_LABELS,
             'categoryLabels'     => Inquiry::CATEGORY_LABELS,
             'contactMethodLabels'=> Inquiry::CONTACT_METHOD_LABELS,
@@ -123,9 +137,7 @@ class InquiryController extends Controller
 
     private function authorizeInquiry(Inquiry $inquiry): void
     {
-        $facilityId = auth()->user()->staff?->facility_id;
-        if ($facilityId) {
-            abort_if($inquiry->child->facility_id !== $facilityId, 403);
-        }
+        $facilityId = $this->facilityId();
+        abort_if($inquiry->child->facility_id !== $facilityId, 403);
     }
 }

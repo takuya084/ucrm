@@ -21,9 +21,7 @@ const form = reactive({
   disability_note:     props.child.disability_note ?? '',
   allergy_note:        props.child.allergy_note ?? '',
   care_note:           props.child.care_note ?? '',
-  pickup_required:     props.child.pickup_required ?? false,
   pickup_address:      props.child.pickup_address ?? '',
-  pickup_area:         props.child.pickup_area ?? '',
   contract_start_date: props.child.contract_start_date ?? '',
   contract_end_date:   props.child.contract_end_date ?? '',
   contract_status:     props.child.contract_status ?? 'active',
@@ -94,6 +92,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                     <option v-for="school in schools" :key="school.id" :value="school.id">{{ school.name }}</option>
                   </select>
                 </div>
+                <div class="md:col-span-2">
+                  <label :class="labelClass">送迎先住所</label>
+                  <input v-model="form.pickup_address" type="text" :class="inputClass" placeholder="例：〇〇市△△町1-2-3" />
+                </div>
               </div>
             </section>
 
@@ -116,27 +118,6 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                 <div>
                   <label :class="labelClass">配慮事項</label>
                   <textarea v-model="form.care_note" :class="inputClass" rows="2" />
-                </div>
-              </div>
-            </section>
-
-            <!-- 送迎情報 -->
-            <section>
-              <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">送迎情報</h3>
-              <div class="space-y-4">
-                <div class="flex items-center gap-2">
-                  <input v-model="form.pickup_required" type="checkbox" id="pickup_required" class="w-4 h-4" />
-                  <label for="pickup_required" class="text-sm text-gray-700">送迎が必要</label>
-                </div>
-                <div v-if="form.pickup_required" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label :class="labelClass">送迎先住所</label>
-                    <input v-model="form.pickup_address" type="text" :class="inputClass" />
-                  </div>
-                  <div>
-                    <label :class="labelClass">送迎エリア</label>
-                    <input v-model="form.pickup_area" type="text" :class="inputClass" />
-                  </div>
                 </div>
               </div>
             </section>
@@ -180,9 +161,9 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   type="number"
                   min="1"
                   :class="inputClass"
-                  placeholder="p-yoyaku の users.id を入力"
+                  placeholder="houkago-plus の users.id を入力"
                 />
-                <p class="text-xs text-gray-400 mt-1">送迎予約システム（p-yoyaku）と連携する場合、保護者アカウントのIDを入力してください</p>
+                <p class="text-xs text-gray-400 mt-1">送迎予約システム（houkago-plus）と連携する場合、保護者アカウントのIDを入力してください</p>
               </div>
             </section>
 

@@ -14,17 +14,14 @@ class ChildrenController extends Controller
     /** 利用児童一覧 */
     public function index(Request $request)
     {
-        $facilityId = auth()->user()->staff?->facility_id;
+        $facilityId = $this->facilityId();
 
         $query = Child::with(['school'])
+            ->where('facility_id', $facilityId)
             ->search($request->search)
             ->when($request->status, fn ($q, $s) => $q->where('contract_status', $s))
             ->orderBy('name_kana')
             ->select('id', 'name', 'name_kana', 'gender', 'grade', 'school_id', 'contract_status', 'pickup_required');
-
-        if ($facilityId) {
-            $query->where('facility_id', $facilityId);
-        }
 
         $children = $query->paginate(20)->withQueryString();
 
@@ -38,17 +35,25 @@ class ChildrenController extends Controller
     public function create()
     {
         return Inertia::render('Children/Create', [
-            'schools' => School::orderBy('name')->get(['id', 'name']),
+            'schools' => School::where('facility_id', $this->facilityId())->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     /** 登録処理 */
     public function store(StoreChildRequest $request)
     {
-        Child::create(array_merge(
-            $request->validated(),
-            ['facility_id' => $this->facilityId()]
-        ));
+        $data = $request->safe()->except('schedule_days');
+        $child = Child::create(array_merge($data, ['facility_id' => $this->facilityId()]));
+
+        // 利用曜日の一括登録
+        $today = now()->toDateString();
+        foreach ($request->input('schedule_days', []) as $day) {
+            $child->schedules()->create([
+                'day_of_week' => $day,
+                'start_date'  => $request->contract_start_date ?? $today,
+                'status'      => 'regular',
+            ]);
+        }
 
         return to_route('children.index')
             ->with(['message' => '児童を登録しました。', 'status' => 'success']);
@@ -57,6 +62,7 @@ class ChildrenController extends Controller
     /** 詳細表示 */
     public function show(Child $child)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         $child->load([
             'school',
             'guardians',
@@ -75,15 +81,17 @@ class ChildrenController extends Controller
     /** 編集フォーム */
     public function edit(Child $child)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         return Inertia::render('Children/Edit', [
             'child'   => $child->load('school'),
-            'schools' => School::orderBy('name')->get(['id', 'name']),
+            'schools' => School::where('facility_id', $this->facilityId())->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     /** 更新処理 */
     public function update(UpdateChildRequest $request, Child $child)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         $child->update($request->validated());
 
         return to_route('children.show', $child)
@@ -93,6 +101,7 @@ class ChildrenController extends Controller
     /** 削除（ソフトデリート） */
     public function destroy(Child $child)
     {
+        abort_if($child->facility_id !== $this->facilityId(), 403);
         $child->delete();
 
         return to_route('children.index')

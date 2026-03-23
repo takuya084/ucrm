@@ -95,7 +95,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
           <!-- 前回計画からのコピー通知 -->
           <div v-if="previousPlan" class="mb-5 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
-            <span class="font-medium text-blue-700">前回計画（{{ previousPlan.valid_from }} 〜 {{ previousPlan.valid_to }}）から一部引き継ぎました。</span>
+            <span class="font-medium text-blue-700">前回計画（{{ previousPlan.valid_from?.slice(0, 10) }} 〜 {{ previousPlan.valid_to?.slice(0, 10) }}）から一部引き継ぎました。</span>
           </div>
 
           <form @submit.prevent="store" class="space-y-6">

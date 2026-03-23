@@ -113,7 +113,7 @@ const CONDITION_OPTIONS = [
           ← 出席管理へ
         </Link>
         <h2 class="font-semibold text-xl text-gray-800">
-          支援記録 — {{ child.name }}（{{ date }}）
+          支援記録 — {{ child.name }}（{{ date?.slice(0, 10) }}）
         </h2>
       </div>
     </template>

@@ -11,12 +11,10 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
-    /**
-     * スタッフ紐付けがない場合は最初の事業所IDにフォールバック
-     */
-    protected function facilityId(): ?int
+    protected function facilityId(): int
     {
-        return auth()->user()->staff?->facility_id
-            ?? \App\Models\Facility::value('id');
+        $id = auth()->user()->staff?->facility_id;
+        abort_if(!$id, 403, '事業所に所属していません。');
+        return $id;
     }
 }

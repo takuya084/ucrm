@@ -38,7 +38,7 @@ const destroy = () => {
       <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <FlashMessage />
 
-        <div class="flex justify-end gap-2">
+        <div v-if="['admin','leader'].includes($page.props.auth.staff_role)" class="flex justify-end gap-2">
           <Link
             :href="route('children.support-plans.edit', [child.id, plan.id])"
             class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600"

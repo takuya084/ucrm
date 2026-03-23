@@ -99,7 +99,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
           ← 記録詳細へ
         </Link>
         <h2 class="font-semibold text-xl text-gray-800">
-          支援記録編集 — {{ record.child?.name }}（{{ record.date }}）
+          支援記録編集 — {{ record.child?.name }}（{{ record.date?.slice(0, 10) }}）
         </h2>
       </div>
     </template>

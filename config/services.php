@@ -37,10 +37,17 @@ return [
         'timeout' => env('OPENAI_TIMEOUT', 30),
     ],
 
-    'p_yoyaku' => [
-        'base_url'  => env('P_YOYAKU_BASE_URL', 'http://localhost:8080'),
-        'api_token' => env('P_YOYAKU_API_TOKEN'),
-        'timeout'   => env('P_YOYAKU_TIMEOUT', 5),
+    'houkago_plus' => [
+        'base_url'  => env('HOUKAGO_PLUS_BASE_URL', 'http://localhost:8080'),
+        'api_token' => env('HOUKAGO_PLUS_API_TOKEN'),
+        'timeout'   => env('HOUKAGO_PLUS_TIMEOUT', 5),
+    ],
+
+    'stripe' => [
+        'pb_key'         => env('STRIPE_PUBLIC'),
+        'st_key'         => env('STRIPE_SECRET'),
+        'price_id'       => env('STRIPE_PRICE_ID'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
 ];

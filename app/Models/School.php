@@ -18,6 +18,7 @@ class School extends Model
     ];
 
     protected $fillable = [
+        'facility_id',
         'name',
         'name_kana',
         'address',
