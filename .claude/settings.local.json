@@ -19,7 +19,8 @@
       "mcp__chrome-devtools__list_pages",
       "mcp__chrome-devtools__take_screenshot",
       "Read(//mnt/c/xampp/**)",
-      "Bash(./mysql/bin/mysql.exe -u root ucrm -e \":*)"
+      "Bash(./mysql/bin/mysql.exe -u root ucrm -e \":*)",
+      "Bash(composer show:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

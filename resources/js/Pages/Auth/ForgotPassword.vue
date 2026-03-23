@@ -21,10 +21,10 @@ const submit = () => {
 
 <template>
     <BreezeGuestLayout>
-        <Head title="Forgot Password" />
+        <Head title="パスワードリセット" />
 
         <div class="mb-4 text-sm text-gray-600">
-            Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.
+            パスワードをお忘れですか？メールアドレスを入力していただければ、パスワードリセット用のリンクをメールでお送りします。
         </div>
 
         <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
@@ -35,13 +35,13 @@ const submit = () => {
 
         <form @submit.prevent="submit">
             <div>
-                <BreezeLabel for="email" value="Email" />
+                <BreezeLabel for="email" value="メールアドレス" />
                 <BreezeInput id="email" type="email" class="mt-1 block w-full" v-model="form.email" required autofocus autocomplete="username" />
             </div>
 
             <div class="flex items-center justify-end mt-4">
                 <BreezeButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Email Password Reset Link
+                    パスワードリセットリンクを送信
                 </BreezeButton>
             </div>
         </form>
