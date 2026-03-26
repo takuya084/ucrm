@@ -7,6 +7,12 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
+        <!-- Favicon -->
+        <link rel="icon" href="{{ asset('hagukumu_favicon.ico') }}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('hagukumu_favicon-32x32.png') }}">
+        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('hagukumu_favicon-16x16.png') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('hagukumu_apple-touch-icon.png') }}">
+
         <!-- Fonts -->
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap">
 
