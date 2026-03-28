@@ -33,6 +33,10 @@ class EnsureFacilityIsActive
 
         $facility = $user->staff->facility ?? null;
 
+        if ($facility && $facility->isFree()) {
+            return $next($request);
+        }
+
         if ($facility && !$facility->is_active) {
             Auth::logout();
             return redirect()->route('login')

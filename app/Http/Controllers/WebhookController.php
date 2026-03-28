@@ -38,6 +38,7 @@ class WebhookController extends Controller
 
                     $facility = Facility::where('stripe_subscription_id', $subscriptionId)->first();
                     if (!$facility) break;
+                    if ($facility->isFree()) break;
 
                     if ($event->type === 'customer.subscription.deleted') {
                         $status = 'canceled';
@@ -59,6 +60,7 @@ class WebhookController extends Controller
 
                     $facility = Facility::where('stripe_subscription_id', $subscriptionId)->first();
                     if (!$facility) break;
+                    if ($facility->isFree()) break;
 
                     $facility->subscription_status = 'past_due';
                     $facility->is_active = false;
@@ -73,6 +75,7 @@ class WebhookController extends Controller
 
                     $facility = Facility::where('stripe_subscription_id', $subscriptionId)->first();
                     if (!$facility) break;
+                    if ($facility->isFree()) break;
 
                     $facility->subscription_status = 'active';
                     $facility->is_active = true;

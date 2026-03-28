@@ -59,4 +59,12 @@ class Facility extends Model
     {
         return $this->hasMany(AvailableSlot::class);
     }
+
+    /**
+     * 無料プランの事業所かどうか
+     */
+    public function isFree(): bool
+    {
+        return $this->billing_type === 'free';
+    }
 }

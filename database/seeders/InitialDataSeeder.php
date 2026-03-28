@@ -21,12 +21,15 @@ class InitialDataSeeder extends Seeder
         $facilityId = DB::table('facilities')->value('id');
         if (!$facilityId) {
             $facilityId = DB::table('facilities')->insertGetId([
-                'name'             => 'サンプル放課後等デイサービス',
-                'address'          => '東京都渋谷区1-1-1',
-                'tel'              => '03-1234-5678',
-                'capacity_per_day' => 10,
-                'created_at'       => $now,
-                'updated_at'       => $now,
+                'name'                => 'サンプル放課後等デイサービス',
+                'address'             => '東京都渋谷区1-1-1',
+                'tel'                => '03-1234-5678',
+                'capacity_per_day'   => 10,
+                'billing_type'       => 'free',
+                'is_active'          => true,
+                'subscription_status' => 'free',
+                'created_at'         => $now,
+                'updated_at'         => $now,
             ]);
         }
 
