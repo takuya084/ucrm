@@ -1,6 +1,7 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/inertia-vue3'
+import QuickNav from '@/Components/QuickNav.vue'
 import { ref, computed } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
 
@@ -23,7 +24,7 @@ const CATEGORY_LABELS = {
 }
 
 // 今日のみ表示トグル
-const todayOnly = ref(false)
+const todayOnly = ref(true)
 const todaySet  = new Set(props.todayChildIds ?? [])
 const displayChildren = computed(() =>
   todayOnly.value ? props.children.filter(c => todaySet.has(c.id)) : props.children
@@ -127,6 +128,8 @@ const overallStats = computed(() => {
 
     <div class="py-8">
       <div class="max-w-full mx-auto sm:px-6 lg:px-8 space-y-4">
+
+        <QuickNav />
 
         <!-- カテゴリタブ -->
         <div class="flex gap-2 flex-wrap">

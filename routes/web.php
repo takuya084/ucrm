@@ -28,6 +28,9 @@ use App\Http\Controllers\StripeController;
 use App\Http\Controllers\SubscribeController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\ShiftController;
+use App\Http\Controllers\ShiftLabelController;
+use App\Http\Controllers\StaffWorkPatternController;
 
 Route::get('analysis', [AnalysisController::class, 'index'])->name('analysis');
 
@@ -41,6 +44,33 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 Route::resource('staff', StaffController::class)
     ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
     ->middleware(['auth', 'verified', 'role:admin']);
+
+// シフト管理（閲覧: 全員、編集: leader以上、作成/削除/確定: admin）
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('shifts',                    [ShiftController::class, 'index'])       ->name('shifts.index');
+    Route::get('shifts/{shift}/edit',       [ShiftController::class, 'edit'])        ->name('shifts.edit');
+});
+Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function () {
+    Route::post('shifts/{shift}/bulk-save', [ShiftController::class, 'bulkSave'])   ->name('shifts.bulk-save');
+});
+Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
+    Route::post('shifts/create',            [ShiftController::class, 'create'])      ->name('shifts.create');
+    Route::patch('shifts/{shift}/status',   [ShiftController::class, 'updateStatus'])->name('shifts.update-status');
+    Route::delete('shifts/{shift}',         [ShiftController::class, 'destroy'])     ->name('shifts.destroy');
+});
+
+// 勤務パターン管理（admin のみ）
+Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
+    Route::get('staff/{staff}/work-patterns',   [StaffWorkPatternController::class, 'edit'])  ->name('staff.work-patterns.edit');
+    Route::patch('staff/{staff}/work-patterns',  [StaffWorkPatternController::class, 'update'])->name('staff.work-patterns.update');
+});
+
+// シフトラベル管理（admin のみ）
+Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
+    Route::get('shift-labels',                      [ShiftLabelController::class, 'index'])  ->name('shift-labels.index');
+    Route::post('shift-labels',                     [ShiftLabelController::class, 'store'])  ->name('shift-labels.store');
+    Route::delete('shift-labels/{shiftLabel}',      [ShiftLabelController::class, 'destroy'])->name('shift-labels.destroy');
+});
 
 // 利用児童管理（閲覧: 全員、編集: leader以上）
 Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function () {

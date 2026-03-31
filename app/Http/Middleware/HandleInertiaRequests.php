@@ -32,6 +32,21 @@ class HandleInertiaRequests extends Middleware
      * @param  \Illuminate\Http\Request  $request
      * @return array
      */
+    /**
+     * Inertia JSON応答にキャッシュ無効化ヘッダーを付与。
+     * ブラウザが古いJSONを再利用して画面が古い状態に戻る問題を防ぐ。
+     */
+    public function handle($request, \Closure $next)
+    {
+        $response = parent::handle($request, $next);
+
+        if ($request->header('X-Inertia')) {
+            $response->headers->set('Cache-Control', 'no-store, max-age=0');
+        }
+
+        return $response;
+    }
+
     public function share(Request $request)
     {
         return array_merge(parent::share($request), [

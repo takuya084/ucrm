@@ -21,7 +21,18 @@
       "Read(//mnt/c/xampp/**)",
       "Bash(./mysql/bin/mysql.exe -u root ucrm -e \":*)",
       "Bash(composer show:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(mysql -u root -e \"SELECT id, year, month, status FROM ucrm.monthly_shifts;\")",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root -e \"SELECT id, year, month, status FROM ucrm.monthly_shifts;\")",
+      "Bash(\"/mnt/c/xampp/mysql/bin/mysql.exe\" -u root -e \"SELECT COUNT\\(*\\) as children_count FROM ucrm.children WHERE contract_status='active'; SELECT COUNT\\(*\\) as schedule_count FROM ucrm.child_schedules;\" 2>/dev/null)",
+      "Bash(\"/mnt/c/xampp/mysql/bin/mysql.exe\" -u root -e \"SELECT id, child_id, date, condition, behavior_note, achievement_note, challenge_note FROM ucrm.support_records ORDER BY id DESC LIMIT 3;\")",
+      "Bash(\"/mnt/c/xampp/mysql/bin/mysql.exe\" -u root -e \"SELECT id, child_id, date, \\\\`condition\\\\`, behavior_note, achievement_note FROM ucrm.support_records ORDER BY id DESC LIMIT 3;\")",
+      "Bash(mysql:*)",
+      "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \"\nSELECT COUNT\\(*\\) as usage_cnt FROM usage_records;\nSELECT COUNT\\(*\\) as support_cnt FROM support_records;\nSELECT DISTINCT date FROM usage_records ORDER BY date;\n\" 2>&1)",
+      "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \"\nDELETE FROM support_records;\nDELETE FROM usage_records;\nSELECT COUNT\\(*\\) as usage_cnt FROM usage_records;\nSELECT COUNT\\(*\\) as support_cnt FROM support_records;\n\" 2>&1)",
+      "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \"\nDELETE FROM support_records;\nDELETE FROM usage_records;\nSELECT 'CLEAN' as status, 0 as usage_cnt, 0 as support_cnt;\n\" 2>&1)",
+      "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \"\nDELETE FROM support_records;\nDELETE FROM usage_records;\nSELECT 'CLEAN' as status;\n\" 2>&1)",
+      "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \":*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -4,6 +4,7 @@ import { Head, Link } from '@inertiajs/inertia-vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive, computed, ref } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
+import axios from 'axios'
 
 const props = defineProps({
   child:          Object,
@@ -34,8 +35,20 @@ const form = reactive({
 // 項目展開状態
 const expandedPrograms = ref(new Set())
 
+const saving = ref(false)
 const store = () => {
-  Inertia.post(route('support-records.store'), form)
+  saving.value = true
+  // Inertia.post はリダイレクトを自動追従しキャッシュ問題を起こすため、
+  // axios で直接 POST し、成功後に Inertia.visit で出席管理に遷移する
+  axios.post(route('support-records.store'), form).then(() => {
+    Inertia.visit(route('usage-records.index', { date: props.date }))
+  }).catch(err => {
+    saving.value = false
+    // バリデーションエラーがあればページをリロードして表示
+    if (err.response?.status === 422) {
+      Inertia.reload()
+    }
+  })
 }
 
 const CATEGORY_LABELS = {

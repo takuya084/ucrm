@@ -18,77 +18,57 @@ class UsageRecordController extends Controller
 
     public function index(Request $request)
     {
-        $date       = $request->input('date', date('Y-m-d'));
+        $date       = \Carbon\Carbon::parse($request->input('date', date('Y-m-d')))->toDateString();
         $dayOfWeek  = $this->getDayOfWeek($date);
         $facilityId = $this->facilityId();
 
-        // その日すでに出席記録が保存されているか
-        $hasRecords = UsageRecord::where('date', $date)
+        // 1. その日すでに出席記録が保存されているか確認
+        $savedRecords = UsageRecord::where('date', $date)
             ->where('facility_id', $facilityId)
-            ->exists();
+            ->with(['child.school', 'supportRecord'])
+            ->get();
 
-        $currentChildIds = [];
-        $dataSource      = 'schedule';
+        $hasRecords = $savedRecords->isNotEmpty();
 
         if ($hasRecords) {
-            // ── 保存済みモード: usage_records をソースにする ──────────────
-            $savedRecords = UsageRecord::where('date', $date)
-                ->where('facility_id', $facilityId)
-                ->with(['child.school', 'supportRecord'])
-                ->get();
-
+            // ── 保存済みモード: DBにあるものだけを表示する（勝手な補充はしない） ──
             $rows = $savedRecords->map(fn($rec) => $this->rowFromRecord($rec));
-            $currentChildIds = $savedRecords->pluck('child_id')->toArray();
             $dataSource = 'records';
-
         } else {
-            // ── テンプレートモード: yoyaku API or child_schedules ─────────
+            // ── テンプレートモード: 初めて開くときは予定を表示 ──
             $yoyakuBusinessId = $this->getYoyakuBusinessId($facilityId);
-            $yoyakuSchedules  = null;
-
-            if ($yoyakuBusinessId) {
-                $yoyakuSchedules = $this->yoyakuApi->getDailySchedule($date, (int) $yoyakuBusinessId);
-            }
+            $yoyakuSchedules  = $yoyakuBusinessId ? $this->yoyakuApi->getDailySchedule($date, (int) $yoyakuBusinessId) : null;
 
             if ($yoyakuSchedules !== null) {
                 $dataSource    = 'yoyaku';
                 $yoyakuMap     = collect($yoyakuSchedules)->keyBy('user_id');
-                $yoyakuUserIds = $yoyakuMap->keys()->toArray();
-
                 $templateChildren = Child::with('school')
-                    ->whereIn('yoyaku_user_id', $yoyakuUserIds)
+                    ->whereIn('yoyaku_user_id', $yoyakuMap->keys()->toArray())
                     ->where('facility_id', $facilityId)
                     ->where('contract_status', 'active')
                     ->orderBy('name_kana')
                     ->get();
 
-                $rows = $templateChildren->map(function ($child) use ($yoyakuMap) {
-                    $yoyaku = $child->yoyaku_user_id ? $yoyakuMap->get($child->yoyaku_user_id) : null;
-                    return $this->rowFromChild($child, $yoyaku);
-                });
-
+                $rows = $templateChildren->map(fn($c) => $this->rowFromChild($c, $yoyakuMap->get($c->yoyaku_user_id)));
             } else {
                 $dataSource = 'schedule';
-
                 $scheduled = ChildSchedule::with('child.school')
                     ->where('day_of_week', $dayOfWeek)
                     ->where('start_date', '<=', $date)
                     ->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', $date))
-                    ->whereHas('child', fn($q) => $q
-                        ->where('facility_id', $facilityId)
-                        ->where('contract_status', 'active'))
+                    ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId)->where('contract_status', 'active'))
                     ->get();
-
                 $rows = $scheduled->map(fn($s) => $this->rowFromChild($s->child));
             }
-
-            $currentChildIds = $rows->pluck('child_id')->toArray();
         }
 
-        // 追加候補の児童（現在リストにいない・契約中）
+        // 表示順をカナ順で安定させる
+        $rows = $rows->sortBy('child_name_kana')->values();
+        $currentChildIds = $rows->pluck('child_id')->toArray();
+
+        // 追加候補の児童（契約中の全児童。フロント側で表示中の児童を除外）
         $availableChildren = Child::where('contract_status', 'active')
             ->where('facility_id', $facilityId)
-            ->whereNotIn('id', $currentChildIds)
             ->with('school:id,name')
             ->orderBy('name_kana')
             ->get(['id', 'name', 'name_kana', 'grade', 'pickup_required', 'school_id']);
@@ -96,10 +76,11 @@ class UsageRecordController extends Controller
         return Inertia::render('UsageRecords/Index', [
             'date'              => $date,
             'dayName'           => $this->dayName($dayOfWeek),
-            'rows'              => $rows->values(),
+            'rows'              => $rows,
             'dataSource'        => $dataSource,
             'hasRecords'        => $hasRecords,
             'availableChildren' => $availableChildren,
+            'serverTs'          => microtime(true), // SPA遷移でのprop変更検知用
         ]);
     }
 
@@ -108,11 +89,23 @@ class UsageRecordController extends Controller
         $date       = $request->date;
         $facilityId = $this->facilityId();
         $staffId    = auth()->user()->staff?->id;
+        $dateStr    = \Carbon\Carbon::parse($date)->toDateString();
 
-        DB::transaction(function () use ($request, $date, $facilityId, $staffId) {
+        $savedIds = [];
+
+        DB::transaction(function () use ($request, $dateStr, $facilityId, $staffId, &$savedIds) {
+            $sentChildIds = collect($request->records)->pluck('child_id')->toArray();
+
+            // 1. リストから削除（バツ印）された児童の既存レコードをDBから物理削除
+            UsageRecord::where('date', $dateStr)
+                ->where('facility_id', $facilityId)
+                ->whereNotIn('child_id', $sentChildIds)
+                ->delete();
+
+            // 2. 残りの児童を更新または作成
             foreach ($request->records as $rec) {
-                UsageRecord::updateOrCreate(
-                    ['child_id' => $rec['child_id'], 'date' => $date],
+                $ur = UsageRecord::updateOrCreate(
+                    ['child_id' => $rec['child_id'], 'date' => $dateStr],
                     [
                         'facility_id'    => $facilityId,
                         'staff_id'       => $staffId,
@@ -124,10 +117,18 @@ class UsageRecordController extends Controller
                         'memo'           => $rec['memo'] ?? null,
                     ]
                 );
+                $savedIds[$rec['child_id']] = $ur->id;
             }
         });
 
-        return back()->with(['message' => '出席記録を保存しました。', 'status' => 'success']);
+        // axios（自動保存）からの場合は JSON で usage_record_id を返す
+        if (! $request->header('X-Inertia')) {
+            return response()->json(['ids' => $savedIds]);
+        }
+
+        session()->flash('message', '出席記録を保存しました。');
+        session()->flash('status', 'success');
+        return to_route('usage-records.index', ['date' => $dateStr]);
     }
 
     // ── private helpers ──────────────────────────────────────────────────
@@ -140,6 +141,7 @@ class UsageRecordController extends Controller
             'child_name'              => $rec->child?->name,
             'child_name_kana'         => $rec->child?->name_kana,
             'school_name'             => $rec->child?->school?->name,
+            'allergy_note'            => $rec->child?->allergy_note,
             'pickup_required'         => $rec->child?->pickup_required ?? false,
             'yoyaku_pickup_time'      => null,
             'yoyaku_dropoff_time'     => null,
@@ -165,6 +167,7 @@ class UsageRecordController extends Controller
             'child_name'              => $child->name,
             'child_name_kana'         => $child->name_kana,
             'school_name'             => $child->school?->name,
+            'allergy_note'            => $child->allergy_note,
             'pickup_required'         => $child->pickup_required,
             'yoyaku_pickup_time'      => $yoyaku['pickup_time'] ?? null,
             'yoyaku_dropoff_time'     => $yoyaku['dropoff_time'] ?? null,

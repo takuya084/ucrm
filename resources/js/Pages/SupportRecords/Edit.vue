@@ -4,9 +4,11 @@ import { Head, Link } from '@inertiajs/inertia-vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive, computed, ref } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
+import axios from 'axios'
 
 const props = defineProps({
   record:           Object,
+  recordDate:       String,  // Y-m-d 形式（タイムゾーンずれ防止）
   programs:         Array,
   selectedPrograms: Object,
   selectedItems:    Object,
@@ -32,8 +34,19 @@ const form = reactive({
 // 既存選択プログラムは展開済みにする
 const expandedPrograms = ref(new Set(form.program_ids))
 
+const saving = ref(false)
 const update = () => {
-  Inertia.patch(route('support-records.update', props.record.id), form)
+  saving.value = true
+  // Inertia.patch はリダイレクトを自動追従しキャッシュ問題を起こすため、
+  // axios で直接 PATCH し、成功後に Inertia.visit で出席管理に遷移する
+  axios.patch(route('support-records.update', props.record.id), form).then(() => {
+    Inertia.visit(route('usage-records.index', { date: props.recordDate }))
+  }).catch(err => {
+    saving.value = false
+    if (err.response?.status === 422) {
+      Inertia.reload()
+    }
+  })
 }
 
 const CATEGORY_LABELS = {
@@ -86,6 +99,19 @@ const CONDITION_OPTIONS = [
   { value: 'poor',   label: '不調', class: 'border-red-400   bg-red-50   text-red-700'   },
 ]
 
+const BEHAVIOR_PRESETS = [
+  '落ち着いて過ごせた', '集中して取り組めた', '友達と仲良く関われた',
+  '切り替えが難しかった', '気持ちの波があった', '表情が明るく元気だった',
+]
+const ACHIEVEMENT_PRESETS = [
+  '最後まで取り組めた', '自分から挨拶できた', '指示をよく聞いて動けた',
+  'ルールを守れた', '友達に優しく接した', '苦手なことに挑戦した',
+]
+
+const appendText = (field, text) => {
+  form[field] = form[field] ? form[field] + '、' + text : text
+}
+
 const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
@@ -109,6 +135,11 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
         <div class="bg-white shadow-sm rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
 
+          <div v-if="record.child?.care_note" class="mb-5 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+            <span class="font-medium text-yellow-700">⚠ 配慮事項：</span>
+            <span class="text-yellow-800">{{ record.child.care_note }}</span>
+          </div>
+
           <form @submit.prevent="update" class="space-y-6">
 
             <!-- 様子 -->
@@ -129,18 +160,42 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               </div>
             </section>
 
-            <div>
+            <!-- 行動・様子 -->
+            <section>
               <label :class="labelClass">行動・様子メモ</label>
-              <textarea v-model="form.behavior_note" :class="inputClass" rows="3" />
-            </div>
-            <div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <button
+                  v-for="p in BEHAVIOR_PRESETS" :key="p"
+                  type="button"
+                  @click="appendText('behavior_note', p)"
+                  class="text-xs px-2 py-1 border border-gray-200 rounded bg-gray-50 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                >{{ p }}</button>
+              </div>
+              <textarea v-model="form.behavior_note" :class="inputClass" rows="3"
+                placeholder="今日の行動・様子を記入してください" />
+            </section>
+
+            <!-- 成功体験 -->
+            <section>
               <label :class="labelClass">成功体験・できたこと</label>
-              <textarea v-model="form.achievement_note" :class="inputClass" rows="2" />
-            </div>
-            <div>
+              <div class="flex flex-wrap gap-1 mb-2">
+                <button
+                  v-for="p in ACHIEVEMENT_PRESETS" :key="p"
+                  type="button"
+                  @click="appendText('achievement_note', p)"
+                  class="text-xs px-2 py-1 border border-gray-200 rounded bg-green-50 hover:bg-green-100 text-green-700 transition-colors"
+                >{{ p }}</button>
+              </div>
+              <textarea v-model="form.achievement_note" :class="inputClass" rows="2"
+                placeholder="できたこと、成長が見られた場面など" />
+            </section>
+
+            <!-- 課題 -->
+            <section>
               <label :class="labelClass">課題・気になること</label>
-              <textarea v-model="form.challenge_note" :class="inputClass" rows="2" />
-            </div>
+              <textarea v-model="form.challenge_note" :class="inputClass" rows="2"
+                placeholder="気になった行動、次回検討したい支援など" />
+            </section>
 
             <!-- 実施プログラム -->
             <section>
@@ -240,28 +295,41 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               </div>
             </section>
 
-            <div>
+            <!-- 申し送り -->
+            <section>
               <label :class="labelClass">次回への申し送り</label>
-              <textarea v-model="form.next_action" :class="inputClass" rows="2" />
-            </div>
-            <div>
-              <label :class="labelClass">本日の配慮メモ</label>
+              <textarea v-model="form.next_action" :class="inputClass" rows="2"
+                placeholder="次回支援で気をつけること、試したいことなど" />
+            </section>
+
+            <!-- 当日配慮メモ -->
+            <section>
+              <label :class="labelClass">
+                本日の配慮メモ
+                <span class="text-xs text-gray-400 ml-1">（今日特有の配慮があれば記入）</span>
+              </label>
               <input v-model="form.care_note" type="text" :class="inputClass" />
-            </div>
+            </section>
 
             <!-- 記録者 -->
-            <div>
+            <section>
               <label :class="labelClass">記録者</label>
               <select v-model="form.staff_id" :class="inputClass">
                 <option :value="null">― 選択してください ―</option>
                 <option v-for="s in staffList" :key="s.id" :value="s.id">{{ s.name }}</option>
               </select>
-            </div>
+            </section>
 
-            <label class="flex items-center gap-3 cursor-pointer p-3 bg-blue-50 border border-blue-200 rounded">
-              <input v-model="form.is_shared_with_guardian" type="checkbox" class="w-4 h-4" />
-              <span class="text-sm text-blue-700">連絡帳として保護者に共有する</span>
-            </label>
+            <!-- 保護者共有 -->
+            <section>
+              <label class="flex items-center gap-3 cursor-pointer p-3 bg-blue-50 border border-blue-200 rounded">
+                <input v-model="form.is_shared_with_guardian" type="checkbox" class="w-4 h-4" />
+                <div>
+                  <span class="text-sm font-medium text-blue-700">連絡帳として保護者に共有する</span>
+                  <p class="text-xs text-blue-500 mt-0.5">チェックを入れると保護者共有フラグが立ちます</p>
+                </div>
+              </label>
+            </section>
 
             <div class="flex justify-end gap-3 pt-4 border-t">
               <Link :href="route('support-records.show', record.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">

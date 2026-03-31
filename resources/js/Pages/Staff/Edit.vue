@@ -8,12 +8,15 @@ import { Inertia } from '@inertiajs/inertia'
 const props = defineProps({
   staff: Object,
   roleLabels: Object,
+  qualifications: Array,
+  qualificationTypes: Object,
 })
 
 const form = reactive({
-  name:      props.staff.name ?? '',
-  role:      props.staff.role ?? 'staff',
-  is_active: props.staff.is_active ?? true,
+  name:           props.staff.name ?? '',
+  role:           props.staff.role ?? 'staff',
+  is_active:      props.staff.is_active ?? true,
+  qualifications: [...(props.qualifications ?? [])],
 })
 
 const update = () => {
@@ -99,6 +102,35 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               </div>
             </div>
 
+            <!-- 保有資格 -->
+            <div>
+              <label :class="labelClass">保有資格</label>
+              <div class="flex flex-wrap gap-2 mt-1">
+                <label
+                  v-for="(info, code) in qualificationTypes"
+                  :key="code"
+                  :class="[
+                    'px-3 py-2 border rounded cursor-pointer text-sm transition-colors',
+                    form.qualifications.includes(code)
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-medium'
+                      : 'border-gray-300 hover:bg-gray-50'
+                  ]"
+                >
+                  <input type="checkbox" :value="code"
+                    :checked="form.qualifications.includes(code)"
+                    @change="e => {
+                      if (e.target.checked) {
+                        form.qualifications.push(code)
+                      } else {
+                        form.qualifications = form.qualifications.filter(q => q !== code)
+                      }
+                    }"
+                    class="sr-only" />
+                  {{ info.name }}
+                </label>
+              </div>
+            </div>
+
             <div class="flex justify-end gap-3 pt-4 border-t">
               <Link :href="route('staff.index')" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
                 キャンセル
@@ -108,6 +140,20 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               </button>
             </div>
           </form>
+        </div>
+
+        <!-- 勤務パターン設定リンク -->
+        <div v-if="$page.props.auth.staff_role === 'admin'" class="mt-4 bg-white shadow-sm sm:rounded-lg p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-medium text-gray-700">勤務パターン設定</h3>
+              <p class="text-xs text-gray-500 mt-1">曜日ごとの基本勤務パターンを設定します。シフト自動生成に使用されます。</p>
+            </div>
+            <Link :href="route('staff.work-patterns.edit', staff.id)"
+              class="px-4 py-2 text-sm border rounded hover:bg-gray-50">
+              設定する →
+            </Link>
+          </div>
         </div>
       </div>
     </div>

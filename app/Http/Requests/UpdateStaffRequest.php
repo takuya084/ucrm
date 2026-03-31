@@ -16,7 +16,9 @@ class UpdateStaffRequest extends FormRequest
         return [
             'name'      => ['required', 'string', 'max:100'],
             'role'      => ['required', 'in:admin,leader,staff'],
-            'is_active' => ['required', 'boolean'],
+            'is_active'        => ['required', 'boolean'],
+            'qualifications'   => ['nullable', 'array'],
+            'qualifications.*' => ['string', 'in:' . implode(',', array_keys(\App\Models\StaffQualification::TYPES))],
         ];
     }
 

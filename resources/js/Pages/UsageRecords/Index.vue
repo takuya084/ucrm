@@ -2,8 +2,10 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/inertia-vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { ref, reactive, computed } from 'vue'
+import QuickNav from '@/Components/QuickNav.vue'
+import { ref, computed, watch } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
+import axios from 'axios'
 
 const props = defineProps({
   date:              String,
@@ -12,25 +14,11 @@ const props = defineProps({
   dataSource:        String, // 'yoyaku' | 'schedule' | 'records'
   hasRecords:        Boolean,
   availableChildren: Array,
+  serverTs:          Number, // サーバーが毎回発行するタイムスタンプ（prop変更検知用）
 })
 
 const LOCATION_LABELS = { school: '学校', home: '自宅', parents: '親送迎', others: 'その他' }
 const locationLabel = (loc) => LOCATION_LABELS[loc] ?? loc
-
-// 各行の記録を reactive で管理
-const records = reactive(props.rows.map(r => ({ ...r })))
-
-// 追加パネルの表示制御
-const showAddPanel = ref(false)
-const selectedChildId = ref('')
-
-// 現在リストにいる child_id の集合（追加候補のフィルタリング用）
-const currentChildIds = computed(() => new Set(records.map(r => r.child_id)))
-
-// サーバーから来た availableChildren のうち、まだリストにいないもの
-const availableToAdd = computed(() =>
-  props.availableChildren.filter(c => !currentChildIds.value.has(c.id))
-)
 
 // 日付ナビゲーション
 const selectedDate = ref(props.date)
@@ -38,11 +26,38 @@ const goToDate = () => {
   Inertia.get(route('usage-records.index'), { date: selectedDate.value }, { preserveState: false })
 }
 
-// 保存
-const save = () => {
-  Inertia.post(route('usage-records.bulk-store'), {
+// 各行の記録を ref で管理
+const records = ref(props.rows.map(r => ({ ...r })))
+
+// serverTs が変わる＝サーバーから新しいデータが届いた → records を最新propsで上書き
+watch(() => props.serverTs, () => {
+  records.value = props.rows.map(r => ({ ...r }))
+  selectedDate.value = props.date
+})
+
+// 追加パネルの表示制御
+const showAddPanel = ref(false)
+const selectedChildId = ref('')
+
+// 現在リストにいる child_id の集合（追加候補のフィルタリング用）
+const currentChildIds = computed(() => new Set(records.value.map(r => r.child_id)))
+
+// サーバーから来た availableChildren のうち、まだリストにいないもの
+const availableToAdd = computed(() =>
+  props.availableChildren.filter(c => !currentChildIds.value.has(c.id))
+)
+
+// ── 自動保存 ─────────────────────────────────────────────
+const saveStatus = ref('')   // '' | 'saving' | 'saved' | 'error'
+let saveTimer = null
+
+const autoSave = () => {
+  saveStatus.value = 'saving'
+  clearTimeout(saveTimer)
+
+  axios.post(route('usage-records.bulk-store'), {
     date:    props.date,
-    records: records.map(r => ({
+    records: records.value.map(r => ({
       child_id:       r.child_id,
       status:         r.status,
       absent_reason:  r.absent_reason,
@@ -51,13 +66,36 @@ const save = () => {
       billing_target: r.billing_target,
       memo:           r.memo,
     })),
+  }).then(res => {
+    // 返ってきた usage_record_id をローカルに反映（支援記録ボタン表示用）
+    const ids = res.data.ids ?? {}
+    records.value.forEach(r => {
+      if (ids[r.child_id]) r.usage_record_id = ids[r.child_id]
+    })
+    saveStatus.value = 'saved'
+    saveTimer = setTimeout(() => { saveStatus.value = '' }, 1500)
+  }).catch(() => {
+    saveStatus.value = 'error'
+    saveTimer = setTimeout(() => { saveStatus.value = '' }, 3000)
   })
 }
 
-// 行を削除（未保存の行のみ可能）
-const removeRow = (childId) => {
-  const idx = records.findIndex(r => r.child_id === childId)
-  if (idx !== -1) records.splice(idx, 1)
+// 手動保存（フォールバック）
+const save = () => autoSave()
+
+// 行を削除
+const removeRow = (row) => {
+  // 保存済みの場合は確認ダイアログ
+  if (row.usage_record_id) {
+    if (!confirm(`${row.child_name} をこの日のリストから削除しますか？\n（出席記録がデータベースから削除されます）`)) {
+      return
+    }
+  }
+  const idx = records.value.findIndex(r => r.child_id === row.child_id)
+  if (idx !== -1) {
+    records.value.splice(idx, 1)
+    autoSave()
+  }
 }
 
 // 児童を追加
@@ -66,7 +104,7 @@ const addChild = () => {
   const child = props.availableChildren.find(c => c.id === id)
   if (!child) return
 
-  records.push({
+  records.value.push({
     child_id:                child.id,
     child_name:              child.name,
     child_name_kana:         child.name_kana,
@@ -89,14 +127,15 @@ const addChild = () => {
 
   selectedChildId.value = ''
   showAddPanel.value = false
+  autoSave()
 }
 
 // 集計
 const summary = computed(() => ({
-  attended:    records.filter(r => r.status === 'attended').length,
-  absent:      records.filter(r => r.status !== 'attended').length,
-  total:       records.length,
-  withSupport: records.filter(r => r.has_support_record).length,
+  attended:    records.value.filter(r => r.status === 'attended').length,
+  absent:      records.value.filter(r => r.status !== 'attended').length,
+  total:       records.value.length,
+  withSupport: records.value.filter(r => r.has_support_record).length,
 }))
 
 const STATUS_OPTIONS = [
@@ -105,6 +144,27 @@ const STATUS_OPTIONS = [
   { value: 'absent',        label: '無断欠席',         color: 'text-red-700 bg-red-50 border-red-200' },
   { value: 'cancel',        label: 'キャンセル',        color: 'text-gray-600 bg-gray-50 border-gray-200' },
 ]
+
+// 出席者を上、欠席・キャンセルを下に並べる
+const sortedRecords = computed(() =>
+  [...records.value].sort((a, b) => {
+    const aIsAttended = a.status === 'attended' ? 0 : 1
+    const bIsAttended = b.status === 'attended' ? 0 : 1
+    return aIsAttended - bIsAttended
+  })
+)
+
+// ステータス変更（支援記録がある児童を出席以外にする場合は確認）→ 自動保存
+const changeStatus = (row, newStatus) => {
+  if (newStatus === row.status) return
+  if (row.has_support_record && row.status === 'attended' && newStatus !== 'attended') {
+    if (!confirm('この児童には支援記録があります。\nステータスを変更してもよいですか？\n（支援記録は保持されます。出席に戻せば元通りになります）')) {
+      return
+    }
+  }
+  row.status = newStatus
+  autoSave()
+}
 
 const rowBg = (status) => ({
   attended:      'bg-white',
@@ -158,6 +218,7 @@ const rowBg = (status) => ({
 
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
+        <QuickNav />
         <FlashMessage />
 
         <!-- 集計バー -->
@@ -183,17 +244,20 @@ const rowBg = (status) => ({
         <!-- 出席一覧 -->
         <div class="bg-white shadow-sm rounded-lg overflow-hidden">
           <div class="p-4 border-b flex justify-between items-center">
-            <h3 class="font-medium text-gray-700">{{ date }} の出席記録</h3>
-            <button
-              @click="save"
-              class="px-5 py-2 bg-indigo-500 text-white text-sm rounded hover:bg-indigo-600"
-            >保存する</button>
+            <h3 class="font-medium text-gray-700">{{ date.slice(0, 10) }} の出席記録</h3>
+            <span v-if="saveStatus === 'saving'" class="text-xs text-gray-400">保存中...</span>
+            <span v-else-if="saveStatus === 'saved'" class="text-xs text-green-600 font-medium">✓ 保存完了</span>
+            <span v-else-if="saveStatus === 'error'" class="text-xs text-red-600 font-medium">保存失敗</span>
+            <span v-else class="text-xs text-gray-300">自動保存</span>
           </div>
 
-          <!-- テンプレートモードの注記 -->
+          <!-- テンプレートモードの注記 + 初回保存ボタン -->
           <div v-if="!hasRecords && records.length > 0"
-            class="px-4 py-2 bg-blue-50 border-b text-xs text-blue-600 flex items-center gap-2">
-            <span>固定スケジュールから読み込みました。不要な児童は「×」で削除、足りない場合は「＋ 追加」で加えてから保存してください。</span>
+            class="px-4 py-2 bg-blue-50 border-b text-xs text-blue-600 flex items-center justify-between gap-2">
+            <span>固定スケジュールから読み込みました。ステータス変更・児童の追加削除は自動保存されます。</span>
+            <button @click="autoSave" class="px-4 py-1.5 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600 whitespace-nowrap">
+              このメンバーで確定
+            </button>
           </div>
 
           <div v-if="records.length === 0" class="py-12 text-center text-gray-400">
@@ -203,7 +267,7 @@ const rowBg = (status) => ({
 
           <div v-else class="divide-y">
             <div
-              v-for="row in records"
+              v-for="row in sortedRecords"
               :key="row.child_id"
               :class="['p-4 transition-colors', rowBg(row.status)]"
             >
@@ -216,6 +280,10 @@ const rowBg = (status) => ({
                     {{ row.child_name }}
                   </Link>
                   <div class="text-xs text-gray-400">{{ row.school_name ?? '学校未登録' }}</div>
+                  <div v-if="row.allergy_note"
+                    class="mt-0.5 px-1.5 py-0.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded">
+                    ⚠ {{ row.allergy_note }}
+                  </div>
                 </div>
 
                 <!-- ステータス選択 -->
@@ -224,7 +292,7 @@ const rowBg = (status) => ({
                     v-for="opt in STATUS_OPTIONS"
                     :key="opt.value"
                     type="button"
-                    @click="row.status = opt.value"
+                    @click="changeStatus(row, opt.value)"
                     :class="[
                       'px-3 py-1.5 text-xs border rounded-full font-medium transition-all',
                       row.status === opt.value ? opt.color : 'border-gray-200 text-gray-400 bg-white hover:bg-gray-50'
@@ -245,14 +313,19 @@ const rowBg = (status) => ({
                     class="text-xs px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600"
                   >支援記録を入力</Link>
 
-                  <!-- 削除ボタン（未保存行のみ） -->
+                  <!-- 削除ボタン -->
                   <button
-                    v-if="!row.usage_record_id"
+                    v-if="!row.has_support_record"
                     type="button"
-                    @click="removeRow(row.child_id)"
+                    @click="removeRow(row)"
                     class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                     title="この日のリストから削除"
                   >×</button>
+                  <span
+                    v-else
+                    class="w-7 h-7 flex items-center justify-center rounded-full text-gray-200 cursor-not-allowed"
+                    title="支援記録があるため削除できません（キャンセルに変更してください）"
+                  >×</span>
                 </div>
               </div>
 
@@ -308,11 +381,9 @@ const rowBg = (status) => ({
               </button>
               <span v-else class="text-xs text-gray-400">追加できる児童はいません</span>
 
-              <button
-                v-if="records.length > 0"
-                @click="save"
-                class="px-6 py-2 bg-indigo-500 text-white text-sm rounded hover:bg-indigo-600"
-              >保存する</button>
+              <span v-if="saveStatus === 'saving'" class="text-xs text-gray-400">保存中...</span>
+              <span v-else-if="saveStatus === 'saved'" class="text-xs text-green-600 font-medium">✓ 保存完了</span>
+              <span v-else-if="saveStatus === 'error'" class="text-xs text-red-600 font-medium">保存失敗</span>
             </div>
 
             <div v-else class="flex items-center gap-3 flex-wrap">

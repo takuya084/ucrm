@@ -1,6 +1,7 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/inertia-vue3'
+import QuickNav from '@/Components/QuickNav.vue'
 
 const props = defineProps({
   todayStats:            Object,
@@ -27,6 +28,8 @@ const daysUntil = (dateStr) => {
     <div class="py-8">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+        <QuickNav />
+
         <!-- 今日のサマリー -->
         <section>
           <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
@@ -49,22 +52,6 @@ const daysUntil = (dateStr) => {
               <div class="text-3xl font-bold text-indigo-700">{{ todayStats.withSupport }}</div>
               <div class="text-xs text-gray-500 mt-1">支援記録済</div>
             </div>
-          </div>
-
-          <!-- クイックアクション -->
-          <div class="mt-3 flex gap-3 flex-wrap">
-            <Link
-              :href="route('usage-records.index', { date: todayStats.date })"
-              class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600"
-            >出席管理を開く →</Link>
-            <Link
-              :href="route('children.index')"
-              class="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-            >利用児童一覧</Link>
-            <Link
-              :href="route('programs.index')"
-              class="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-            >プログラム管理</Link>
           </div>
         </section>
 

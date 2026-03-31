@@ -43,7 +43,7 @@ class SupportRecordController extends Controller
             $usageRecord = UsageRecord::with('child')->findOrFail($request->usage_record_id);
             return Inertia::render('SupportRecords/Create', [
                 'child'          => $usageRecord->child->only('id', 'name', 'care_note'),
-                'date'           => $usageRecord->date,
+                'date'           => $usageRecord->date->format('Y-m-d'),
                 'usageRecordId'  => $usageRecord->id,
                 'programs'       => $programs,
                 'staffList'      => $this->staffList(),
@@ -54,7 +54,7 @@ class SupportRecordController extends Controller
         $child = Child::findOrFail($request->child_id);
         return Inertia::render('SupportRecords/Create', [
             'child'          => $child->only('id', 'name', 'care_note'),
-            'date'           => $request->date ?? date('Y-m-d'),
+            'date'           => \Carbon\Carbon::parse($request->date ?? today())->format('Y-m-d'),
             'usageRecordId'  => null,
             'programs'       => $programs,
             'staffList'      => $this->staffList(),
@@ -93,8 +93,14 @@ class SupportRecordController extends Controller
             }
         });
 
-        return to_route('usage-records.index', ['date' => $request->date])
-            ->with(['message' => '支援記録を保存しました。', 'status' => 'success']);
+        $dateStr = \Carbon\Carbon::parse($request->date)->toDateString();
+        session()->flash('message', '支援記録を保存しました。');
+        session()->flash('status', 'success');
+        // axios から呼ばれた場合は JSON を返す（Inertia リダイレクト追従によるキャッシュ問題を回避）
+        if (! $request->header('X-Inertia')) {
+            return response()->json(['date' => $dateStr]);
+        }
+        return to_route('usage-records.index', ['date' => $dateStr]);
     }
 
     /** 支援記録詳細 */
@@ -110,7 +116,8 @@ class SupportRecordController extends Controller
         });
 
         return Inertia::render('SupportRecords/Show', [
-            'record' => $supportRecord,
+            'record'     => $supportRecord,
+            'recordDate' => $supportRecord->date->format('Y-m-d'),
         ]);
     }
 
@@ -138,6 +145,7 @@ class SupportRecordController extends Controller
 
         return Inertia::render('SupportRecords/Edit', [
             'record'           => $supportRecord,
+            'recordDate'       => $supportRecord->date->format('Y-m-d'),
             'programs'         => $programs,
             'selectedPrograms' => $selectedPrograms,
             'selectedItems'    => $selectedItems,
@@ -172,7 +180,13 @@ class SupportRecordController extends Controller
             $supportRecord->programs()->sync($sync);
         });
 
-        return to_route('support-records.show', $supportRecord)
-            ->with(['message' => '支援記録を更新しました。', 'status' => 'success']);
+        $dateStr = \Carbon\Carbon::parse($supportRecord->date)->toDateString();
+        session()->flash('message', '支援記録を更新しました。');
+        session()->flash('status', 'success');
+        // axios から呼ばれた場合は JSON を返す（Inertia リダイレクト追従によるキャッシュ問題を回避）
+        if (! $request->header('X-Inertia')) {
+            return response()->json(['date' => $dateStr]);
+        }
+        return to_route('usage-records.index', ['date' => $dateStr]);
     }
 }

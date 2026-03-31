@@ -17,6 +17,7 @@ class Staff extends Model
         'name',
         'role',
         'is_active',
+        'display_order',
         'joined_at',
     ];
 
@@ -58,6 +59,26 @@ class Staff extends Model
     public function supportPlans(): HasMany
     {
         return $this->hasMany(SupportPlan::class);
+    }
+
+    public function workPatterns(): HasMany
+    {
+        return $this->hasMany(StaffWorkPattern::class);
+    }
+
+    public function shiftEntries(): HasMany
+    {
+        return $this->hasMany(ShiftEntry::class);
+    }
+
+    public function qualifications(): HasMany
+    {
+        return $this->hasMany(StaffQualification::class);
+    }
+
+    public function hasQualification(string $code): bool
+    {
+        return $this->qualifications->contains('qualification', $code);
     }
 
     // 管理者かどうか
