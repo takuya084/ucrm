@@ -158,7 +158,8 @@ class BillingCalculationService
             $record->is_school_day ?? true,
             $record->check_in_time,
             $record->check_out_time,
-            $yearMonth
+            $yearMonth,
+            $facility->capacity_per_day
         );
 
         if ($baseCode) {

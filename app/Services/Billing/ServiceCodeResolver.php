@@ -21,7 +21,8 @@ class ServiceCodeResolver
         bool $isSchoolDay,
         ?string $checkInTime,
         ?string $checkOutTime,
-        string $yearMonth
+        string $yearMonth,
+        ?int $capacityPerDay = null
     ): ?ServiceCodeMaster {
         $query = ServiceCodeMaster::forServiceType($serviceType)
             ->ofCategory('base')
@@ -33,12 +34,22 @@ class ServiceCodeResolver
         $codes = $query->get();
 
         // 条件JSONからマッチするものを探す
-        return $codes->first(function ($code) use ($dayType, $checkInTime, $checkOutTime) {
+        return $codes->first(function ($code) use ($dayType, $checkInTime, $checkOutTime, $capacityPerDay) {
             $conditions = $code->conditions ?? [];
 
             // day_type条件のチェック
             if (isset($conditions['day_type']) && $conditions['day_type'] !== $dayType) {
                 return false;
+            }
+
+            // 定員条件のチェック
+            if ($capacityPerDay !== null) {
+                if (isset($conditions['max_capacity']) && $capacityPerDay > $conditions['max_capacity']) {
+                    return false;
+                }
+                if (isset($conditions['min_capacity']) && $capacityPerDay < $conditions['min_capacity']) {
+                    return false;
+                }
             }
 
             // 時間帯条件のチェック（設定があれば）
