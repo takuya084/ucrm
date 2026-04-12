@@ -12,8 +12,14 @@ class Facility extends Model
 
     protected $fillable = [
         'name',
+        'facility_code',
+        'service_type',
+        'area_unit_price',
+        'designated_date',
+        'administrator_name',
         'address',
         'tel',
+        'fax',
         'capacity_per_day',
         'yoyaku_business_id',
         'billing_type',
@@ -26,8 +32,10 @@ class Facility extends Model
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'subscription_ended_at' => 'datetime',
+        'is_active'              => 'boolean',
+        'subscription_ended_at'  => 'datetime',
+        'designated_date'        => 'date',
+        'area_unit_price'        => 'decimal:2',
     ];
 
     public function staff(): HasMany
@@ -58,6 +66,21 @@ class Facility extends Model
     public function availableSlots(): HasMany
     {
         return $this->hasMany(AvailableSlot::class);
+    }
+
+    public function billingPeriods(): HasMany
+    {
+        return $this->hasMany(BillingPeriod::class);
+    }
+
+    public function facilityServiceSettings(): HasMany
+    {
+        return $this->hasMany(FacilityServiceSetting::class);
+    }
+
+    public function guardianInvoices(): HasMany
+    {
+        return $this->hasMany(GuardianInvoice::class);
     }
 
     /**

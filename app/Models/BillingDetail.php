@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+class BillingDetail extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'billing_period_id',
+        'child_id',
+        'recipient_certificate_id',
+        'service_type',
+        'total_days',
+        'total_units',
+        'unit_price_yen',
+        'total_amount',
+        'insurance_amount',
+        'copayment_amount',
+        'copayment_cap',
+        'copayment_cap_applied',
+        'status',
+    ];
+
+    protected $casts = [
+        'unit_price_yen' => 'decimal:2',
+    ];
+
+    public function billingPeriod(): BelongsTo
+    {
+        return $this->belongsTo(BillingPeriod::class);
+    }
+
+    public function child(): BelongsTo
+    {
+        return $this->belongsTo(Child::class);
+    }
+
+    public function recipientCertificate(): BelongsTo
+    {
+        return $this->belongsTo(RecipientCertificate::class);
+    }
+
+    public function billingDetailLines(): HasMany
+    {
+        return $this->hasMany(BillingDetailLine::class);
+    }
+
+    public function dailyServiceRecords(): HasMany
+    {
+        return $this->hasMany(DailyServiceRecord::class);
+    }
+
+    public function guardianInvoice(): HasOne
+    {
+        return $this->hasOne(GuardianInvoice::class);
+    }
+
+    public function errorClaims(): HasMany
+    {
+        return $this->hasMany(ErrorClaim::class);
+    }
+
+    public function claimReturns(): HasMany
+    {
+        return $this->hasMany(ClaimReturn::class);
+    }
+}

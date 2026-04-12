@@ -105,6 +105,21 @@ class Child extends Model
         return $this->hasMany(SupportPlan::class);
     }
 
+    public function billingDetails(): HasMany
+    {
+        return $this->hasMany(BillingDetail::class);
+    }
+
+    public function guardianInvoices(): HasMany
+    {
+        return $this->hasMany(GuardianInvoice::class);
+    }
+
+    public function copaymentCapManagements(): HasMany
+    {
+        return $this->hasMany(CopaymentCapManagement::class);
+    }
+
     public function latestSupportPlan(): HasOne
     {
         return $this->hasOne(SupportPlan::class)->latestOfMany('plan_date');

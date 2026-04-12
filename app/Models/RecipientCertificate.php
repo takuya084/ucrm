@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RecipientCertificate extends Model
 {
@@ -17,6 +18,12 @@ class RecipientCertificate extends Model
         'valid_from',
         'valid_to',
         'monthly_limit',
+        'copayment_rate',
+        'copayment_cap_monthly',
+        'is_cap_management_target',
+        'cap_managing_facility_id',
+        'service_type',
+        'municipality_code',
         'disability_support_category',
         'issue_date',
         'status',
@@ -24,14 +31,25 @@ class RecipientCertificate extends Model
     ];
 
     protected $casts = [
-        'valid_from'  => 'date',
-        'valid_to'    => 'date',
-        'issue_date'  => 'date',
+        'valid_from'               => 'date',
+        'valid_to'                 => 'date',
+        'issue_date'               => 'date',
+        'is_cap_management_target' => 'boolean',
     ];
 
     public function child(): BelongsTo
     {
         return $this->belongsTo(Child::class);
+    }
+
+    public function capManagingFacility(): BelongsTo
+    {
+        return $this->belongsTo(Facility::class, 'cap_managing_facility_id');
+    }
+
+    public function billingDetails(): HasMany
+    {
+        return $this->hasMany(BillingDetail::class);
     }
 
     // 有効期限まで残り何日か

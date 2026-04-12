@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class UsageRecord extends Model
@@ -17,6 +18,10 @@ class UsageRecord extends Model
         'staff_id',
         'date',
         'status',
+        'check_in_time',
+        'check_out_time',
+        'service_type',
+        'is_school_day',
         'absent_reason',
         'pickup_done',
         'dropoff_done',
@@ -29,6 +34,7 @@ class UsageRecord extends Model
         'pickup_done'    => 'boolean',
         'dropoff_done'   => 'boolean',
         'billing_target' => 'boolean',
+        'is_school_day'  => 'boolean',
     ];
 
     // ステータスの日本語ラベル
@@ -57,6 +63,11 @@ class UsageRecord extends Model
     public function supportRecord(): HasOne
     {
         return $this->hasOne(SupportRecord::class);
+    }
+
+    public function dailyServiceRecords(): HasMany
+    {
+        return $this->hasMany(DailyServiceRecord::class);
     }
 
     // 出席のみ
