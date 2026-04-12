@@ -112,6 +112,10 @@ watch(showingNavigationDropdown, (open) => {
                       <BreezeDropdownLink :href="route('billing.returns.index')">
                         返戻管理
                       </BreezeDropdownLink>
+                      <hr class="my-1" />
+                      <BreezeDropdownLink :href="route('billing.settings.service-codes')">
+                        加算・減算設定
+                      </BreezeDropdownLink>
                     </template>
                   </BreezeDropdown>
                 </div>
@@ -296,6 +300,11 @@ watch(showingNavigationDropdown, (open) => {
                       :class="['mobile-nav-item pl-12', route().current('billing.returns.*') && 'mobile-nav-active']">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                       返戻管理
+                    </Link>
+                    <Link :href="route('billing.settings.service-codes')" @click="showingNavigationDropdown = false"
+                      :class="['mobile-nav-item pl-12', route().current('billing.settings.*') && 'mobile-nav-active']">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                      加算・減算設定
                     </Link>
                   </template>
 

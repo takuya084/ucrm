@@ -38,6 +38,7 @@ use App\Http\Controllers\Billing\CopaymentCapController;
 use App\Http\Controllers\Billing\GuardianInvoiceController;
 use App\Http\Controllers\Billing\ErrorClaimController;
 use App\Http\Controllers\Billing\ClaimReturnController;
+use App\Http\Controllers\Billing\FacilityServiceSettingController;
 
 Route::get('analysis', [AnalysisController::class, 'index'])->name('analysis');
 
@@ -221,6 +222,10 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::get('/returns',                    [ClaimReturnController::class, 'index'])    ->name('billing.returns.index');
     Route::post('/returns',                   [ClaimReturnController::class, 'store'])    ->name('billing.returns.store');
     Route::post('/returns/{claimReturn}/resubmit', [ClaimReturnController::class, 'resubmit'])->name('billing.returns.resubmit');
+
+    // 加算・減算設定
+    Route::get('/settings/service-codes',      [FacilityServiceSettingController::class, 'index'])     ->name('billing.settings.service-codes');
+    Route::post('/settings/service-codes',     [FacilityServiceSettingController::class, 'bulkUpdate'])->name('billing.settings.service-codes.update');
 });
 
 // AI下書き生成（leader以上）
