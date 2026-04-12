@@ -14,6 +14,9 @@ const attendanceActive = () =>
   route().current('usage-records.index') ||
   route().current('vacancy-adjustment.index')
 
+const billingActive = () =>
+  route().current('billing.*')
+
 // メニュー開閉時にbodyスクロールを制御
 watch(showingNavigationDropdown, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
@@ -66,6 +69,48 @@ watch(showingNavigationDropdown, (open) => {
                       </BreezeDropdownLink>
                       <BreezeDropdownLink :href="route('vacancy-adjustment.index')">
                         空き枠調整
+                      </BreezeDropdownLink>
+                    </template>
+                  </BreezeDropdown>
+                </div>
+
+                <!-- 請求管理ドロップダウン（leader以上） -->
+                <div v-if="['admin','leader'].includes($page.props.auth.staff_role)" class="relative flex items-center h-full">
+                  <BreezeDropdown align="left" width="48" @click.stop>
+                    <template #trigger>
+                      <button
+                        type="button"
+                        :class="[
+                          'inline-flex items-center gap-1 px-3 py-2 text-sm font-medium border-b-2 transition duration-150 ease-in-out focus:outline-none',
+                          billingActive()
+                            ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:text-gray-700 focus:border-gray-300'
+                        ]"
+                      >
+                        請求管理
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                    </template>
+                    <template #content>
+                      <BreezeDropdownLink :href="route('billing.index')">
+                        月次請求
+                      </BreezeDropdownLink>
+                      <BreezeDropdownLink :href="route('billing.daily-records.index')">
+                        実績記録票
+                      </BreezeDropdownLink>
+                      <BreezeDropdownLink :href="route('billing.cap-management.index')">
+                        上限管理
+                      </BreezeDropdownLink>
+                      <BreezeDropdownLink :href="route('billing.invoices.index')">
+                        利用者請求
+                      </BreezeDropdownLink>
+                      <BreezeDropdownLink :href="route('billing.error-claims.index')">
+                        過誤申立
+                      </BreezeDropdownLink>
+                      <BreezeDropdownLink :href="route('billing.returns.index')">
+                        返戻管理
                       </BreezeDropdownLink>
                     </template>
                   </BreezeDropdown>
@@ -216,6 +261,43 @@ watch(showingNavigationDropdown, (open) => {
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                     問い合わせ
                   </Link>
+
+                  <!-- 請求管理（leader以上） -->
+                  <template v-if="['admin','leader'].includes($page.props.auth.staff_role)">
+                    <div class="px-4 mt-5 mb-2">
+                      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">請求管理</div>
+                    </div>
+                    <Link :href="route('billing.index')" @click="showingNavigationDropdown = false"
+                      :class="['mobile-nav-item', route().current('billing.index') && 'mobile-nav-active']">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+                      月次請求
+                    </Link>
+                    <Link :href="route('billing.daily-records.index')" @click="showingNavigationDropdown = false"
+                      :class="['mobile-nav-item pl-12', route().current('billing.daily-records.*') && 'mobile-nav-active']">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                      実績記録票
+                    </Link>
+                    <Link :href="route('billing.cap-management.index')" @click="showingNavigationDropdown = false"
+                      :class="['mobile-nav-item pl-12', route().current('billing.cap-management.*') && 'mobile-nav-active']">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      上限管理
+                    </Link>
+                    <Link :href="route('billing.invoices.index')" @click="showingNavigationDropdown = false"
+                      :class="['mobile-nav-item pl-12', route().current('billing.invoices.*') && 'mobile-nav-active']">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                      利用者請求
+                    </Link>
+                    <Link :href="route('billing.error-claims.index')" @click="showingNavigationDropdown = false"
+                      :class="['mobile-nav-item pl-12', route().current('billing.error-claims.*') && 'mobile-nav-active']">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      過誤申立
+                    </Link>
+                    <Link :href="route('billing.returns.index')" @click="showingNavigationDropdown = false"
+                      :class="['mobile-nav-item pl-12', route().current('billing.returns.*') && 'mobile-nav-active']">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                      返戻管理
+                    </Link>
+                  </template>
 
                   <!-- 設定 -->
                   <div class="px-4 mt-5 mb-2">

@@ -31,6 +31,13 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\ShiftLabelController;
 use App\Http\Controllers\StaffWorkPatternController;
+use App\Http\Controllers\Billing\BillingPeriodController;
+use App\Http\Controllers\Billing\BillingDetailController;
+use App\Http\Controllers\Billing\DailyServiceRecordController;
+use App\Http\Controllers\Billing\CopaymentCapController;
+use App\Http\Controllers\Billing\GuardianInvoiceController;
+use App\Http\Controllers\Billing\ErrorClaimController;
+use App\Http\Controllers\Billing\ClaimReturnController;
 
 Route::get('analysis', [AnalysisController::class, 'index'])->name('analysis');
 
@@ -170,6 +177,50 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function 
 });
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('children/{child}/support-plans/{support_plan}', [SupportPlanController::class, 'show'])->name('children.support-plans.show');
+});
+
+// ── 請求管理（leader以上） ──────────────────
+Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing')->group(function () {
+    // 月次請求
+    Route::get('/',                          [BillingPeriodController::class, 'index'])            ->name('billing.index');
+    Route::post('/calculate',                [BillingPeriodController::class, 'calculate'])         ->name('billing.calculate');
+    Route::get('/{billingPeriod}',           [BillingPeriodController::class, 'show'])              ->name('billing.show');
+    Route::patch('/{billingPeriod}/confirm', [BillingPeriodController::class, 'confirm'])           ->name('billing.confirm');
+    Route::get('/{billingPeriod}/export',    [BillingPeriodController::class, 'export'])            ->name('billing.export');
+    Route::get('/{billingPeriod}/export-performance', [BillingPeriodController::class, 'exportPerformance'])->name('billing.export-performance');
+
+    // 児童別明細
+    Route::get('/details/{billingDetail}',      [BillingDetailController::class, 'show'])   ->name('billing.details.show');
+    Route::get('/details/{billingDetail}/edit',  [BillingDetailController::class, 'edit'])   ->name('billing.details.edit');
+    Route::patch('/details/{billingDetail}',     [BillingDetailController::class, 'update']) ->name('billing.details.update');
+
+    // 実績記録票
+    Route::get('/daily-records',             [DailyServiceRecordController::class, 'index'])     ->name('billing.daily-records.index');
+    Route::post('/daily-records/bulk-update', [DailyServiceRecordController::class, 'bulkUpdate'])->name('billing.daily-records.bulk-update');
+
+    // 上限管理
+    Route::get('/cap-management',              [CopaymentCapController::class, 'index'])    ->name('billing.cap-management.index');
+    Route::post('/cap-management/calculate',   [CopaymentCapController::class, 'calculate'])->name('billing.cap-management.calculate');
+    Route::get('/cap-management/export',       [CopaymentCapController::class, 'export'])   ->name('billing.cap-management.export');
+    Route::get('/cap-management/{copaymentCapManagement}', [CopaymentCapController::class, 'show'])->name('billing.cap-management.show');
+
+    // 利用者請求
+    Route::get('/invoices',                       [GuardianInvoiceController::class, 'index'])        ->name('billing.invoices.index');
+    Route::post('/invoices/generate',             [GuardianInvoiceController::class, 'generate'])     ->name('billing.invoices.generate');
+    Route::get('/invoices/{guardianInvoice}',     [GuardianInvoiceController::class, 'show'])         ->name('billing.invoices.show');
+    Route::get('/invoices/{guardianInvoice}/pdf', [GuardianInvoiceController::class, 'downloadPdf'])  ->name('billing.invoices.pdf');
+    Route::patch('/invoices/{guardianInvoice}/payment', [GuardianInvoiceController::class, 'updatePayment'])->name('billing.invoices.update-payment');
+
+    // 過誤申立
+    Route::get('/error-claims',                         [ErrorClaimController::class, 'index'])  ->name('billing.error-claims.index');
+    Route::get('/error-claims/create/{billingDetail}',  [ErrorClaimController::class, 'create']) ->name('billing.error-claims.create');
+    Route::post('/error-claims',                        [ErrorClaimController::class, 'store'])  ->name('billing.error-claims.store');
+    Route::get('/error-claims/export',                  [ErrorClaimController::class, 'export']) ->name('billing.error-claims.export');
+
+    // 返戻管理
+    Route::get('/returns',                    [ClaimReturnController::class, 'index'])    ->name('billing.returns.index');
+    Route::post('/returns',                   [ClaimReturnController::class, 'store'])    ->name('billing.returns.store');
+    Route::post('/returns/{claimReturn}/resubmit', [ClaimReturnController::class, 'resubmit'])->name('billing.returns.resubmit');
 });
 
 // AI下書き生成（leader以上）
