@@ -113,8 +113,12 @@ class UsageRecordController extends Controller
                         'absent_reason'  => $rec['absent_reason'] ?? null,
                         'pickup_done'    => $rec['pickup_done'] ?? false,
                         'dropoff_done'   => $rec['dropoff_done'] ?? false,
-                        'billing_target' => $rec['billing_target'] ?? true,
-                        'memo'           => $rec['memo'] ?? null,
+                        'billing_target'  => $rec['billing_target'] ?? true,
+                        'memo'            => $rec['memo'] ?? null,
+                        'check_in_time'   => $rec['check_in_time'] ?? null,
+                        'check_out_time'  => $rec['check_out_time'] ?? null,
+                        'is_school_day'   => $rec['is_school_day'] ?? true,
+                        'service_type'    => $rec['service_type'] ?? null,
                     ]
                 );
                 $savedIds[$rec['child_id']] = $ur->id;
@@ -154,6 +158,10 @@ class UsageRecordController extends Controller
             'dropoff_done'            => $rec->dropoff_done,
             'billing_target'          => $rec->billing_target,
             'memo'                    => $rec->memo ?? '',
+            'check_in_time'           => $rec->check_in_time ? substr($rec->check_in_time, 0, 5) : '',
+            'check_out_time'          => $rec->check_out_time ? substr($rec->check_out_time, 0, 5) : '',
+            'is_school_day'           => $rec->is_school_day ?? true,
+            'service_type'            => $rec->service_type ?? '',
             'has_support_record'      => $rec->supportRecord !== null,
             'support_record_id'       => $rec->supportRecord?->id,
         ];
@@ -180,6 +188,10 @@ class UsageRecordController extends Controller
             'dropoff_done'            => $child->pickup_required,
             'billing_target'          => true,
             'memo'                    => '',
+            'check_in_time'           => '',
+            'check_out_time'          => '',
+            'is_school_day'           => true,
+            'service_type'            => '',
             'has_support_record'      => false,
             'support_record_id'       => null,
         ];

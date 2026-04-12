@@ -23,6 +23,10 @@ class BulkStoreUsageRecordRequest extends FormRequest
             'records.*.dropoff_done'  => ['boolean'],
             'records.*.billing_target'=> ['boolean'],
             'records.*.memo'          => ['nullable', 'string', 'max:200'],
+            'records.*.check_in_time' => ['nullable', 'date_format:H:i'],
+            'records.*.check_out_time'=> ['nullable', 'date_format:H:i'],
+            'records.*.is_school_day' => ['boolean'],
+            'records.*.service_type'  => ['nullable', 'in:houday,jidou'],
         ];
     }
 

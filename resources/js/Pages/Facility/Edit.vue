@@ -14,8 +14,14 @@ const form = reactive({
   name:               props.facility.name ?? '',
   address:            props.facility.address ?? '',
   tel:                props.facility.tel ?? '',
+  fax:                props.facility.fax ?? '',
   capacity_per_day:   props.facility.capacity_per_day ?? '',
   yoyaku_business_id: props.facility.yoyaku_business_id ?? '',
+  facility_code:      props.facility.facility_code ?? '',
+  service_type:       props.facility.service_type ?? 'houday',
+  area_unit_price:    props.facility.area_unit_price ?? '10.00',
+  designated_date:    props.facility.designated_date ?? '',
+  administrator_name: props.facility.administrator_name ?? '',
 })
 
 const update = () => {
@@ -58,8 +64,45 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   <input v-model="form.tel" type="text" :class="inputClass" />
                 </div>
                 <div>
+                  <label :class="labelClass">FAX番号</label>
+                  <input v-model="form.fax" type="text" :class="inputClass" />
+                </div>
+                <div>
                   <label :class="labelClass">1日の定員</label>
                   <input v-model.number="form.capacity_per_day" type="number" min="1" max="100" :class="inputClass" />
+                </div>
+              </div>
+            </section>
+
+            <!-- 請求設定 -->
+            <section>
+              <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">請求設定</h3>
+              <div class="space-y-4">
+                <div>
+                  <label :class="labelClass">事業所番号（10桁）</label>
+                  <input v-model="form.facility_code" type="text" maxlength="10" :class="inputClass" placeholder="例: 1350000001" />
+                  <p class="text-xs text-gray-400 mt-1">国保連請求に使用する事業所番号を入力してください。</p>
+                </div>
+                <div>
+                  <label :class="labelClass">サービス種別</label>
+                  <select v-model="form.service_type" :class="inputClass">
+                    <option value="houday">放課後等デイサービス</option>
+                    <option value="jidou">児童発達支援</option>
+                    <option value="both">両方（多機能型）</option>
+                  </select>
+                </div>
+                <div>
+                  <label :class="labelClass">地域区分単価（円）</label>
+                  <input v-model="form.area_unit_price" type="number" step="0.01" min="0" max="20" :class="inputClass" />
+                  <p class="text-xs text-gray-400 mt-1">地域区分に応じた1単位あたりの単価。例: 1級地=11.40、6級地=10.00</p>
+                </div>
+                <div>
+                  <label :class="labelClass">管理者氏名</label>
+                  <input v-model="form.administrator_name" type="text" :class="inputClass" />
+                </div>
+                <div>
+                  <label :class="labelClass">指定日</label>
+                  <input v-model="form.designated_date" type="date" :class="inputClass" />
                 </div>
               </div>
             </section>

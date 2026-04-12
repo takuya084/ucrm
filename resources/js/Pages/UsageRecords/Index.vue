@@ -65,6 +65,10 @@ const autoSave = () => {
       dropoff_done:   r.dropoff_done,
       billing_target: r.billing_target,
       memo:           r.memo,
+      check_in_time:  r.check_in_time || null,
+      check_out_time: r.check_out_time || null,
+      is_school_day:  r.is_school_day ?? true,
+      service_type:   r.service_type || null,
     })),
   }).then(res => {
     // 返ってきた usage_record_id をローカルに反映（支援記録ボタン表示用）
@@ -121,6 +125,10 @@ const addChild = () => {
     dropoff_done:            child.pickup_required ?? false,
     billing_target:          true,
     memo:                    '',
+    check_in_time:           '',
+    check_out_time:          '',
+    is_school_day:           true,
+    service_type:            '',
     has_support_record:      false,
     support_record_id:       null,
   })
@@ -337,6 +345,26 @@ const rowBg = (status) => ({
                   placeholder="欠席理由（例：体調不良）"
                   class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs"
                 />
+              </div>
+
+              <!-- 来所・退所時間 + 学校日フラグ（出席時のみ） -->
+              <div v-if="row.status === 'attended'" class="mt-2 flex gap-3 items-center flex-wrap text-xs text-gray-600">
+                <label class="flex items-center gap-1">
+                  来所
+                  <input v-model="row.check_in_time" type="time" class="border border-gray-300 rounded px-1.5 py-1 text-xs w-24" @change="autoSave" />
+                </label>
+                <label class="flex items-center gap-1">
+                  退所
+                  <input v-model="row.check_out_time" type="time" class="border border-gray-300 rounded px-1.5 py-1 text-xs w-24" @change="autoSave" />
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer">
+                  <input v-model="row.is_school_day" type="checkbox" class="w-3 h-3" @change="autoSave" />学校日
+                </label>
+                <select v-model="row.service_type" class="border border-gray-300 rounded px-1.5 py-1 text-xs" @change="autoSave">
+                  <option value="">種別自動</option>
+                  <option value="houday">放デイ</option>
+                  <option value="jidou">児発</option>
+                </select>
               </div>
 
               <!-- 送迎チェック（出席時のみ） -->

@@ -19,6 +19,11 @@ const form = reactive({
   disability_support_category: props.certificate.disability_support_category ?? '',
   issue_date:                  props.certificate.issue_date ?? '',
   status:                      props.certificate.status ?? 'active',
+  copayment_rate:              props.certificate.copayment_rate ?? 10,
+  copayment_cap_monthly:       props.certificate.copayment_cap_monthly ?? '',
+  is_cap_management_target:    props.certificate.is_cap_management_target ?? false,
+  service_type:                props.certificate.service_type ?? '',
+  municipality_code:           props.certificate.municipality_code ?? '',
 })
 
 const update = () => {
@@ -104,6 +109,38 @@ const statusColor = {
                   <option value="pending">申請中</option>
                   <option value="expired">期限切れ</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- 請求設定 -->
+            <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mt-2">請求設定</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label :class="labelClass">サービス種別</label>
+                <select v-model="form.service_type" :class="inputClass">
+                  <option value="">未設定</option>
+                  <option value="houday">放課後等デイサービス</option>
+                  <option value="jidou">児童発達支援</option>
+                </select>
+              </div>
+              <div>
+                <label :class="labelClass">市区町村コード（6桁）</label>
+                <input v-model="form.municipality_code" type="text" maxlength="6" :class="inputClass" placeholder="例：131130" />
+              </div>
+              <div>
+                <label :class="labelClass">自己負担割合（%）</label>
+                <input v-model.number="form.copayment_rate" type="number" min="0" max="100" :class="inputClass" />
+              </div>
+              <div>
+                <label :class="labelClass">上限月額（円）</label>
+                <input v-model.number="form.copayment_cap_monthly" type="number" min="0" :class="inputClass" placeholder="例：4600" />
+                <p class="text-xs text-gray-400 mt-1">非課税世帯=0、低所得=4,600、一般=37,200</p>
+              </div>
+              <div class="md:col-span-2">
+                <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input v-model="form.is_cap_management_target" type="checkbox" class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-300" />
+                  上限管理対象（複数事業所利用の場合にチェック）
+                </label>
               </div>
             </div>
 

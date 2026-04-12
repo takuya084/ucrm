@@ -22,6 +22,11 @@ class UpdateRecipientCertificateRequest extends FormRequest
             'disability_support_category' => ['nullable', 'string', 'max:100'],
             'issue_date'                  => ['nullable', 'date'],
             'status'                      => ['required', 'in:active,expired,pending'],
+            'copayment_rate'              => ['nullable', 'integer', 'min:0', 'max:100'],
+            'copayment_cap_monthly'       => ['nullable', 'integer', 'min:0'],
+            'is_cap_management_target'    => ['nullable', 'boolean'],
+            'service_type'                => ['nullable', 'in:houday,jidou'],
+            'municipality_code'           => ['nullable', 'string', 'max:6'],
         ];
     }
 
@@ -34,7 +39,12 @@ class UpdateRecipientCertificateRequest extends FormRequest
             'valid_to'           => '有効期間（終了）',
             'monthly_limit'      => '月あたり支給量',
             'issue_date'         => '交付日',
-            'status'             => 'ステータス',
+            'status'                   => 'ステータス',
+            'copayment_rate'           => '自己負担割合',
+            'copayment_cap_monthly'    => '上限月額',
+            'is_cap_management_target' => '上限管理対象',
+            'service_type'             => 'サービス種別',
+            'municipality_code'        => '市区町村コード',
         ];
     }
 }
