@@ -146,6 +146,9 @@ watch(showingNavigationDropdown, (open) => {
                   <BreezeDropdownLink v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('schools.index')">
                     学校マスタ
                   </BreezeDropdownLink>
+                  <BreezeDropdownLink v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('external-facilities.index')">
+                    他社事業所マスタ
+                  </BreezeDropdownLink>
                   <BreezeDropdownLink :href="route('programs.index')">
                     プログラムマスタ
                   </BreezeDropdownLink>
@@ -317,6 +320,12 @@ watch(showingNavigationDropdown, (open) => {
                     :class="['mobile-nav-item', route().current('schools.*') && 'mobile-nav-active']">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 14l9-5-9-5-9 5 9 5zm0 7l-9-5 9 5 9-5-9 5zm0-7v7"/></svg>
                     学校マスタ
+                  </Link>
+                  <Link v-if="['admin','leader'].includes($page.props.auth.staff_role)"
+                    :href="route('external-facilities.index')" @click="showingNavigationDropdown = false"
+                    :class="['mobile-nav-item', route().current('external-facilities.*') && 'mobile-nav-active']">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    他社事業所マスタ
                   </Link>
                   <Link :href="route('programs.index')" @click="showingNavigationDropdown = false"
                     :class="['mobile-nav-item', route().current('programs.*') && 'mobile-nav-active']">
