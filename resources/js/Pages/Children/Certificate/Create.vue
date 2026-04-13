@@ -6,7 +6,8 @@ import { reactive } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
 
 const props = defineProps({
-  child: Object,
+  child:              Object,
+  externalFacilities: { type: Array, default: () => [] },
 })
 
 const form = reactive({
@@ -23,6 +24,7 @@ const form = reactive({
   is_cap_management_target:    false,
   service_type:                '',
   municipality_code:           '',
+  external_facility_ids:       [],
 })
 
 const store = () => {
@@ -123,6 +125,36 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                 <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                   <input v-model="form.is_cap_management_target" type="checkbox" class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-300" />
                   上限管理対象（複数事業所利用の場合にチェック）
+                </label>
+              </div>
+            </div>
+
+            <!-- 併給先（他社事業所） -->
+            <div v-if="form.is_cap_management_target">
+              <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mt-2">併給先（他社事業所）</h3>
+              <p class="text-xs text-gray-500 mt-2 mb-3">
+                上限管理対象時、他社事業所の利用がある場合に選択してください。
+              </p>
+              <div v-if="externalFacilities.length === 0" class="text-sm text-gray-400 py-2">
+                他社事業所が未登録です。
+                <Link :href="route('external-facilities.create')" class="text-indigo-500 hover:underline">登録する</Link>
+              </div>
+              <div v-else class="space-y-2">
+                <label
+                  v-for="ef in externalFacilities"
+                  :key="ef.id"
+                  class="flex items-center gap-3 p-2 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    :value="ef.id"
+                    v-model="form.external_facility_ids"
+                    class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-300"
+                  />
+                  <span class="text-sm">
+                    <span class="font-medium text-gray-800">{{ ef.name }}</span>
+                    <span class="ml-2 text-xs text-gray-400 font-mono">{{ ef.facility_number }}</span>
+                  </span>
                 </label>
               </div>
             </div>

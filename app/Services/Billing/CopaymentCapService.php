@@ -6,6 +6,7 @@ use App\Models\BillingDetail;
 use App\Models\CopaymentCapDetail;
 use App\Models\CopaymentCapManagement;
 use App\Models\Child;
+use App\Models\ExternalFacility;
 use App\Models\Facility;
 use Illuminate\Support\Facades\DB;
 
@@ -53,10 +54,15 @@ class CopaymentCapService
                 ]
             );
 
-            // 既存の明細をクリア
+            // 既存の明細を金額情報を保持しながら再生成する準備
+            $previousExternalAmounts = $management->details()
+                ->where('billable_facility_type', ExternalFacility::class)
+                ->get()
+                ->keyBy('billable_facility_id');
+
             $management->details()->delete();
 
-            // この児童の全事業所の請求明細を取得
+            // この児童の自社事業所の請求明細
             $billingDetails = BillingDetail::where('child_id', $child->id)
                 ->whereHas('billingPeriod', function ($q) use ($yearMonth) {
                     $q->where('year_month', $yearMonth);
@@ -74,21 +80,44 @@ class CopaymentCapService
                 CopaymentCapDetail::create([
                     'copayment_cap_management_id' => $management->id,
                     'facility_id'                 => $facility->id,
+                    'billable_facility_type'      => Facility::class,
+                    'billable_facility_id'        => $facility->id,
                     'facility_name'               => $facility->name,
                     'total_amount'                => $detail->total_amount,
                     'copayment_amount'            => $copayment,
-                    'adjusted_amount'             => $copayment, // 仮設定、後で按分
+                    'adjusted_amount'             => $copayment,
                     'is_managing_facility'        => $facility->id === $managingFacilityId,
                 ]);
             }
 
+            // 受給者証に紐付く他社事業所の枠を作成（金額は手入力）
+            foreach ($certificate->externalFacilities as $externalFacility) {
+                $prev = $previousExternalAmounts->get($externalFacility->id);
+                $copayment = $prev?->copayment_amount ?? 0;
+                $totalCopayment += $copayment;
+
+                CopaymentCapDetail::create([
+                    'copayment_cap_management_id' => $management->id,
+                    'facility_id'                 => null,
+                    'billable_facility_type'      => ExternalFacility::class,
+                    'billable_facility_id'        => $externalFacility->id,
+                    'facility_name'               => $externalFacility->name,
+                    'total_amount'                => $prev?->total_amount ?? 0,
+                    'copayment_amount'            => $copayment,
+                    'adjusted_amount'             => $copayment,
+                    'is_managing_facility'        => false,
+                ]);
+            }
+
             // 按分計算
+            $detailCount = $management->details()->count();
+
             if ($totalCopayment <= $capAmount) {
                 // 上限以下：按分不要
                 $management->update([
                     'total_copayment'     => $totalCopayment,
                     'adjusted_copayment'  => $totalCopayment,
-                    'management_result'   => $billingDetails->count() > 1 ? '2' : '1',
+                    'management_result'   => $detailCount > 1 ? '2' : '1',
                 ]);
             } else {
                 // 上限超過：按分が必要
@@ -133,6 +162,31 @@ class CopaymentCapService
             'adjusted_copayment'  => $capAmount,
             'management_result'   => '3',
         ]);
+    }
+
+    /**
+     * 既存明細から合計と按分を再計算（他社金額更新後などに呼ぶ）
+     */
+    public function recomputeAllocation(CopaymentCapManagement $management): void
+    {
+        $details = $management->details;
+        $totalCopayment = (int) $details->sum('copayment_amount');
+        $capAmount = $management->cap_amount;
+        $managingFacilityId = $management->managing_facility_id;
+
+        if ($totalCopayment <= $capAmount) {
+            foreach ($details as $d) {
+                $d->update(['adjusted_amount' => $d->copayment_amount]);
+            }
+            $management->update([
+                'total_copayment'    => $totalCopayment,
+                'adjusted_copayment' => $totalCopayment,
+                'management_result'  => $details->count() > 1 ? '2' : '1',
+            ]);
+            return;
+        }
+
+        $this->allocateAmongFacilities($management, $capAmount, $totalCopayment, $managingFacilityId);
     }
 
     /**

@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
+use App\Models\CopaymentCapDetail;
 use App\Models\CopaymentCapManagement;
+use App\Models\ExternalFacility;
 use App\Services\Billing\CopaymentCapService;
 use App\Services\Billing\NhifCsvExportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -44,11 +47,42 @@ class CopaymentCapController extends Controller
     {
         abort_if($copaymentCapManagement->managing_facility_id !== $this->facilityId(), 403);
 
-        $copaymentCapManagement->load(['child', 'details.facility']);
+        $copaymentCapManagement->load(['child', 'details.billableFacility']);
 
         return Inertia::render('Billing/CapManagement/Show', [
             'management' => $copaymentCapManagement,
         ]);
+    }
+
+    /**
+     * 他社事業所の利用者負担額を更新し、按分再計算
+     */
+    public function updateExternalDetail(
+        Request $request,
+        CopaymentCapManagement $copaymentCapManagement,
+        CopaymentCapDetail $copaymentCapDetail,
+    ) {
+        $detail = $copaymentCapDetail;
+        abort_if($copaymentCapManagement->managing_facility_id !== $this->facilityId(), 403);
+        abort_if($detail->copayment_cap_management_id !== $copaymentCapManagement->id, 404);
+        abort_unless($detail->billable_facility_type === ExternalFacility::class, 422, '他社事業所の明細ではありません。');
+
+        $data = $request->validate([
+            'total_amount'     => ['required', 'integer', 'min:0'],
+            'copayment_amount' => ['required', 'integer', 'min:0'],
+        ]);
+
+        DB::transaction(function () use ($copaymentCapManagement, $detail, $data) {
+            $detail->update([
+                'total_amount'     => $data['total_amount'],
+                'copayment_amount' => $data['copayment_amount'],
+                'adjusted_amount'  => $data['copayment_amount'],
+            ]);
+
+            $this->capService->recomputeAllocation($copaymentCapManagement->fresh('details'));
+        });
+
+        return back()->with(['message' => '他社事業所の金額を更新しました。', 'status' => 'success']);
     }
 
     /**

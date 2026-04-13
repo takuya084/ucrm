@@ -27,6 +27,8 @@ class UpdateRecipientCertificateRequest extends FormRequest
             'is_cap_management_target'    => ['nullable', 'boolean'],
             'service_type'                => ['nullable', 'in:houday,jidou'],
             'municipality_code'           => ['nullable', 'string', 'max:6'],
+            'external_facility_ids'       => ['nullable', 'array'],
+            'external_facility_ids.*'     => ['integer', 'exists:external_facilities,id'],
         ];
     }
 

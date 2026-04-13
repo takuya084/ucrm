@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreRecipientCertificateRequest;
 use App\Http\Requests\UpdateRecipientCertificateRequest;
 use App\Models\Child;
+use App\Models\ExternalFacility;
 use App\Models\RecipientCertificate;
 use Inertia\Inertia;
 
@@ -15,7 +16,8 @@ class RecipientCertificateController extends Controller
     {
         abort_if($child->facility_id !== $this->facilityId(), 403);
         return Inertia::render('Children/Certificate/Create', [
-            'child' => $child->only('id', 'name'),
+            'child'              => $child->only('id', 'name'),
+            'externalFacilities' => $this->externalFacilityOptions(),
         ]);
     }
 
@@ -30,7 +32,12 @@ class RecipientCertificateController extends Controller
                 ->update(['status' => 'expired']);
         }
 
-        $child->recipientCertificates()->create($request->validated());
+        $data = $request->validated();
+        $externalIds = $data['external_facility_ids'] ?? [];
+        unset($data['external_facility_ids']);
+
+        $certificate = $child->recipientCertificates()->create($data);
+        $certificate->externalFacilities()->sync($externalIds);
 
         return to_route('children.show', $child)
             ->with(['message' => '受給者証を登録しました。', 'status' => 'success']);
@@ -43,8 +50,10 @@ class RecipientCertificateController extends Controller
         abort_if($certificate->child_id !== $child->id, 404);
 
         return Inertia::render('Children/Certificate/Edit', [
-            'child'       => $child->only('id', 'name'),
-            'certificate' => $certificate,
+            'child'               => $child->only('id', 'name'),
+            'certificate'         => $certificate,
+            'externalFacilities'  => $this->externalFacilityOptions(),
+            'linkedExternalIds'   => $certificate->externalFacilities()->pluck('external_facilities.id'),
         ]);
     }
 
@@ -65,7 +74,12 @@ class RecipientCertificateController extends Controller
                 ->update(['status' => 'expired']);
         }
 
-        $certificate->update($request->validated());
+        $data = $request->validated();
+        $externalIds = $data['external_facility_ids'] ?? [];
+        unset($data['external_facility_ids']);
+
+        $certificate->update($data);
+        $certificate->externalFacilities()->sync($externalIds);
 
         return to_route('children.show', $child)
             ->with(['message' => '受給者証を更新しました。', 'status' => 'success']);
@@ -81,5 +95,13 @@ class RecipientCertificateController extends Controller
 
         return to_route('children.show', $child)
             ->with(['message' => '受給者証を削除しました。', 'status' => 'success']);
+    }
+
+    /** 自施設の他社事業所一覧（選択肢用） */
+    private function externalFacilityOptions()
+    {
+        return ExternalFacility::where('facility_id', $this->facilityId())
+            ->orderBy('name_kana')->orderBy('name')
+            ->get(['id', 'name', 'facility_number', 'service_type']);
     }
 }

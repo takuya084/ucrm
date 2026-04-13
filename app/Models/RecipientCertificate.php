@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RecipientCertificate extends Model
@@ -50,6 +51,16 @@ class RecipientCertificate extends Model
     public function billingDetails(): HasMany
     {
         return $this->hasMany(BillingDetail::class);
+    }
+
+    public function externalFacilities(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ExternalFacility::class,
+            'certificate_external_facility',
+            'recipient_certificate_id',
+            'external_facility_id'
+        )->withTimestamps();
     }
 
     // 有効期限まで残り何日か
