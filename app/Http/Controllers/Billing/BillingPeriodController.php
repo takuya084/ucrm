@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
+use App\Models\BillingExport;
 use App\Models\BillingPeriod;
 use App\Services\Billing\BillingCalculationService;
+use App\Services\Billing\BillingExportBundleService;
 use App\Services\Billing\NhifCsvExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +17,7 @@ class BillingPeriodController extends Controller
     public function __construct(
         private BillingCalculationService $calculationService,
         private NhifCsvExportService $csvExportService,
+        private BillingExportBundleService $bundleService,
     ) {}
 
     /**
@@ -50,8 +53,14 @@ class BillingPeriodController extends Controller
             'confirmedByStaff:id,name',
         ]);
 
+        $exports = BillingExport::where('billing_period_id', $billingPeriod->id)
+            ->orderByDesc('created_at')
+            ->with('createdBy:id,name')
+            ->get();
+
         return Inertia::render('Billing/Show', [
-            'period' => $billingPeriod,
+            'period'  => $billingPeriod,
+            'exports' => $exports,
         ]);
     }
 
@@ -124,6 +133,56 @@ class BillingPeriodController extends Controller
 
         $path = $this->csvExportService->generatePerformanceRecordCsv($billingPeriod);
         return Storage::disk('local')->download($path);
+    }
+
+    /**
+     * 事前バリデーション（ZIP出力前チェック）
+     */
+    public function validateExport(BillingPeriod $billingPeriod)
+    {
+        $this->authorizeFacility($billingPeriod);
+
+        return response()->json([
+            'warnings' => $this->bundleService->validate($billingPeriod),
+        ]);
+    }
+
+    /**
+     * 複式CSV（ZIP一括）出力
+     */
+    public function exportBundle(BillingPeriod $billingPeriod)
+    {
+        $this->authorizeFacility($billingPeriod);
+
+        $export = $this->bundleService->generateBundle($billingPeriod, auth()->id());
+
+        return Storage::disk('local')->download($export->file_path, $export->file_name);
+    }
+
+    /**
+     * 過去の出力履歴から再ダウンロード
+     */
+    public function downloadExport(BillingExport $billingExport)
+    {
+        abort_if($billingExport->facility_id !== $this->facilityId(), 403);
+        abort_unless(Storage::disk('local')->exists($billingExport->file_path), 404);
+
+        return Storage::disk('local')->download($billingExport->file_path, $billingExport->file_name);
+    }
+
+    /**
+     * 国保連送信済マーク
+     */
+    public function markSubmitted(BillingExport $billingExport)
+    {
+        abort_if($billingExport->facility_id !== $this->facilityId(), 403);
+
+        $billingExport->update([
+            'is_submitted' => true,
+            'submitted_at' => now(),
+        ]);
+
+        return back()->with(['message' => '送信済にマークしました。', 'status' => 'success']);
     }
 
     private function authorizeFacility(BillingPeriod $period): void

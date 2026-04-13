@@ -235,11 +235,17 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::get('/settings/service-codes',      [FacilityServiceSettingController::class, 'index'])     ->name('billing.settings.service-codes');
     Route::post('/settings/service-codes',     [FacilityServiceSettingController::class, 'bulkUpdate'])->name('billing.settings.service-codes.update');
 
+    // 複式CSV出力（履歴）
+    Route::get('/exports/{billingExport}/download',   [BillingPeriodController::class, 'downloadExport'])->name('billing.exports.download');
+    Route::post('/exports/{billingExport}/mark-submitted', [BillingPeriodController::class, 'markSubmitted'])->name('billing.exports.mark-submitted');
+
     // 月次請求 詳細（ワイルドカードなので最後に配置）
     Route::get('/{billingPeriod}',           [BillingPeriodController::class, 'show'])              ->name('billing.show');
     Route::patch('/{billingPeriod}/confirm', [BillingPeriodController::class, 'confirm'])           ->name('billing.confirm');
     Route::get('/{billingPeriod}/export',    [BillingPeriodController::class, 'export'])            ->name('billing.export');
     Route::get('/{billingPeriod}/export-performance', [BillingPeriodController::class, 'exportPerformance'])->name('billing.export-performance');
+    Route::get('/{billingPeriod}/validate-export',    [BillingPeriodController::class, 'validateExport'])   ->name('billing.validate-export');
+    Route::get('/{billingPeriod}/export-bundle',      [BillingPeriodController::class, 'exportBundle'])     ->name('billing.export-bundle');
 });
 
 // AI下書き生成（leader以上）
