@@ -19,6 +19,7 @@ use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\MonitoringRecordController;
 use App\Http\Controllers\SupportPlanController;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\ExternalFacilityController;
 use App\Http\Controllers\ProgramItemController;
 use App\Http\Controllers\VacancyAdjustmentController;
 use App\Http\Controllers\ProgramProgressController;
@@ -108,6 +109,12 @@ Route::resource('schools', SchoolController::class)
     ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
     ->middleware(['auth', 'verified', 'role:leader-or-above']);
 
+// 他社事業所マスタ（leader以上）
+Route::resource('external-facilities', ExternalFacilityController::class)
+    ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
+    ->parameters(['external-facilities' => 'external_facility'])
+    ->middleware(['auth', 'verified', 'role:leader-or-above']);
+
 // 療育プログラムマスタ（全ロール）
 Route::resource('programs', ProgramController::class)
     ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
@@ -182,13 +189,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // ── 請求管理（leader以上） ──────────────────
 Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing')->group(function () {
-    // 月次請求
-    Route::get('/',                          [BillingPeriodController::class, 'index'])            ->name('billing.index');
-    Route::post('/calculate',                [BillingPeriodController::class, 'calculate'])         ->name('billing.calculate');
-    Route::get('/{billingPeriod}',           [BillingPeriodController::class, 'show'])              ->name('billing.show');
-    Route::patch('/{billingPeriod}/confirm', [BillingPeriodController::class, 'confirm'])           ->name('billing.confirm');
-    Route::get('/{billingPeriod}/export',    [BillingPeriodController::class, 'export'])            ->name('billing.export');
-    Route::get('/{billingPeriod}/export-performance', [BillingPeriodController::class, 'exportPerformance'])->name('billing.export-performance');
+    // 月次請求（一覧・計算）
+    Route::get('/',                          [BillingPeriodController::class, 'index'])    ->name('billing.index');
+    Route::post('/calculate',                [BillingPeriodController::class, 'calculate'])->name('billing.calculate');
 
     // 児童別明細
     Route::get('/details/{billingDetail}',      [BillingDetailController::class, 'show'])   ->name('billing.details.show');
@@ -226,6 +229,12 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     // 加算・減算設定
     Route::get('/settings/service-codes',      [FacilityServiceSettingController::class, 'index'])     ->name('billing.settings.service-codes');
     Route::post('/settings/service-codes',     [FacilityServiceSettingController::class, 'bulkUpdate'])->name('billing.settings.service-codes.update');
+
+    // 月次請求 詳細（ワイルドカードなので最後に配置）
+    Route::get('/{billingPeriod}',           [BillingPeriodController::class, 'show'])              ->name('billing.show');
+    Route::patch('/{billingPeriod}/confirm', [BillingPeriodController::class, 'confirm'])           ->name('billing.confirm');
+    Route::get('/{billingPeriod}/export',    [BillingPeriodController::class, 'export'])            ->name('billing.export');
+    Route::get('/{billingPeriod}/export-performance', [BillingPeriodController::class, 'exportPerformance'])->name('billing.export-performance');
 });
 
 // AI下書き生成（leader以上）

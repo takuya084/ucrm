@@ -11,6 +11,8 @@ class CopaymentCapManagement extends Model
 {
     use HasFactory;
 
+    protected $table = 'copayment_cap_managements';
+
     protected $fillable = [
         'child_id',
         'year_month',

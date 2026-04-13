@@ -61,13 +61,17 @@ class GuardianInvoiceController extends Controller
     public function generate(Request $request)
     {
         $request->validate([
-            'year_month' => 'required|date_format:Y-m',
+            'year_month' => ['required', 'string', 'regex:/^\d{4}-\d{2}$/'],
         ]);
 
         $facilityId = $this->facilityId();
         $period = BillingPeriod::where('facility_id', $facilityId)
             ->where('year_month', $request->year_month)
-            ->firstOrFail();
+            ->first();
+
+        if (!$period) {
+            return back()->with(['message' => '該当月の請求データがありません。先に月次請求で計算を実行してください。', 'status' => 'error']);
+        }
 
         $invoices = $this->pdfService->createInvoicesFromBillingPeriod($period);
 

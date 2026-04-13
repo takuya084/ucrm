@@ -1138,12 +1138,12 @@
     "file": "assets/app.9024fec5.css",
     "src": "resources/js\\app.css"
   },
-  "resources/js/Pages/Shifts\\Edit.css": {
-    "file": "assets/Edit.1deb4d78.css",
-    "src": "resources/js/Pages/Shifts\\Edit.css"
-  },
   "Authenticated.css": {
     "file": "assets/Authenticated.c126efaf.css",
     "src": "Authenticated.css"
+  },
+  "resources/js/Pages/Shifts\\Edit.css": {
+    "file": "assets/Edit.1deb4d78.css",
+    "src": "resources/js/Pages/Shifts\\Edit.css"
   }
 }
