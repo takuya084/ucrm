@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
+use App\Models\Child;
 use App\Models\CopaymentCapDetail;
 use App\Models\CopaymentCapManagement;
 use App\Models\ExternalFacility;
@@ -28,15 +29,61 @@ class CopaymentCapController extends Controller
         $facilityId = $this->facilityId();
         $yearMonth  = $request->input('month', now()->format('Y-m'));
 
-        $managements = CopaymentCapManagement::where('managing_facility_id', $facilityId)
-            ->where('year_month', $yearMonth)
-            ->with(['child:id,name,name_kana', 'details'])
-            ->orderBy('child_id')
+        // 上限管理対象の利用者（受給者証ベース）
+        $children = Child::where('facility_id', $facilityId)
+            ->whereHas('recipientCertificates', function ($q) use ($yearMonth) {
+                $q->where('is_cap_management_target', true)
+                  ->where('status', 'active')
+                  ->where('valid_from', '<=', $yearMonth . '-01')
+                  ->where(function ($q2) use ($yearMonth) {
+                      $q2->whereNull('valid_to')
+                        ->orWhere('valid_to', '>=', $yearMonth . '-01');
+                  });
+            })
+            ->with(['recipientCertificates' => function ($q) {
+                $q->where('status', 'active')->latest('valid_from');
+            }])
+            ->orderBy('name_kana')->orderBy('name')
             ->get();
 
+        $managementsByChild = CopaymentCapManagement::where('managing_facility_id', $facilityId)
+            ->where('year_month', $yearMonth)
+            ->with('details')
+            ->get()
+            ->keyBy('child_id');
+
+        $rows = $children->map(function ($child) use ($managementsByChild) {
+            $m = $managementsByChild->get($child->id);
+            $cert = $child->recipientCertificates->first();
+            return [
+                'child_id'         => $child->id,
+                'child_name'       => $child->name,
+                'child_name_kana'  => $child->name_kana,
+                'contract_status'  => $m?->contract_status ?? 'contracted',
+                'form_type'        => $m?->form_type ?? 'paper',
+                'status'           => $m?->status ?? 'draft',
+                'actual_confirmed_at' => $m?->actual_confirmed_at,
+                'sent_at'          => $m?->sent_at,
+                'received_at'      => $m?->received_at,
+                'confirmed_at'     => $m?->confirmed_at,
+                'result_amount'    => $m?->adjusted_copayment,
+                'management_result' => $m?->management_result,
+                'remarks'          => $m?->remarks,
+                'management_id'    => $m?->id,
+                'related_count'    => $m ? $m->details->count() : 0,
+                'cap_amount'       => $cert?->copayment_cap_monthly,
+            ];
+        });
+
         return Inertia::render('Billing/CapManagement/Index', [
-            'managements' => $managements,
-            'yearMonth'   => $yearMonth,
+            'rows'      => $rows,
+            'yearMonth' => $yearMonth,
+            'labels'    => [
+                'status'          => CopaymentCapManagement::STATUS_LABELS,
+                'formType'        => CopaymentCapManagement::FORM_TYPE_LABELS,
+                'contractStatus'  => CopaymentCapManagement::CONTRACT_STATUS_LABELS,
+                'result'          => CopaymentCapManagement::RESULT_LABELS,
+            ],
         ]);
     }
 
@@ -51,6 +98,12 @@ class CopaymentCapController extends Controller
 
         return Inertia::render('Billing/CapManagement/Show', [
             'management' => $copaymentCapManagement,
+            'labels'     => [
+                'status'         => CopaymentCapManagement::STATUS_LABELS,
+                'formType'       => CopaymentCapManagement::FORM_TYPE_LABELS,
+                'contractStatus' => CopaymentCapManagement::CONTRACT_STATUS_LABELS,
+                'result'         => CopaymentCapManagement::RESULT_LABELS,
+            ],
         ]);
     }
 
@@ -116,5 +169,60 @@ class CopaymentCapController extends Controller
         $path = $this->csvExportService->generateCapManagementCsv($facilityId, $request->year_month);
 
         return Storage::disk('local')->download($path);
+    }
+
+    /**
+     * ワークフロー状態の遷移
+     */
+    public function transition(Request $request, CopaymentCapManagement $copaymentCapManagement)
+    {
+        abort_if($copaymentCapManagement->managing_facility_id !== $this->facilityId(), 403);
+
+        $data = $request->validate([
+            'action' => ['required', 'in:send,receive,confirm,revert,confirm_actual'],
+        ]);
+
+        $now = now();
+        $updates = match ($data['action']) {
+            'send'           => ['status' => 'sent',      'sent_at' => $now],
+            'receive'        => ['status' => 'received',  'received_at' => $now],
+            'confirm'        => ['status' => 'confirmed', 'confirmed_at' => $now],
+            'confirm_actual' => ['actual_confirmed_at' => $now],
+            'revert'         => $this->revertStatus($copaymentCapManagement),
+        };
+
+        if (!empty($updates)) {
+            $copaymentCapManagement->update($updates);
+        }
+
+        return back()->with(['message' => '状態を更新しました。', 'status' => 'success']);
+    }
+
+    private function revertStatus(CopaymentCapManagement $m): array
+    {
+        return match ($m->status) {
+            'confirmed' => ['status' => 'received', 'confirmed_at' => null],
+            'received'  => ['status' => 'sent',     'received_at' => null],
+            'sent'      => ['status' => 'created',  'sent_at' => null],
+            default     => [],
+        };
+    }
+
+    /**
+     * 備考・様式・契約状況の更新
+     */
+    public function updateAttributes(Request $request, CopaymentCapManagement $copaymentCapManagement)
+    {
+        abort_if($copaymentCapManagement->managing_facility_id !== $this->facilityId(), 403);
+
+        $data = $request->validate([
+            'form_type'       => ['nullable', 'in:paper,electronic'],
+            'contract_status' => ['nullable', 'in:contracted,pending,terminated'],
+            'remarks'         => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $copaymentCapManagement->update(array_filter($data, fn($v) => $v !== null));
+
+        return back()->with(['message' => '属性を更新しました。', 'status' => 'success']);
     }
 }

@@ -42,6 +42,17 @@ class CopaymentCapService
         $managingFacilityId = $certificate->cap_managing_facility_id ?? $facilityId;
 
         return DB::transaction(function () use ($child, $yearMonth, $managingFacilityId, $capAmount) {
+            $existing = CopaymentCapManagement::where([
+                'child_id' => $child->id,
+                'year_month' => $yearMonth,
+                'managing_facility_id' => $managingFacilityId,
+            ])->first();
+
+            // 確定済の場合は再計算しない
+            if ($existing && $existing->status === 'confirmed') {
+                return $existing->load('details');
+            }
+
             $management = CopaymentCapManagement::updateOrCreate(
                 [
                     'child_id'              => $child->id,
@@ -49,8 +60,7 @@ class CopaymentCapService
                     'managing_facility_id'  => $managingFacilityId,
                 ],
                 [
-                    'cap_amount'          => $capAmount,
-                    'status'              => 'draft',
+                    'cap_amount' => $capAmount,
                 ]
             );
 
@@ -118,6 +128,7 @@ class CopaymentCapService
                     'total_copayment'     => $totalCopayment,
                     'adjusted_copayment'  => $totalCopayment,
                     'management_result'   => $detailCount > 1 ? '2' : '1',
+                    'status'              => in_array($management->status, ['sent','received','confirmed']) ? $management->status : 'created',
                 ]);
             } else {
                 // 上限超過：按分が必要
@@ -161,6 +172,7 @@ class CopaymentCapService
             'total_copayment'     => $totalCopayment,
             'adjusted_copayment'  => $capAmount,
             'management_result'   => '3',
+            'status'              => in_array($management->status, ['sent','received','confirmed']) ? $management->status : 'created',
         ]);
     }
 

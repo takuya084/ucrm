@@ -208,6 +208,8 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::get('/cap-management/export',       [CopaymentCapController::class, 'export'])   ->name('billing.cap-management.export');
     Route::get('/cap-management/{copaymentCapManagement}', [CopaymentCapController::class, 'show'])->name('billing.cap-management.show');
     Route::patch('/cap-management/{copaymentCapManagement}/details/{copaymentCapDetail}', [CopaymentCapController::class, 'updateExternalDetail'])->name('billing.cap-management.details.update');
+    Route::post('/cap-management/{copaymentCapManagement}/transition', [CopaymentCapController::class, 'transition'])->name('billing.cap-management.transition');
+    Route::patch('/cap-management/{copaymentCapManagement}/attributes', [CopaymentCapController::class, 'updateAttributes'])->name('billing.cap-management.attributes');
 
     // 利用者請求
     Route::get('/invoices',                       [GuardianInvoiceController::class, 'index'])        ->name('billing.invoices.index');

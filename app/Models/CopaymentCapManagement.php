@@ -22,12 +22,45 @@ class CopaymentCapManagement extends Model
         'adjusted_copayment',
         'management_result',
         'status',
+        'form_type',
+        'contract_status',
+        'actual_confirmed_at',
+        'sent_at',
+        'received_at',
+        'confirmed_at',
+        'remarks',
+    ];
+
+    protected $casts = [
+        'actual_confirmed_at' => 'datetime',
+        'sent_at'             => 'datetime',
+        'received_at'         => 'datetime',
+        'confirmed_at'        => 'datetime',
     ];
 
     public const RESULT_LABELS = [
         '1' => '管理結果なし',
         '2' => '管理結果あり',
         '3' => '管理結果あり（按分）',
+    ];
+
+    public const STATUS_LABELS = [
+        'draft'     => '未作成',
+        'created'   => '作成済',
+        'sent'      => '送付済',
+        'received'  => '受領済',
+        'confirmed' => '確定済',
+    ];
+
+    public const FORM_TYPE_LABELS = [
+        'paper'      => '紙',
+        'electronic' => '電子',
+    ];
+
+    public const CONTRACT_STATUS_LABELS = [
+        'contracted' => '契約中',
+        'pending'    => '未開始',
+        'terminated' => '解約',
     ];
 
     public function child(): BelongsTo

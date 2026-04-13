@@ -5,33 +5,43 @@ import FlashMessage from '@/Components/FlashMessage.vue'
 import { Inertia } from '@inertiajs/inertia'
 import { reactive } from 'vue'
 
-const props = defineProps({ management: Object })
+const props = defineProps({
+  management: Object,
+  labels:     Object,
+})
 const fmt = (n) => Number(n ?? 0).toLocaleString()
-const RESULT_LABEL = { '1': '管理結果なし', '2': '管理結果あり', '3': '管理結果あり（按分）' }
+const fmtDate = (d) => d ? new Date(d).toLocaleString('ja-JP') : '—'
 
 const EXTERNAL_TYPE = 'App\\Models\\ExternalFacility'
 const isExternal = (d) => d.billable_facility_type === EXTERNAL_TYPE
 
 const editing = reactive({})
-
-const startEdit = (d) => {
-  editing[d.id] = {
-    total_amount:     d.total_amount,
-    copayment_amount: d.copayment_amount,
-  }
-}
-const cancelEdit = (d) => {
-  delete editing[d.id]
-}
+const startEdit = (d) => editing[d.id] = { total_amount: d.total_amount, copayment_amount: d.copayment_amount }
+const cancelEdit = (d) => delete editing[d.id]
 const saveEdit = (d) => {
-  Inertia.patch(
-    route('billing.cap-management.details.update', {
-      copaymentCapManagement: props.management.id,
-      copaymentCapDetail: d.id,
-    }),
-    editing[d.id],
-    { onSuccess: () => delete editing[d.id] }
-  )
+  Inertia.patch(route('billing.cap-management.details.update', {
+    copaymentCapManagement: props.management.id,
+    copaymentCapDetail: d.id,
+  }), editing[d.id], { onSuccess: () => delete editing[d.id] })
+}
+
+const transition = (action, label) => {
+  if (!confirm(`「${label}」に遷移しますか？`)) return
+  Inertia.post(route('billing.cap-management.transition', props.management.id), { action })
+}
+
+const attrs = reactive({
+  form_type:       props.management.form_type ?? 'paper',
+  contract_status: props.management.contract_status ?? 'contracted',
+  remarks:         props.management.remarks ?? '',
+})
+const saveAttrs = () => {
+  Inertia.patch(route('billing.cap-management.attributes', props.management.id), attrs)
+}
+
+const confirmActual = () => {
+  if (!confirm('実績を確定しますか？')) return
+  Inertia.post(route('billing.cap-management.transition', props.management.id), { action: 'confirm_actual' })
 }
 </script>
 
@@ -46,7 +56,7 @@ const saveEdit = (d) => {
     </template>
 
     <div class="py-8">
-      <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-4">
+      <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <FlashMessage />
 
         <!-- 概要 -->
@@ -55,7 +65,57 @@ const saveEdit = (d) => {
             <div><span class="text-xs text-gray-500 block">対象年月</span>{{ management.year_month }}</div>
             <div><span class="text-xs text-gray-500 block">上限月額</span>{{ fmt(management.cap_amount) }}円</div>
             <div><span class="text-xs text-gray-500 block">全事業所合計</span>{{ fmt(management.total_copayment) }}円</div>
-            <div><span class="text-xs text-gray-500 block">管理結果</span>{{ RESULT_LABEL[management.management_result] }}</div>
+            <div>
+              <span class="text-xs text-gray-500 block">状態</span>
+              <span class="inline-block text-xs bg-gray-100 px-2 py-0.5 rounded">{{ labels.status[management.status] }}</span>
+            </div>
+            <div><span class="text-xs text-gray-500 block">管理結果</span>{{ labels.result[management.management_result] }}</div>
+            <div><span class="text-xs text-gray-500 block">実績確定</span>{{ fmtDate(management.actual_confirmed_at) }}</div>
+            <div><span class="text-xs text-gray-500 block">送付</span>{{ fmtDate(management.sent_at) }}</div>
+            <div><span class="text-xs text-gray-500 block">受領</span>{{ fmtDate(management.received_at) }}</div>
+          </div>
+        </div>
+
+        <!-- ワークフロー操作 -->
+        <div class="bg-white shadow-sm rounded-lg p-5">
+          <h3 class="text-sm font-semibold text-gray-700 mb-3">ワークフロー</h3>
+          <div class="flex flex-wrap gap-2">
+            <button v-if="!management.actual_confirmed_at" @click="confirmActual"
+              class="px-3 py-1.5 text-xs bg-blue-500 text-white rounded hover:bg-blue-600">実績を確定</button>
+            <button v-if="management.status === 'created'" @click="transition('send', '送付済')"
+              class="px-3 py-1.5 text-xs bg-amber-500 text-white rounded hover:bg-amber-600">関連事業所へ送付</button>
+            <button v-if="management.status === 'sent'" @click="transition('receive', '受領済')"
+              class="px-3 py-1.5 text-xs bg-purple-500 text-white rounded hover:bg-purple-600">受領済にする</button>
+            <button v-if="management.status === 'received'" @click="transition('confirm', '確定済')"
+              class="px-3 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600">確定</button>
+            <button v-if="['sent','received','confirmed'].includes(management.status)" @click="transition('revert', '前段階へ')"
+              class="px-3 py-1.5 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50">前の状態に戻す</button>
+          </div>
+        </div>
+
+        <!-- 属性編集 -->
+        <div class="bg-white shadow-sm rounded-lg p-5">
+          <h3 class="text-sm font-semibold text-gray-700 mb-3">属性</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">様式</label>
+              <select v-model="attrs.form_type" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                <option v-for="(l, k) in labels.formType" :key="k" :value="k">{{ l }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">契約状況</label>
+              <select v-model="attrs.contract_status" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                <option v-for="(l, k) in labels.contractStatus" :key="k" :value="k">{{ l }}</option>
+              </select>
+            </div>
+            <div class="sm:col-span-3">
+              <label class="block text-xs text-gray-500 mb-1">備考</label>
+              <textarea v-model="attrs.remarks" rows="2" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+            </div>
+          </div>
+          <div class="mt-3 text-right">
+            <button @click="saveAttrs" class="px-4 py-1.5 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600">保存</button>
           </div>
         </div>
 
@@ -63,7 +123,7 @@ const saveEdit = (d) => {
         <div class="bg-white shadow-sm rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">事業所別内訳</h3>
-            <p class="text-xs text-gray-400 mt-1">他社事業所（外）の金額は編集できます。更新すると按分が再計算されます。</p>
+            <p class="text-xs text-gray-400 mt-1">「外」=他社事業所、金額編集で按分が再計算されます。</p>
           </div>
           <table class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
@@ -71,7 +131,7 @@ const saveEdit = (d) => {
                 <th class="px-4 py-2 text-left">事業所名</th>
                 <th class="px-4 py-2 text-right">総費用額</th>
                 <th class="px-4 py-2 text-right">利用者負担額</th>
-                <th class="px-4 py-2 text-right">調整後負担額</th>
+                <th class="px-4 py-2 text-right">調整後</th>
                 <th class="px-4 py-2 text-center">管理</th>
                 <th class="px-4 py-2"></th>
               </tr>
