@@ -21,10 +21,27 @@ class ClaimReturn extends Model
         'status',
         'resubmitted_billing_detail_id',
         'received_at',
+        'remarks',
+        'resubmitted_at',
+        'resolved_at',
     ];
 
     protected $casts = [
-        'received_at' => 'date',
+        'received_at'    => 'date',
+        'resubmitted_at' => 'date',
+        'resolved_at'    => 'date',
+    ];
+
+    public const RETURN_CODE_PRESETS = [
+        'E001' => '受給者証の有効期間外',
+        'E005' => '支給量超過',
+        'E010' => '重複請求',
+        'E012' => '事業所番号不一致',
+        'E015' => 'サービス提供実績なし',
+        'E020' => '単価・単位数の誤り',
+        'E030' => '上限管理結果票の不整合',
+        'E050' => '受給者番号の誤り',
+        'OTHER' => 'その他',
     ];
 
     public const STATUS_LABELS = [

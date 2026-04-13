@@ -2,37 +2,80 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/inertia-vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
 
 const props = defineProps({
-  returns:  Object,
-  children: Array,
+  returns:      Object,
+  children:     Array,
+  stats:        Object,
+  filters:      Object,
+  statusLabels: Object,
+  codePresets:  Object,
 })
 
-const fmt = (n) => Number(n).toLocaleString()
+const fmt = (n) => Number(n ?? 0).toLocaleString()
 
 const STATUS_COLOR = {
-  returned: 'bg-red-100 text-red-700', resubmitting: 'bg-yellow-100 text-yellow-700',
-  resubmitted: 'bg-blue-100 text-blue-700', resolved: 'bg-green-100 text-green-700',
+  returned:     'bg-red-100 text-red-700',
+  resubmitting: 'bg-yellow-100 text-yellow-700',
+  resubmitted:  'bg-blue-100 text-blue-700',
+  resolved:     'bg-green-100 text-green-700',
 }
-const STATUS_LABEL = { returned: '返戻', resubmitting: '再請求準備中', resubmitted: '再請求済', resolved: '解決済' }
 
+// --- フィルタ ---
+const filters = reactive({
+  month:       props.filters.month       ?? '',
+  status:      props.filters.status      ?? '',
+  child_id:    props.filters.child_id    ?? '',
+  return_code: props.filters.return_code ?? '',
+})
+const applyFilter = () => {
+  Inertia.get(route('billing.returns.index'), filters, { preserveState: true, replace: true })
+}
+const resetFilter = () => {
+  filters.month = ''; filters.status = ''; filters.child_id = ''; filters.return_code = ''
+  applyFilter()
+}
+
+// --- 新規登録 ---
 const showForm = ref(false)
-const form = ref({
+const form = reactive({
   year_month: '', child_id: '', return_code: '', return_reason: '',
   original_amount: 0, received_at: new Date().toISOString().slice(0, 10),
+  remarks: '',
 })
-
+const applyPreset = (code) => {
+  form.return_code = code
+  if (code !== 'OTHER') form.return_reason = props.codePresets[code]
+}
 const submitReturn = () => {
-  Inertia.post(route('billing.returns.store'), form.value, {
+  Inertia.post(route('billing.returns.store'), form, {
     onSuccess: () => { showForm.value = false }
   })
 }
 
-const resubmit = (id) => {
-  if (!confirm('再請求処理を開始しますか？')) return
-  Inertia.post(route('billing.returns.resubmit', id))
+// --- 編集 ---
+const editing = ref(null)
+const editForm = reactive({ return_code: '', return_reason: '', remarks: '', received_at: '' })
+const startEdit = (ret) => {
+  editing.value = ret.id
+  editForm.return_code   = ret.return_code ?? ''
+  editForm.return_reason = ret.return_reason ?? ''
+  editForm.remarks       = ret.remarks ?? ''
+  editForm.received_at   = ret.received_at ?? ''
+}
+const cancelEdit = () => { editing.value = null }
+const saveEdit = (id) => {
+  Inertia.patch(route('billing.returns.update', id), editForm, {
+    onSuccess: () => { editing.value = null }
+  })
+}
+
+// --- 状態遷移 ---
+const transition = (id, action, label) => {
+  if (!confirm(`「${label}」に遷移しますか？`)) return
+  Inertia.post(route('billing.returns.transition', id), { action })
 }
 </script>
 
@@ -44,16 +87,71 @@ const resubmit = (id) => {
         <h2 class="font-semibold text-xl text-gray-800">返戻管理</h2>
         <div class="flex gap-2">
           <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">請求管理へ</Link>
-          <button @click="showForm = !showForm" class="px-4 py-1.5 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600 transition">
-            {{ showForm ? '閉じる' : '返戻登録' }}
+          <button @click="showForm = !showForm" class="px-4 py-1.5 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600">
+            {{ showForm ? '閉じる' : '＋ 返戻登録' }}
           </button>
         </div>
       </div>
     </template>
 
     <div class="py-8">
-      <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
+      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <FlashMessage />
+
+        <!-- サマリー -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div class="bg-red-50 rounded-lg p-4">
+            <div class="text-xs text-red-600">未対応（返戻）</div>
+            <div class="text-2xl font-bold text-red-700 mt-1">{{ stats.returned }}</div>
+          </div>
+          <div class="bg-yellow-50 rounded-lg p-4">
+            <div class="text-xs text-yellow-700">再請求準備中</div>
+            <div class="text-2xl font-bold text-yellow-700 mt-1">{{ stats.resubmitting }}</div>
+          </div>
+          <div class="bg-blue-50 rounded-lg p-4">
+            <div class="text-xs text-blue-600">再請求済</div>
+            <div class="text-2xl font-bold text-blue-700 mt-1">{{ stats.resubmitted }}</div>
+          </div>
+          <div class="bg-green-50 rounded-lg p-4">
+            <div class="text-xs text-green-600">解決済</div>
+            <div class="text-2xl font-bold text-green-700 mt-1">{{ stats.resolved }}</div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="text-xs text-gray-500">累計返戻額</div>
+            <div class="text-2xl font-bold text-gray-700 mt-1">{{ fmt(stats.total_amount) }}<span class="text-sm">円</span></div>
+          </div>
+        </div>
+
+        <!-- フィルタ -->
+        <div class="bg-white shadow-sm rounded-lg p-4 flex flex-wrap gap-3 items-end">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">年月</label>
+            <input v-model="filters.month" type="month" class="border border-gray-300 rounded px-3 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">ステータス</label>
+            <select v-model="filters.status" class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+              <option value="">すべて</option>
+              <option v-for="(l, k) in statusLabels" :key="k" :value="k">{{ l }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">児童</label>
+            <select v-model="filters.child_id" class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+              <option value="">すべて</option>
+              <option v-for="c in children" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">返戻コード</label>
+            <select v-model="filters.return_code" class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+              <option value="">すべて</option>
+              <option v-for="(l, k) in codePresets" :key="k" :value="k">{{ k }} - {{ l }}</option>
+            </select>
+          </div>
+          <button @click="applyFilter" class="px-4 py-1.5 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">適用</button>
+          <button @click="resetFilter" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">リセット</button>
+        </div>
 
         <!-- 返戻登録フォーム -->
         <div v-if="showForm" class="bg-white shadow-sm rounded-lg p-5">
@@ -72,7 +170,11 @@ const resubmit = (id) => {
             </div>
             <div>
               <label class="block text-xs text-gray-500 mb-1">返戻コード</label>
-              <input v-model="form.return_code" type="text" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm" />
+              <select :value="form.return_code" @change="applyPreset($event.target.value)"
+                class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                <option value="">選択してください</option>
+                <option v-for="(l, k) in codePresets" :key="k" :value="k">{{ k }} - {{ l }}</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs text-gray-500 mb-1">元請求額</label>
@@ -86,9 +188,13 @@ const resubmit = (id) => {
               <label class="block text-xs text-gray-500 mb-1">返戻理由</label>
               <textarea v-model="form.return_reason" rows="2" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"></textarea>
             </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs text-gray-500 mb-1">備考</label>
+              <textarea v-model="form.remarks" rows="2" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"></textarea>
+            </div>
           </div>
           <div class="mt-4 flex justify-end">
-            <button @click="submitReturn" class="px-6 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition">登録</button>
+            <button @click="submitReturn" class="px-6 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">登録</button>
           </div>
         </div>
 
@@ -100,32 +206,83 @@ const resubmit = (id) => {
           <table v-else class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
-                <th class="px-4 py-2 text-left">児童名</th>
-                <th class="px-4 py-2 text-left">年月</th>
-                <th class="px-4 py-2 text-left">コード</th>
-                <th class="px-4 py-2 text-right">元請求額</th>
-                <th class="px-4 py-2 text-left">ステータス</th>
-                <th class="px-4 py-2 text-left">受領日</th>
-                <th class="px-4 py-2 text-right">操作</th>
+                <th class="px-3 py-2 text-left">児童</th>
+                <th class="px-3 py-2 text-left">年月</th>
+                <th class="px-3 py-2 text-left">コード</th>
+                <th class="px-3 py-2 text-right">元請求額</th>
+                <th class="px-3 py-2 text-left">ステータス</th>
+                <th class="px-3 py-2 text-left">受領</th>
+                <th class="px-3 py-2 text-left">再請求</th>
+                <th class="px-3 py-2 text-left">解決</th>
+                <th class="px-3 py-2 text-left">理由/備考</th>
+                <th class="px-3 py-2 text-right">操作</th>
               </tr>
             </thead>
             <tbody class="divide-y">
-              <tr v-for="ret in returns.data" :key="ret.id" class="hover:bg-gray-50">
-                <td class="px-4 py-3 font-medium">{{ ret.child?.name }}</td>
-                <td class="px-4 py-3 text-xs">{{ ret.year_month }}</td>
-                <td class="px-4 py-3 text-xs font-mono">{{ ret.return_code }}</td>
-                <td class="px-4 py-3 text-right">{{ fmt(ret.original_amount) }}円</td>
-                <td class="px-4 py-3">
-                  <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', STATUS_COLOR[ret.status]]">
-                    {{ STATUS_LABEL[ret.status] }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-xs text-gray-500">{{ ret.received_at }}</td>
-                <td class="px-4 py-3 text-right">
-                  <button v-if="ret.status === 'returned'" @click="resubmit(ret.id)"
-                    class="text-indigo-600 hover:underline text-xs">再請求</button>
-                </td>
-              </tr>
+              <template v-for="ret in returns.data" :key="ret.id">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2">
+                    <div class="font-medium">{{ ret.child?.name }}</div>
+                    <div v-if="ret.child?.name_kana" class="text-xs text-gray-400">{{ ret.child.name_kana }}</div>
+                  </td>
+                  <td class="px-3 py-2 text-xs">{{ ret.year_month }}</td>
+                  <td class="px-3 py-2 text-xs font-mono">{{ ret.return_code ?? '—' }}</td>
+                  <td class="px-3 py-2 text-right">{{ fmt(ret.original_amount) }}円</td>
+                  <td class="px-3 py-2">
+                    <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', STATUS_COLOR[ret.status]]">
+                      {{ statusLabels[ret.status] }}
+                    </span>
+                  </td>
+                  <td class="px-3 py-2 text-xs text-gray-500">{{ ret.received_at ?? '—' }}</td>
+                  <td class="px-3 py-2 text-xs text-gray-500">{{ ret.resubmitted_at ?? '—' }}</td>
+                  <td class="px-3 py-2 text-xs text-gray-500">{{ ret.resolved_at ?? '—' }}</td>
+                  <td class="px-3 py-2 text-xs text-gray-500 max-w-[220px]">
+                    <div class="truncate" :title="ret.return_reason">{{ ret.return_reason ?? '—' }}</div>
+                    <div v-if="ret.remarks" class="truncate text-gray-400" :title="ret.remarks">📝 {{ ret.remarks }}</div>
+                  </td>
+                  <td class="px-3 py-2 text-right whitespace-nowrap">
+                    <button @click="startEdit(ret)" class="text-xs px-2 py-0.5 border border-gray-300 rounded hover:bg-gray-50 text-gray-600 mr-1">編集</button>
+                    <button v-if="ret.status === 'returned'" @click="transition(ret.id, 'start_resubmit', '再請求準備中')"
+                      class="text-xs px-2 py-0.5 bg-yellow-500 text-white rounded hover:bg-yellow-600">準備</button>
+                    <button v-else-if="ret.status === 'resubmitting'" @click="transition(ret.id, 'mark_resubmitted', '再請求済')"
+                      class="text-xs px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600">再請求済</button>
+                    <button v-else-if="ret.status === 'resubmitted'" @click="transition(ret.id, 'mark_resolved', '解決済')"
+                      class="text-xs px-2 py-0.5 bg-green-500 text-white rounded hover:bg-green-600">解決</button>
+                    <button v-if="['resubmitting','resubmitted','resolved'].includes(ret.status)"
+                      @click="transition(ret.id, 'revert', '前の状態')"
+                      class="text-xs px-2 py-0.5 border border-gray-300 rounded hover:bg-gray-50 text-gray-500 ml-1">↶</button>
+                  </td>
+                </tr>
+                <tr v-if="editing === ret.id" class="bg-indigo-50">
+                  <td colspan="10" class="px-4 py-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-xs text-gray-500 mb-1">返戻コード</label>
+                        <select v-model="editForm.return_code" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                          <option value="">—</option>
+                          <option v-for="(l, k) in codePresets" :key="k" :value="k">{{ k }} - {{ l }}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-xs text-gray-500 mb-1">受領日</label>
+                        <input v-model="editForm.received_at" type="date" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+                      </div>
+                      <div class="sm:col-span-2">
+                        <label class="block text-xs text-gray-500 mb-1">返戻理由</label>
+                        <textarea v-model="editForm.return_reason" rows="2" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"></textarea>
+                      </div>
+                      <div class="sm:col-span-2">
+                        <label class="block text-xs text-gray-500 mb-1">備考</label>
+                        <textarea v-model="editForm.remarks" rows="2" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"></textarea>
+                      </div>
+                    </div>
+                    <div class="mt-3 flex justify-end gap-2">
+                      <button @click="cancelEdit" class="px-4 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">取消</button>
+                      <button @click="saveEdit(ret.id)" class="px-4 py-1 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600">保存</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
 
