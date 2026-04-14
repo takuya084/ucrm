@@ -48,7 +48,7 @@ class BillingPeriodController extends Controller
         $billingPeriod->load([
             'billingDetails' => fn($q) => $q->orderBy('child_id'),
             'billingDetails.child:id,name,name_kana',
-            'billingDetails.recipientCertificate:id,certificate_number,copayment_cap_monthly',
+            'billingDetails.recipientCertificate:id,certificate_number,copayment_cap_monthly,monthly_limit,valid_from,valid_to',
             'billingDetails.billingDetailLines',
             'confirmedByStaff:id,name',
         ]);

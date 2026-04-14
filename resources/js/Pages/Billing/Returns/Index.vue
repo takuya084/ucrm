@@ -72,6 +72,28 @@ const saveEdit = (id) => {
   })
 }
 
+// --- CSVインポート ---
+const showImport = ref(false)
+const importFile = ref(null)
+const importing = ref(false)
+const importErrors = ref([])
+const onFileChange = (e) => { importFile.value = e.target.files[0] || null }
+const submitImport = () => {
+  if (!importFile.value) { alert('CSVファイルを選択してください'); return }
+  const fd = new FormData()
+  fd.append('file', importFile.value)
+  importing.value = true
+  importErrors.value = []
+  Inertia.post(route('billing.returns.import'), fd, {
+    forceFormData: true,
+    onSuccess: (page) => {
+      importErrors.value = page.props.flash?.import_errors ?? []
+      importFile.value = null
+    },
+    onFinish: () => { importing.value = false },
+  })
+}
+
 // --- 状態遷移 ---
 const transition = (id, action, label) => {
   if (!confirm(`「${label}」に遷移しますか？`)) return
@@ -87,6 +109,9 @@ const transition = (id, action, label) => {
         <h2 class="font-semibold text-xl text-gray-800">返戻管理</h2>
         <div class="flex gap-2">
           <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">請求管理へ</Link>
+          <button @click="showImport = !showImport" class="px-4 py-1.5 text-xs border border-emerald-500 text-emerald-600 rounded hover:bg-emerald-50">
+            {{ showImport ? '閉じる' : '📥 CSV取込' }}
+          </button>
           <button @click="showForm = !showForm" class="px-4 py-1.5 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600">
             {{ showForm ? '閉じる' : '＋ 返戻登録' }}
           </button>
@@ -151,6 +176,29 @@ const transition = (id, action, label) => {
           </div>
           <button @click="applyFilter" class="px-4 py-1.5 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">適用</button>
           <button @click="resetFilter" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">リセット</button>
+        </div>
+
+        <!-- CSVインポート -->
+        <div v-if="showImport" class="bg-white shadow-sm rounded-lg p-5 border border-emerald-200">
+          <h3 class="text-sm font-semibold text-gray-700 mb-2">国保連返戻CSV取込</h3>
+          <p class="text-xs text-gray-500 mb-3 leading-relaxed">
+            1行目はヘッダ行。2行目以降に以下の6列（カンマ区切り）：<br>
+            <code class="bg-gray-100 px-1">受給者証番号, サービス提供年月(YYYYMM or YYYY-MM), 返戻コード, 返戻理由, 費用額, 受領日(YYYY-MM-DD or YYYYMMDD)</code><br>
+            ※ Shift_JIS / UTF-8 いずれも自動判定。同一児童・同月・同コードの重複はスキップ。
+          </p>
+          <div class="flex items-center gap-3">
+            <input type="file" accept=".csv,.txt" @change="onFileChange" class="text-sm" />
+            <button @click="submitImport" :disabled="importing || !importFile"
+              class="px-4 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50">
+              {{ importing ? '取込中...' : '取込実行' }}
+            </button>
+          </div>
+          <div v-if="importErrors.length" class="mt-3 bg-red-50 border border-red-200 rounded p-3 max-h-48 overflow-y-auto">
+            <div class="text-xs font-semibold text-red-700 mb-1">取込エラー ({{ importErrors.length }}件)</div>
+            <ul class="text-xs text-red-700 space-y-0.5">
+              <li v-for="(e, i) in importErrors" :key="i">• {{ e }}</li>
+            </ul>
+          </div>
         </div>
 
         <!-- 返戻登録フォーム -->

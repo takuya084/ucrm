@@ -164,6 +164,32 @@ class ClaimReturnController extends Controller
     }
 
     /**
+     * 国保連返戻CSVを一括インポート
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $result = $this->errorClaimService->importReturnsCsv(
+            $this->facilityId(),
+            $request->file('file')->getRealPath(),
+        );
+
+        $msg = "取込完了: 登録{$result['imported']}件 / スキップ{$result['skipped']}件";
+        if (!empty($result['errors'])) {
+            $msg .= ' / エラー ' . count($result['errors']) . '件';
+        }
+
+        return back()->with([
+            'message'       => $msg,
+            'status'        => $result['imported'] > 0 ? 'success' : 'warning',
+            'import_errors' => $result['errors'],
+        ]);
+    }
+
+    /**
      * 旧エンドポイント（互換用）
      */
     public function resubmit(ClaimReturn $claimReturn)

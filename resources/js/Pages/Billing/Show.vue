@@ -203,7 +203,18 @@ const fmt = (n) => Number(n).toLocaleString()
                       {{ detail.service_type === 'houday' ? '放デイ' : '児発' }}
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-right">{{ detail.total_days }}日</td>
+                  <td class="px-4 py-3 text-right">
+                    <span
+                      :class="detail.recipient_certificate?.monthly_limit && detail.total_days > detail.recipient_certificate.monthly_limit
+                        ? 'text-red-600 font-bold'
+                        : detail.recipient_certificate?.monthly_limit && detail.total_days === detail.recipient_certificate.monthly_limit
+                          ? 'text-amber-600 font-semibold'
+                          : ''"
+                      :title="detail.recipient_certificate?.monthly_limit ? `支給量 ${detail.recipient_certificate.monthly_limit}日` : ''">
+                      {{ detail.total_days }}日
+                      <span v-if="detail.recipient_certificate?.monthly_limit" class="text-xs text-gray-400">/ {{ detail.recipient_certificate.monthly_limit }}</span>
+                    </span>
+                  </td>
                   <td class="px-4 py-3 text-right">{{ fmt(detail.total_units) }}</td>
                   <td class="px-4 py-3 text-right">{{ fmt(detail.total_amount) }}円</td>
                   <td class="px-4 py-3 text-right">{{ fmt(detail.insurance_amount) }}円</td>

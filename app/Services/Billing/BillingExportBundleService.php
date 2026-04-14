@@ -57,6 +57,28 @@ class BillingExportBundleService
             if ($detail->total_days <= 0) {
                 $warnings[] = ['level' => 'warning', 'message' => "{$label}: 利用日数が0日です"];
             }
+
+            // 支給量（月間支給日数）超過チェック
+            if ($cert->monthly_limit && $detail->total_days > $cert->monthly_limit) {
+                $warnings[] = [
+                    'level'   => 'error',
+                    'message' => "{$label}: 利用日数 {$detail->total_days}日 が受給者証の支給量 {$cert->monthly_limit}日 を超過しています（返戻対象）",
+                ];
+            } elseif ($cert->monthly_limit && $detail->total_days === (int) $cert->monthly_limit) {
+                $warnings[] = [
+                    'level'   => 'warning',
+                    'message' => "{$label}: 利用日数が支給量の上限 {$cert->monthly_limit}日 に達しています",
+                ];
+            }
+
+            // 受給者証の有効期間チェック
+            $periodDate = $period->year_month . '-01';
+            if ($cert->valid_from && $cert->valid_from->format('Y-m-d') > $periodDate) {
+                $warnings[] = ['level' => 'error', 'message' => "{$label}: 受給者証の有効開始日（{$cert->valid_from->format('Y-m-d')}）が請求対象月より後です"];
+            }
+            if ($cert->valid_to && $cert->valid_to->format('Y-m') < $period->year_month) {
+                $warnings[] = ['level' => 'error', 'message' => "{$label}: 受給者証の有効期限（{$cert->valid_to->format('Y-m-d')}）が請求対象月より前に切れています"];
+            }
         }
 
         return $warnings;

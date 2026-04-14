@@ -227,6 +227,7 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     // 返戻管理
     Route::get('/returns',                    [ClaimReturnController::class, 'index'])    ->name('billing.returns.index');
     Route::post('/returns',                   [ClaimReturnController::class, 'store'])    ->name('billing.returns.store');
+    Route::post('/returns/import',            [ClaimReturnController::class, 'import'])   ->name('billing.returns.import');
     Route::post('/returns/{claimReturn}/resubmit', [ClaimReturnController::class, 'resubmit'])->name('billing.returns.resubmit');
     Route::patch('/returns/{claimReturn}',         [ClaimReturnController::class, 'update'])    ->name('billing.returns.update');
     Route::post('/returns/{claimReturn}/transition', [ClaimReturnController::class, 'transition'])->name('billing.returns.transition');
