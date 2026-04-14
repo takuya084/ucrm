@@ -197,6 +197,7 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::get('/details/{billingDetail}',      [BillingDetailController::class, 'show'])   ->name('billing.details.show');
     Route::get('/details/{billingDetail}/edit',  [BillingDetailController::class, 'edit'])   ->name('billing.details.edit');
     Route::patch('/details/{billingDetail}',     [BillingDetailController::class, 'update']) ->name('billing.details.update');
+    Route::get('/details/{billingDetail}/performance-pdf', [BillingPeriodController::class, 'performancePdf'])->name('billing.details.performance-pdf');
 
     // 実績記録票
     Route::get('/daily-records',             [DailyServiceRecordController::class, 'index'])     ->name('billing.daily-records.index');
@@ -247,6 +248,7 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::get('/{billingPeriod}/export-performance', [BillingPeriodController::class, 'exportPerformance'])->name('billing.export-performance');
     Route::get('/{billingPeriod}/validate-export',    [BillingPeriodController::class, 'validateExport'])   ->name('billing.validate-export');
     Route::get('/{billingPeriod}/export-bundle',      [BillingPeriodController::class, 'exportBundle'])     ->name('billing.export-bundle');
+    Route::get('/{billingPeriod}/performance-pdf-bundle', [BillingPeriodController::class, 'performancePdfBundle'])->name('billing.performance-pdf-bundle');
 });
 
 // AI下書き生成（leader以上）

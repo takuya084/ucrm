@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Billing;
 use App\Http\Controllers\Controller;
 use App\Models\BillingExport;
 use App\Models\BillingPeriod;
+use App\Models\BillingDetail;
 use App\Services\Billing\BillingCalculationService;
 use App\Services\Billing\BillingExportBundleService;
 use App\Services\Billing\NhifCsvExportService;
+use App\Services\Billing\PerformanceRecordPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -18,7 +20,28 @@ class BillingPeriodController extends Controller
         private BillingCalculationService $calculationService,
         private NhifCsvExportService $csvExportService,
         private BillingExportBundleService $bundleService,
+        private PerformanceRecordPdfService $performancePdfService,
     ) {}
+
+    /**
+     * 実績記録票PDF（1児童分）
+     */
+    public function performancePdf(BillingDetail $billingDetail)
+    {
+        abort_if($billingDetail->billingPeriod->facility_id !== $this->facilityId(), 403);
+        $path = $this->performancePdfService->generate($billingDetail);
+        return Storage::disk('local')->download($path);
+    }
+
+    /**
+     * 実績記録票PDF（月次一括ZIP）
+     */
+    public function performancePdfBundle(BillingPeriod $billingPeriod)
+    {
+        $this->authorizeFacility($billingPeriod);
+        $path = $this->performancePdfService->generateBundle($billingPeriod);
+        return Storage::disk('local')->download($path);
+    }
 
     /**
      * 月次請求一覧

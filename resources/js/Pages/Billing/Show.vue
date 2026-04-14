@@ -86,6 +86,10 @@ const fmt = (n) => Number(n).toLocaleString()
               class="px-3 py-1.5 text-xs border border-green-500 text-green-600 rounded hover:bg-green-50 transition">
               実績のみ
             </a>
+            <a :href="route('billing.performance-pdf-bundle', period.id)"
+              class="px-3 py-1.5 text-xs border border-rose-500 text-rose-600 rounded hover:bg-rose-50 transition">
+              実績記録票PDF（全員ZIP）
+            </a>
           </template>
         </div>
       </div>
@@ -222,6 +226,7 @@ const fmt = (n) => Number(n).toLocaleString()
                   <td class="px-4 py-3 text-right space-x-2">
                     <Link :href="route('billing.details.show', detail.id)" class="text-indigo-600 hover:underline text-xs">詳細</Link>
                     <Link v-if="period.status === 'draft'" :href="route('billing.details.edit', detail.id)" class="text-gray-500 hover:underline text-xs">編集</Link>
+                    <a :href="route('billing.details.performance-pdf', detail.id)" class="text-rose-600 hover:underline text-xs">実績票PDF</a>
                   </td>
                 </tr>
               </tbody>
