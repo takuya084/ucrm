@@ -16,7 +16,9 @@ const form = reactive({
   tel:                props.facility.tel ?? '',
   fax:                props.facility.fax ?? '',
   capacity_per_day:   props.facility.capacity_per_day ?? '',
-  yoyaku_business_id: props.facility.yoyaku_business_id ?? '',
+  yoyaku_business_id:     props.facility.yoyaku_business_id ?? '',
+  yoyaku_api_token:       props.facility.yoyaku_api_token ?? '',
+  yoyaku_webhook_secret:  props.facility.yoyaku_webhook_secret ?? '',
   facility_code:      props.facility.facility_code ?? '',
   service_type:       props.facility.service_type ?? 'houday',
   area_unit_price:    props.facility.area_unit_price ?? '10.00',
@@ -125,6 +127,23 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   <p class="text-xs text-gray-400 mt-1">
                     houkago-plus の管理者画面で確認できる事業所IDを入力してください。
                     未入力の場合、出席管理は登録された固定曜日スケジュールを使用します。
+                  </p>
+                </div>
+
+                <div>
+                  <label :class="labelClass">API トークン</label>
+                  <input v-model="form.yoyaku_api_token" type="text" :class="inputClass"
+                    placeholder="houkago-plus のマスター管理者が発行した Bearer トークン" />
+                  <p class="text-xs text-gray-400 mt-1">未入力の場合は .env の HOUKAGO_PLUS_API_TOKEN を利用します。</p>
+                </div>
+
+                <div>
+                  <label :class="labelClass">Webhook 共通シークレット</label>
+                  <input v-model="form.yoyaku_webhook_secret" type="text" :class="inputClass"
+                    placeholder="任意の英数字文字列（HMAC署名検証用）" />
+                  <p class="text-xs text-gray-400 mt-1">
+                    p-yoyaku 側の Business.webhook_secret と同じ値を設定してください。
+                    受信URL: <code class="bg-gray-100 px-1">/api/webhooks/yoyaku</code>
                   </p>
                 </div>
 

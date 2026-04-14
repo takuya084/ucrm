@@ -4,6 +4,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\Customer;
 use App\Http\Controllers\Api\AnalysisController;
+use App\Http\Controllers\YoyakuWebhookController;
+
+// p-yoyaku からの webhook 受信（HMAC 認証）
+Route::post('/webhooks/yoyaku', YoyakuWebhookController::class)->name('api.webhooks.yoyaku');
 
 /*
 |--------------------------------------------------------------------------

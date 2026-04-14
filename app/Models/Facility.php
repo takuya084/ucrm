@@ -22,6 +22,8 @@ class Facility extends Model
         'fax',
         'capacity_per_day',
         'yoyaku_business_id',
+        'yoyaku_api_token',
+        'yoyaku_webhook_secret',
         'billing_type',
         'is_active',
         'subscription_status',

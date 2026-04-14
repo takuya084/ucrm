@@ -16,7 +16,8 @@ class FacilityController extends Controller
 
         return Inertia::render('Facility/Edit', [
             'facility' => $facility->only([
-                'id', 'name', 'address', 'tel', 'fax', 'capacity_per_day', 'yoyaku_business_id',
+                'id', 'name', 'address', 'tel', 'fax', 'capacity_per_day',
+                'yoyaku_business_id', 'yoyaku_api_token', 'yoyaku_webhook_secret',
                 'facility_code', 'service_type', 'area_unit_price', 'designated_date', 'administrator_name',
             ]),
         ]);
@@ -34,7 +35,9 @@ class FacilityController extends Controller
             'tel'                => ['nullable', 'string', 'max:20'],
             'fax'                => ['nullable', 'string', 'max:20'],
             'capacity_per_day'   => ['nullable', 'integer', 'min:1', 'max:100'],
-            'yoyaku_business_id' => ['nullable', 'integer', 'min:1'],
+            'yoyaku_business_id'    => ['nullable', 'integer', 'min:1'],
+            'yoyaku_api_token'      => ['nullable', 'string', 'max:255'],
+            'yoyaku_webhook_secret' => ['nullable', 'string', 'max:64'],
             'facility_code'      => ['nullable', 'string', 'max:10'],
             'service_type'       => ['nullable', 'in:houday,jidou,both'],
             'area_unit_price'    => ['nullable', 'numeric', 'min:0', 'max:20'],

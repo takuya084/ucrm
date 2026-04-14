@@ -2,66 +2,125 @@
 
 namespace App\Services;
 
+use App\Models\Facility;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class YoyakuApiService
 {
     private string $baseUrl;
-    private string $token;
     private int    $timeout;
 
     public function __construct()
     {
-        $this->baseUrl  = config('services.houkago_plus.base_url');
-        $this->token    = config('services.houkago_plus.api_token') ?? '';
-        $this->timeout  = (int) config('services.houkago_plus.timeout', 5);
+        $this->baseUrl = rtrim(config('services.houkago_plus.base_url') ?? '', '/');
+        $this->timeout = (int) config('services.houkago_plus.timeout', 5);
     }
 
     /**
-     * 指定日・事業所の送迎予約一覧を取得する
-     * 失敗時は null を返す（呼び出し元でフォールバック処理を行う）
-     *
-     * @return array|null
+     * 当該施設に紐付くトークンで Http クライアントを構築
      */
-    public function getDailySchedule(string $date, int $businessId): ?array
+    private function client(?int $facilityId = null): ?PendingRequest
     {
-        if (empty($this->token) || empty($this->baseUrl)) {
+        $token = null;
+        if ($facilityId) {
+            $token = Facility::where('id', $facilityId)->value('yoyaku_api_token');
+        }
+        $token = $token ?: config('services.houkago_plus.api_token');
+
+        if (empty($token) || empty($this->baseUrl)) {
             return null;
         }
+        return Http::withToken($token)->acceptJson()->timeout($this->timeout);
+    }
 
+    /**
+     * 指定日・事業所の送迎予約一覧
+     */
+    public function getDailySchedule(string $date, int $businessId, ?int $facilityId = null): ?array
+    {
+        $client = $this->client($facilityId);
+        if (!$client) return null;
+
+        return $this->safe(fn() =>
+            $client->get("{$this->baseUrl}/api/schedule/daily", [
+                'date'        => $date,
+                'business_id' => $businessId,
+            ])
+        );
+    }
+
+    /**
+     * 実績一覧（乗降時刻付き）
+     */
+    public function getActuals(string $date, int $businessId, ?int $facilityId = null): ?array
+    {
+        $client = $this->client($facilityId);
+        if (!$client) return null;
+
+        return $this->safe(fn() =>
+            $client->get("{$this->baseUrl}/api/schedule/actuals", [
+                'date'        => $date,
+                'business_id' => $businessId,
+            ])
+        );
+    }
+
+    /**
+     * 予約作成（冪等: external_ref を渡すと upsert）
+     */
+    public function createBooking(array $payload, ?int $facilityId = null): ?array
+    {
+        $client = $this->client($facilityId);
+        if (!$client) return null;
+
+        return $this->safe(fn() =>
+            $client->post("{$this->baseUrl}/api/yoyaku", $payload)
+        );
+    }
+
+    public function updateBooking(int $yoyakuId, array $payload, ?int $facilityId = null): ?array
+    {
+        $client = $this->client($facilityId);
+        if (!$client) return null;
+
+        return $this->safe(fn() =>
+            $client->put("{$this->baseUrl}/api/yoyaku/{$yoyakuId}", $payload)
+        );
+    }
+
+    public function deleteBooking(int $yoyakuId, ?int $facilityId = null): bool
+    {
+        $client = $this->client($facilityId);
+        if (!$client) return false;
+
+        $result = $this->safe(fn() =>
+            $client->delete("{$this->baseUrl}/api/yoyaku/{$yoyakuId}")
+        );
+        return $result !== null;
+    }
+
+    /**
+     * Http 呼び出しの共通例外ハンドリング
+     */
+    private function safe(\Closure $fn): ?array
+    {
         try {
-            $response = Http::withToken($this->token)
-                ->timeout($this->timeout)
-                ->get("{$this->baseUrl}/api/schedule/daily", [
-                    'date'        => $date,
-                    'business_id' => $businessId,
-                ]);
-
+            $response = $fn();
             if ($response->successful()) {
                 return $response->json();
             }
-
-            Log::warning('YoyakuAPI: non-200 response', [
-                'status'      => $response->status(),
-                'date'        => $date,
-                'business_id' => $businessId,
+            Log::warning('YoyakuAPI: non-2xx', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
             ]);
             return null;
-
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::warning('YoyakuAPI: connection failed', [
-                'message'     => $e->getMessage(),
-                'date'        => $date,
-                'business_id' => $businessId,
-            ]);
+            Log::warning('YoyakuAPI: connection failed', ['message' => $e->getMessage()]);
             return null;
         } catch (\Throwable $e) {
-            Log::error('YoyakuAPI: unexpected error', [
-                'message'     => $e->getMessage(),
-                'date'        => $date,
-                'business_id' => $businessId,
-            ]);
+            Log::error('YoyakuAPI: unexpected error', ['message' => $e->getMessage()]);
             return null;
         }
     }
