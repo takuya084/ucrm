@@ -8,6 +8,8 @@ use App\Models\SupportPlan;
 use App\Models\Child;
 use App\Http\Requests\StoreSupportPlanRequest;
 use App\Http\Requests\UpdateSupportPlanRequest;
+use App\Services\SupportPlanPdfService;
+use Illuminate\Support\Facades\Storage;
 
 class SupportPlanController extends Controller
 {
@@ -84,6 +86,15 @@ class SupportPlanController extends Controller
 
         return redirect()->route('children.show', $child->id)
             ->with(['message' => '個別支援計画を削除しました。', 'status' => 'success']);
+    }
+
+    public function pdf(Child $child, SupportPlan $supportPlan, SupportPlanPdfService $pdfService)
+    {
+        $this->authorizeChild($child);
+        abort_if($supportPlan->child_id !== $child->id, 404);
+
+        $path = $pdfService->generate($supportPlan);
+        return Storage::disk('local')->download($path);
     }
 
     private function authorizeChild(Child $child): void

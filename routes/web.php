@@ -173,6 +173,7 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function 
 });
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('children/{child}/monitoring/{monitoringRecord}', [MonitoringRecordController::class, 'show'])->name('children.monitoring.show');
+    Route::get('children/{child}/monitoring/{monitoringRecord}/pdf', [MonitoringRecordController::class, 'pdf'])->name('children.monitoring.pdf');
 });
 
 // 個別支援計画（閲覧: 全員、編集: leader以上）
@@ -185,6 +186,7 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function 
 });
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('children/{child}/support-plans/{support_plan}', [SupportPlanController::class, 'show'])->name('children.support-plans.show');
+    Route::get('children/{child}/support-plans/{support_plan}/pdf', [SupportPlanController::class, 'pdf'])->name('children.support-plans.pdf');
 });
 
 // ── 請求管理（leader以上） ──────────────────
@@ -236,6 +238,7 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     // 加算・減算設定
     Route::get('/settings/service-codes',      [FacilityServiceSettingController::class, 'index'])     ->name('billing.settings.service-codes');
     Route::post('/settings/service-codes',     [FacilityServiceSettingController::class, 'bulkUpdate'])->name('billing.settings.service-codes.update');
+    Route::post('/settings/service-codes/import', [FacilityServiceSettingController::class, 'importMaster'])->name('billing.settings.service-codes.import');
 
     // 複式CSV出力（履歴）
     Route::get('/exports/{billingExport}/download',   [BillingPeriodController::class, 'downloadExport'])->name('billing.exports.download');

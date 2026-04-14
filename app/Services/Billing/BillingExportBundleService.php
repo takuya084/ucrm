@@ -15,6 +15,7 @@ class BillingExportBundleService
 {
     public function __construct(
         private NhifCsvExportService $csv,
+        private StaffingComplianceService $staffing,
     ) {}
 
     /**
@@ -79,6 +80,11 @@ class BillingExportBundleService
             if ($cert->valid_to && $cert->valid_to->format('Y-m') < $period->year_month) {
                 $warnings[] = ['level' => 'error', 'message' => "{$label}: 受給者証の有効期限（{$cert->valid_to->format('Y-m-d')}）が請求対象月より前に切れています"];
             }
+        }
+
+        // 人員配置基準チェック（シフト連動）
+        foreach ($this->staffing->checkPeriod($period) as $w) {
+            $warnings[] = $w;
         }
 
         return $warnings;

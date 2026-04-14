@@ -8,6 +8,8 @@ use App\Models\MonitoringRecord;
 use App\Models\Child;
 use App\Http\Requests\StoreMonitoringRecordRequest;
 use App\Http\Requests\UpdateMonitoringRecordRequest;
+use App\Services\MonitoringRecordPdfService;
+use Illuminate\Support\Facades\Storage;
 
 class MonitoringRecordController extends Controller
 {
@@ -81,6 +83,15 @@ class MonitoringRecordController extends Controller
 
         return redirect()->route('children.show', $child->id)
             ->with(['message' => 'モニタリング記録を削除しました。', 'status' => 'success']);
+    }
+
+    public function pdf(Child $child, MonitoringRecord $monitoringRecord, MonitoringRecordPdfService $pdfService)
+    {
+        $this->authorizeChild($child);
+        abort_if($monitoringRecord->child_id !== $child->id, 404);
+
+        $path = $pdfService->generate($monitoringRecord);
+        return Storage::disk('local')->download($path);
     }
 
     private function authorizeChild(Child $child): void

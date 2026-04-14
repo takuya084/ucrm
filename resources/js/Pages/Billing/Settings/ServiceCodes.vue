@@ -45,6 +45,28 @@ const save = () => {
 }
 
 const enabledCount = computed(() => settings.value.filter(s => s.is_enabled).length)
+
+// --- マスターCSV取込 ---
+const showImport = ref(false)
+const importFile = ref(null)
+const importing = ref(false)
+const importErrors = ref([])
+const onImportFile = (e) => { importFile.value = e.target.files[0] || null }
+const submitImport = () => {
+  if (!importFile.value) { alert('CSVファイルを選択してください'); return }
+  const fd = new FormData()
+  fd.append('file', importFile.value)
+  importing.value = true
+  importErrors.value = []
+  Inertia.post(route('billing.settings.service-codes.import'), fd, {
+    forceFormData: true,
+    onSuccess: (page) => {
+      importErrors.value = page.props.flash?.import_errors ?? []
+      importFile.value = null
+    },
+    onFinish: () => { importing.value = false },
+  })
+}
 </script>
 
 <template>
@@ -64,9 +86,37 @@ const enabledCount = computed(() => settings.value.filter(s => s.is_enabled).len
         <FlashMessage />
         <BreezeValidationErrors />
 
-        <div class="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-700">
-          事業所で算定する加算・減算にチェックを入れてください。チェックされた項目のみ請求計算で適用されます。
-          <br />現在 <strong>{{ enabledCount }}</strong> 件が有効です。
+        <div class="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-700 flex items-center justify-between">
+          <div>
+            事業所で算定する加算・減算にチェックを入れてください。チェックされた項目のみ請求計算で適用されます。
+            <br />現在 <strong>{{ enabledCount }}</strong> 件が有効です。
+          </div>
+          <button @click="showImport = !showImport"
+            class="ml-4 px-3 py-1.5 text-xs border border-emerald-500 text-emerald-600 bg-white rounded hover:bg-emerald-50 whitespace-nowrap">
+            {{ showImport ? '閉じる' : '📥 マスターCSV取込' }}
+          </button>
+        </div>
+
+        <div v-if="showImport" class="bg-white shadow-sm rounded-lg p-5 border border-emerald-200">
+          <h3 class="text-sm font-semibold text-gray-700 mb-2">サービスコードマスターCSV取込</h3>
+          <p class="text-xs text-gray-500 mb-3 leading-relaxed">
+            ヘッダ行必須。2行目以降は以下9列（9列目は空可）:<br>
+            <code class="bg-gray-100 px-1">報酬改定日, サービス種別(houday|jidou|63|61), サービスコード, サービス内容名, 単位数, 単位種別(per_day|per_time|per_month), 区分(base|addition|subtraction|1|2|3), 有効開始日, 有効終了日</code><br>
+            ※ (service_code, valid_from) が一致するレコードは上書き更新。それ以外は新規登録。
+          </p>
+          <div class="flex items-center gap-3">
+            <input type="file" accept=".csv,.txt" @change="onImportFile" class="text-sm" />
+            <button @click="submitImport" :disabled="importing || !importFile"
+              class="px-4 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50">
+              {{ importing ? '取込中...' : '取込実行' }}
+            </button>
+          </div>
+          <div v-if="importErrors.length" class="mt-3 bg-red-50 border border-red-200 rounded p-3 max-h-48 overflow-y-auto">
+            <div class="text-xs font-semibold text-red-700 mb-1">取込エラー ({{ importErrors.length }}件)</div>
+            <ul class="text-xs text-red-700 space-y-0.5">
+              <li v-for="(e, i) in importErrors" :key="i">• {{ e }}</li>
+            </ul>
+          </div>
         </div>
 
         <div v-for="(categories, serviceType) in grouped" :key="serviceType"
