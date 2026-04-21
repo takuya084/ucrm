@@ -7,12 +7,21 @@ import { Inertia } from '@inertiajs/inertia'
 const props = defineProps({
   staffMembers: Array,
   roleLabels: Object,
+  qualificationTypes: Object,
 })
 
 const ROLE_COLORS = {
   admin:  'bg-red-100 text-red-700',
   leader: 'bg-blue-100 text-blue-700',
   staff:  'bg-gray-100 text-gray-600',
+}
+
+const QUAL_COLORS = {
+  blue:   'bg-blue-50 text-blue-700 border-blue-200',
+  green:  'bg-green-50 text-green-700 border-green-200',
+  purple: 'bg-purple-50 text-purple-700 border-purple-200',
+  orange: 'bg-orange-50 text-orange-700 border-orange-200',
+  gray:   'bg-gray-50 text-gray-600 border-gray-200',
 }
 
 const destroy = (staff) => {
@@ -47,6 +56,7 @@ const destroy = (staff) => {
                 <th class="pb-2 font-medium">氏名</th>
                 <th class="pb-2 font-medium">メールアドレス</th>
                 <th class="pb-2 font-medium">役割</th>
+                <th class="pb-2 font-medium">保有資格</th>
                 <th class="pb-2 font-medium">ステータス</th>
                 <th class="pb-2"></th>
               </tr>
@@ -59,6 +69,16 @@ const destroy = (staff) => {
                   <span :class="['px-2 py-1 rounded-full text-xs font-medium', ROLE_COLORS[member.role] ?? 'bg-gray-100 text-gray-600']">
                     {{ roleLabels[member.role] ?? member.role }}
                   </span>
+                </td>
+                <td class="py-3 pr-4">
+                  <div v-if="member.qualifications?.length" class="flex flex-wrap gap-1">
+                    <span v-for="q in member.qualifications" :key="q.id"
+                      :class="['px-1.5 py-0.5 rounded text-[10px] border font-medium',
+                               QUAL_COLORS[qualificationTypes[q.qualification]?.color] ?? QUAL_COLORS.gray]">
+                      {{ qualificationTypes[q.qualification]?.name ?? q.qualification }}
+                    </span>
+                  </div>
+                  <span v-else class="text-gray-300 text-xs">—</span>
                 </td>
                 <td class="py-3 pr-4">
                   <span :class="['px-2 py-1 rounded-full text-xs font-medium', member.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400']">

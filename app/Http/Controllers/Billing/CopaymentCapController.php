@@ -7,6 +7,8 @@ use App\Models\Child;
 use App\Models\CopaymentCapDetail;
 use App\Models\CopaymentCapManagement;
 use App\Models\ExternalFacility;
+use App\Services\Billing\BeneficiaryPaymentListPdfService;
+use App\Services\Billing\CopaymentCapPdfService;
 use App\Services\Billing\CopaymentCapService;
 use App\Services\Billing\NhifCsvExportService;
 use Illuminate\Http\Request;
@@ -19,6 +21,8 @@ class CopaymentCapController extends Controller
     public function __construct(
         private CopaymentCapService $capService,
         private NhifCsvExportService $csvExportService,
+        private CopaymentCapPdfService $pdfService,
+        private BeneficiaryPaymentListPdfService $paymentListPdfService,
     ) {}
 
     /**
@@ -167,6 +171,48 @@ class CopaymentCapController extends Controller
 
         $facilityId = $this->facilityId();
         $path = $this->csvExportService->generateCapManagementCsv($facilityId, $request->year_month);
+
+        return Storage::disk('local')->download($path);
+    }
+
+    /**
+     * 利用者負担上限額管理結果票PDF（1名）
+     */
+    public function pdf(CopaymentCapManagement $copaymentCapManagement)
+    {
+        abort_if($copaymentCapManagement->managing_facility_id !== $this->facilityId(), 403);
+
+        $path = $this->pdfService->generate($copaymentCapManagement);
+
+        return Storage::disk('local')->download($path);
+    }
+
+    /**
+     * 利用者負担上限額管理結果票PDF（対象月一括ZIP）
+     */
+    public function pdfBundle(Request $request)
+    {
+        $request->validate([
+            'year_month' => 'required|date_format:Y-m',
+        ]);
+
+        $facilityId = $this->facilityId();
+        $path = $this->pdfService->generateBundle($facilityId, $request->year_month);
+
+        return Storage::disk('local')->download($path);
+    }
+
+    /**
+     * 利用者負担額一覧表PDF
+     */
+    public function paymentListPdf(Request $request)
+    {
+        $request->validate([
+            'year_month' => 'required|date_format:Y-m',
+        ]);
+
+        $facilityId = $this->facilityId();
+        $path = $this->paymentListPdfService->generate($facilityId, $request->year_month);
 
         return Storage::disk('local')->download($path);
     }

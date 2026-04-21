@@ -13,7 +13,7 @@ class ShiftLabelController extends Controller
         $labels = ShiftLabel::where('facility_id', $this->facilityId())
             ->orderBy('display_order')
             ->orderBy('id')
-            ->get(['id', 'name', 'is_off', 'display_order']);
+            ->get(['id', 'name', 'is_off', 'display_order', 'work_hours']);
 
         return Inertia::render('ShiftLabels/Index', [
             'labels' => $labels,
@@ -26,8 +26,10 @@ class ShiftLabelController extends Controller
             'name'          => 'required|string|max:30',
             'is_off'        => 'boolean',
             'display_order' => 'integer|min:0',
+            'work_hours'    => 'nullable|numeric|min:0|max:24',
         ], [], [
-            'name' => 'ラベル名',
+            'name'       => 'ラベル名',
+            'work_hours' => '勤務時間',
         ]);
 
         $facilityId = $this->facilityId();
@@ -41,6 +43,7 @@ class ShiftLabelController extends Controller
             'name'          => $request->name,
             'is_off'        => $request->boolean('is_off'),
             'display_order' => $request->input('display_order', 0),
+            'work_hours'    => $request->boolean('is_off') ? null : $request->input('work_hours'),
         ]);
 
         return back()->with(['message' => 'ラベルを追加しました。', 'status' => 'success']);

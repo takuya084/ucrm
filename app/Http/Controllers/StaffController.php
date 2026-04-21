@@ -25,14 +25,15 @@ class StaffController extends Controller
     public function index()
     {
         $staffMembers = Staff::where('facility_id', $this->facilityId())
-            ->with('user:id,email')
+            ->with(['user:id,email', 'qualifications:id,staff_id,qualification'])
             ->orderByRaw("FIELD(role, 'admin', 'leader', 'staff')")
             ->orderBy('name')
             ->get(['id', 'user_id', 'name', 'role', 'is_active', 'joined_at']);
 
         return Inertia::render('Staff/Index', [
-            'staffMembers' => $staffMembers,
-            'roleLabels'   => self::ROLE_LABELS,
+            'staffMembers'       => $staffMembers,
+            'roleLabels'         => self::ROLE_LABELS,
+            'qualificationTypes' => StaffQualification::TYPES,
         ]);
     }
 
@@ -89,7 +90,7 @@ class StaffController extends Controller
         $staff->load('user:id,email', 'qualifications');
 
         return Inertia::render('Staff/Edit', [
-            'staff'              => $staff->only('id', 'name', 'role', 'is_active', 'user'),
+            'staff'              => $staff->only('id', 'name', 'role', 'employment_type', 'monthly_salary', 'hourly_wage', 'is_active', 'user'),
             'roleLabels'         => self::ROLE_LABELS,
             'qualifications'     => $staff->qualifications->pluck('qualification')->values(),
             'qualificationTypes' => StaffQualification::TYPES,
@@ -100,7 +101,7 @@ class StaffController extends Controller
     {
         abort_if($staff->facility_id !== $this->facilityId(), 403);
 
-        $staff->update($request->only('name', 'role', 'is_active'));
+        $staff->update($request->only('name', 'role', 'is_active', 'employment_type', 'monthly_salary', 'hourly_wage'));
 
         // 資格の同期
         $qualifications = $request->input('qualifications', []);

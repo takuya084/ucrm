@@ -84,6 +84,14 @@ const transition = (row, action, label) => {
             class="px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600">
             CSV出力
           </a>
+          <a :href="route('billing.cap-management.pdf-bundle', { year_month: selectedMonth })"
+            class="px-4 py-2 text-sm bg-rose-500 text-white rounded hover:bg-rose-600">
+            管理結果票PDF一括（ZIP）
+          </a>
+          <a :href="route('billing.cap-management.payment-list', { year_month: selectedMonth })"
+            class="px-4 py-2 text-sm bg-sky-500 text-white rounded hover:bg-sky-600">
+            利用者負担額一覧表PDF
+          </a>
         </div>
 
         <div class="bg-white shadow-sm rounded-lg overflow-x-auto">
@@ -130,6 +138,8 @@ const transition = (row, action, label) => {
                 <td class="px-3 py-2 text-right whitespace-nowrap">
                   <Link v-if="row.management_id" :href="route('billing.cap-management.show', row.management_id)"
                     class="text-xs text-indigo-600 hover:underline mr-2">詳細</Link>
+                  <a v-if="row.management_id" :href="route('billing.cap-management.pdf', row.management_id)"
+                    class="text-xs text-rose-600 hover:underline mr-2">PDF</a>
                   <button v-if="row.status === 'created'" @click="transition(row, 'send', '送付済')"
                     class="text-xs px-2 py-0.5 bg-amber-500 text-white rounded hover:bg-amber-600">送付</button>
                   <button v-else-if="row.status === 'sent'" @click="transition(row, 'receive', '受領済')"

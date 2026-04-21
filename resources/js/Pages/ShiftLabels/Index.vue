@@ -13,6 +13,7 @@ const form = reactive({
   name: '',
   is_off: false,
   display_order: 0,
+  work_hours: null,
 })
 
 const store = () => {
@@ -21,6 +22,7 @@ const store = () => {
       form.name = ''
       form.is_off = false
       form.display_order = 0
+      form.work_hours = null
     },
   })
 }
@@ -55,6 +57,7 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
               <tr class="border-b text-left text-gray-500">
                 <th class="py-2 px-2">ラベル名</th>
                 <th class="py-2 px-2 w-20 text-center">休み系</th>
+                <th class="py-2 px-2 w-24 text-center">勤務時間</th>
                 <th class="py-2 px-2 w-20 text-center">表示順</th>
                 <th class="py-2 px-2 w-16"></th>
               </tr>
@@ -67,6 +70,11 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
                 <td class="py-2 px-2 text-center">
                   <span v-if="l.is_off" class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">休み系</span>
                 </td>
+                <td class="py-2 px-2 text-center">
+                  <span v-if="l.is_off" class="text-gray-300">—</span>
+                  <span v-else-if="l.work_hours != null" class="text-gray-700">{{ l.work_hours }} h</span>
+                  <span v-else class="text-amber-500 text-xs" title="パート職員の人件費計算に必要">未設定</span>
+                </td>
                 <td class="py-2 px-2 text-center text-gray-500">{{ l.display_order }}</td>
                 <td class="py-2 px-2 text-right">
                   <button v-if="!isProtected(l)" @click="destroy(l)"
@@ -76,7 +84,7 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
                 </td>
               </tr>
               <tr v-if="labels.length === 0">
-                <td colspan="4" class="py-4 text-center text-gray-400">ラベルがありません</td>
+                <td colspan="5" class="py-4 text-center text-gray-400">ラベルがありません</td>
               </tr>
             </tbody>
           </table>
@@ -84,11 +92,18 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
           <!-- 新規追加フォーム -->
           <div class="border-t pt-4">
             <h3 class="text-sm font-medium text-gray-700 mb-3">ラベル追加</h3>
-            <form @submit.prevent="store" class="flex items-end gap-3">
-              <div class="flex-1">
+            <form @submit.prevent="store" class="flex items-end gap-3 flex-wrap">
+              <div class="flex-1 min-w-[160px]">
                 <label class="block text-xs text-gray-500 mb-1">ラベル名</label>
                 <input v-model="form.name" type="text" maxlength="30" placeholder="例: 早番"
                   class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+              </div>
+              <div class="w-28">
+                <label class="block text-xs text-gray-500 mb-1">勤務時間(h)</label>
+                <input v-model.number="form.work_hours" type="number" min="0" max="24" step="0.25"
+                  :disabled="form.is_off"
+                  placeholder="8"
+                  class="w-full border border-gray-300 rounded px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400" />
               </div>
               <div class="w-20">
                 <label class="block text-xs text-gray-500 mb-1">表示順</label>
@@ -104,6 +119,9 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
                 追加
               </button>
             </form>
+            <p class="mt-2 text-xs text-gray-500">
+              <span class="font-medium">勤務時間(h)</span>は休憩を除く実働時間。パート職員の人件費 = 時給 × 勤務時間 の計算に使います。
+            </p>
           </div>
         </div>
       </div>

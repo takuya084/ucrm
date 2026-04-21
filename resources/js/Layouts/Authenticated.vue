@@ -94,6 +94,10 @@ watch(showingNavigationDropdown, (open) => {
                       </button>
                     </template>
                     <template #content>
+                      <div class="px-4 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">月次業務</div>
+                      <BreezeDropdownLink :href="route('billing.previous-month')" class="text-indigo-600 font-medium">
+                        前月請求詳細（月初確認）
+                      </BreezeDropdownLink>
                       <BreezeDropdownLink :href="route('billing.index')">
                         月次請求
                       </BreezeDropdownLink>
@@ -106,13 +110,19 @@ watch(showingNavigationDropdown, (open) => {
                       <BreezeDropdownLink :href="route('billing.invoices.index')">
                         利用者請求
                       </BreezeDropdownLink>
+                      <div class="border-t my-1" />
+                      <div class="px-4 pt-1 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">例外対応</div>
                       <BreezeDropdownLink :href="route('billing.error-claims.index')">
                         過誤申立
                       </BreezeDropdownLink>
                       <BreezeDropdownLink :href="route('billing.returns.index')">
                         返戻管理
                       </BreezeDropdownLink>
-                      <hr class="my-1" />
+                      <div class="border-t my-1" />
+                      <div class="px-4 pt-1 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">設定</div>
+                      <BreezeDropdownLink :href="route('billing.expenses.index')">
+                        経費管理
+                      </BreezeDropdownLink>
                       <BreezeDropdownLink :href="route('billing.settings.service-codes')">
                         加算・減算設定
                       </BreezeDropdownLink>
@@ -271,42 +281,63 @@ watch(showingNavigationDropdown, (open) => {
 
                   <!-- 請求管理（leader以上） -->
                   <template v-if="['admin','leader'].includes($page.props.auth.staff_role)">
+                    <!-- 月次業務 -->
                     <div class="px-4 mt-5 mb-2">
-                      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">請求管理</div>
+                      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">月次業務</div>
                     </div>
+                    <Link :href="route('billing.previous-month')" @click="showingNavigationDropdown = false"
+                      class="mobile-nav-item text-indigo-600 font-medium">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M15 19l-7-7 7-7"/></svg>
+                      前月請求詳細（月初確認）
+                    </Link>
                     <Link :href="route('billing.index')" @click="showingNavigationDropdown = false"
                       :class="['mobile-nav-item', route().current('billing.index') && 'mobile-nav-active']">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
                       月次請求
                     </Link>
                     <Link :href="route('billing.daily-records.index')" @click="showingNavigationDropdown = false"
-                      :class="['mobile-nav-item pl-12', route().current('billing.daily-records.*') && 'mobile-nav-active']">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                      :class="['mobile-nav-item', route().current('billing.daily-records.*') && 'mobile-nav-active']">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                       実績記録票
                     </Link>
                     <Link :href="route('billing.cap-management.index')" @click="showingNavigationDropdown = false"
-                      :class="['mobile-nav-item pl-12', route().current('billing.cap-management.*') && 'mobile-nav-active']">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      :class="['mobile-nav-item', route().current('billing.cap-management.*') && 'mobile-nav-active']">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                       上限管理
                     </Link>
                     <Link :href="route('billing.invoices.index')" @click="showingNavigationDropdown = false"
-                      :class="['mobile-nav-item pl-12', route().current('billing.invoices.*') && 'mobile-nav-active']">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                      :class="['mobile-nav-item', route().current('billing.invoices.*') && 'mobile-nav-active']">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
                       利用者請求
                     </Link>
+
+                    <!-- 例外対応 -->
+                    <div class="px-4 mt-4 mb-2">
+                      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">例外対応</div>
+                    </div>
                     <Link :href="route('billing.error-claims.index')" @click="showingNavigationDropdown = false"
-                      :class="['mobile-nav-item pl-12', route().current('billing.error-claims.*') && 'mobile-nav-active']">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      :class="['mobile-nav-item', route().current('billing.error-claims.*') && 'mobile-nav-active']">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                       過誤申立
                     </Link>
                     <Link :href="route('billing.returns.index')" @click="showingNavigationDropdown = false"
-                      :class="['mobile-nav-item pl-12', route().current('billing.returns.*') && 'mobile-nav-active']">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                      :class="['mobile-nav-item', route().current('billing.returns.*') && 'mobile-nav-active']">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                       返戻管理
                     </Link>
+
+                    <!-- 設定 -->
+                    <div class="px-4 mt-4 mb-2">
+                      <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">請求・経費 設定</div>
+                    </div>
+                    <Link :href="route('billing.expenses.index')" @click="showingNavigationDropdown = false"
+                      :class="['mobile-nav-item', route().current('billing.expenses.*') && 'mobile-nav-active']">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+                      経費管理
+                    </Link>
                     <Link :href="route('billing.settings.service-codes')" @click="showingNavigationDropdown = false"
-                      :class="['mobile-nav-item pl-12', route().current('billing.settings.*') && 'mobile-nav-active']">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                      :class="['mobile-nav-item', route().current('billing.settings.*') && 'mobile-nav-active']">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                       加算・減算設定
                     </Link>
                   </template>

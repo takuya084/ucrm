@@ -2,7 +2,7 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/inertia-vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
 
 const props = defineProps({
@@ -13,10 +13,25 @@ const props = defineProps({
 })
 
 const form = reactive({
-  name:           props.staff.name ?? '',
-  role:           props.staff.role ?? 'staff',
-  is_active:      props.staff.is_active ?? true,
-  qualifications: [...(props.qualifications ?? [])],
+  name:            props.staff.name ?? '',
+  role:            props.staff.role ?? 'staff',
+  employment_type: props.staff.employment_type ?? 'full_time',
+  monthly_salary:  props.staff.monthly_salary ?? null,
+  hourly_wage:     props.staff.hourly_wage ?? null,
+  is_active:       props.staff.is_active ?? true,
+  qualifications:  [...(props.qualifications ?? [])],
+})
+
+const EMPLOYMENT_TYPE_LABELS = {
+  full_time: '常勤',
+  part_time: 'パート',
+  contract:  '契約',
+}
+
+// 雇用形態切替時に不要な給与欄をクリア（人件費誤計算を防止）
+watch(() => form.employment_type, (t) => {
+  if (t === 'full_time') form.hourly_wage = null
+  else if (t === 'part_time') form.monthly_salary = null
 })
 
 const update = () => {
@@ -75,6 +90,49 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   {{ label }}
                 </label>
               </div>
+            </div>
+
+            <!-- 雇用形態 -->
+            <div>
+              <label :class="labelClass">雇用形態</label>
+              <div class="flex gap-2 mt-1">
+                <label
+                  v-for="(label, value) in EMPLOYMENT_TYPE_LABELS" :key="value"
+                  :class="['px-3 py-2 border rounded cursor-pointer text-sm transition-colors',
+                    form.employment_type === value
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-medium'
+                      : 'border-gray-300 hover:bg-gray-50']">
+                  <input type="radio" v-model="form.employment_type" :value="value" class="sr-only" />
+                  {{ label }}
+                </label>
+              </div>
+            </div>
+
+            <!-- 給与（雇用形態に応じて表示） -->
+            <div v-if="form.employment_type === 'full_time'">
+              <label :class="labelClass">月給</label>
+              <input v-model.number="form.monthly_salary" type="number" min="0" step="1000"
+                placeholder="例: 280000" :class="inputClass" />
+              <p class="mt-1 text-xs text-gray-400">常勤のため月給のみ入力します。</p>
+            </div>
+            <div v-else-if="form.employment_type === 'part_time'">
+              <label :class="labelClass">時給</label>
+              <input v-model.number="form.hourly_wage" type="number" min="0" step="10"
+                placeholder="例: 1200" :class="inputClass" />
+              <p class="mt-1 text-xs text-gray-400">パートのため時給のみ入力します。シフトラベルの勤務時間に連動して人件費を計算します。</p>
+            </div>
+            <div v-else-if="form.employment_type === 'contract'" class="grid grid-cols-2 gap-3">
+              <div>
+                <label :class="labelClass">月給</label>
+                <input v-model.number="form.monthly_salary" type="number" min="0" step="1000"
+                  placeholder="例: 280000" :class="inputClass" />
+              </div>
+              <div>
+                <label :class="labelClass">時給</label>
+                <input v-model.number="form.hourly_wage" type="number" min="0" step="10"
+                  placeholder="例: 1200" :class="inputClass" />
+              </div>
+              <p class="col-span-2 text-xs text-gray-400">契約形態に応じて使用する項目のみ入力してください。</p>
             </div>
 
             <!-- ステータス -->

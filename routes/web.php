@@ -40,6 +40,7 @@ use App\Http\Controllers\Billing\GuardianInvoiceController;
 use App\Http\Controllers\Billing\ErrorClaimController;
 use App\Http\Controllers\Billing\ClaimReturnController;
 use App\Http\Controllers\Billing\FacilityServiceSettingController;
+use App\Http\Controllers\Billing\MonthlyExpenseController;
 
 Route::get('analysis', [AnalysisController::class, 'index'])->name('analysis');
 
@@ -193,6 +194,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing')->group(function () {
     // 月次請求（一覧・計算）
     Route::get('/',                          [BillingPeriodController::class, 'index'])    ->name('billing.index');
+    Route::get('/previous-month',            [BillingPeriodController::class, 'previousMonth'])->name('billing.previous-month');
     Route::post('/calculate',                [BillingPeriodController::class, 'calculate'])->name('billing.calculate');
 
     // 児童別明細
@@ -209,7 +211,10 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::get('/cap-management',              [CopaymentCapController::class, 'index'])    ->name('billing.cap-management.index');
     Route::post('/cap-management/calculate',   [CopaymentCapController::class, 'calculate'])->name('billing.cap-management.calculate');
     Route::get('/cap-management/export',       [CopaymentCapController::class, 'export'])   ->name('billing.cap-management.export');
+    Route::get('/cap-management/pdf-bundle',   [CopaymentCapController::class, 'pdfBundle'])->name('billing.cap-management.pdf-bundle');
+    Route::get('/cap-management/payment-list', [CopaymentCapController::class, 'paymentListPdf'])->name('billing.cap-management.payment-list');
     Route::get('/cap-management/{copaymentCapManagement}', [CopaymentCapController::class, 'show'])->name('billing.cap-management.show');
+    Route::get('/cap-management/{copaymentCapManagement}/pdf', [CopaymentCapController::class, 'pdf'])->name('billing.cap-management.pdf');
     Route::patch('/cap-management/{copaymentCapManagement}/details/{copaymentCapDetail}', [CopaymentCapController::class, 'updateExternalDetail'])->name('billing.cap-management.details.update');
     Route::post('/cap-management/{copaymentCapManagement}/transition', [CopaymentCapController::class, 'transition'])->name('billing.cap-management.transition');
     Route::patch('/cap-management/{copaymentCapManagement}/attributes', [CopaymentCapController::class, 'updateAttributes'])->name('billing.cap-management.attributes');
@@ -236,6 +241,8 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::post('/returns/{claimReturn}/transition', [ClaimReturnController::class, 'transition'])->name('billing.returns.transition');
 
     // 加算・減算設定
+    Route::get('/expenses',                   [MonthlyExpenseController::class, 'index'])  ->name('billing.expenses.index');
+    Route::post('/expenses',                  [MonthlyExpenseController::class, 'upsert']) ->name('billing.expenses.upsert');
     Route::get('/settings/service-codes',      [FacilityServiceSettingController::class, 'index'])     ->name('billing.settings.service-codes');
     Route::post('/settings/service-codes',     [FacilityServiceSettingController::class, 'bulkUpdate'])->name('billing.settings.service-codes.update');
     Route::post('/settings/service-codes/import', [FacilityServiceSettingController::class, 'importMaster'])->name('billing.settings.service-codes.import');

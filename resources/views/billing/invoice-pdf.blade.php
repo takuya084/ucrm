@@ -7,7 +7,13 @@
             font-family: 'ipag';
             font-style: normal;
             font-weight: normal;
-            src: url({{ storage_path('fonts/ipag.ttf') }}) format('truetype');
+            src: url({{ storage_path('fonts/ipaexg.ttf') }}) format('truetype');
+        }
+        @font-face {
+            font-family: 'ipag';
+            font-style: normal;
+            font-weight: bold;
+            src: url({{ storage_path('fonts/ipaexg.ttf') }}) format('truetype');
         }
         body {
             font-family: 'ipag', sans-serif;

@@ -16,14 +16,25 @@ class Staff extends Model
         'facility_id',
         'name',
         'role',
+        'employment_type',
+        'monthly_salary',
+        'hourly_wage',
         'is_active',
         'display_order',
         'joined_at',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'joined_at' => 'date',
+        'is_active'      => 'boolean',
+        'joined_at'      => 'date',
+        'monthly_salary' => 'decimal:2',
+        'hourly_wage'    => 'decimal:2',
+    ];
+
+    public const EMPLOYMENT_TYPE_LABELS = [
+        'full_time' => '常勤',
+        'part_time' => 'パート',
+        'contract'  => '契約',
     ];
 
     public function user(): BelongsTo

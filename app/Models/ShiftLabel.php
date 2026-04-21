@@ -15,10 +15,12 @@ class ShiftLabel extends Model
         'name',
         'is_off',
         'display_order',
+        'work_hours',
     ];
 
     protected $casts = [
-        'is_off' => 'boolean',
+        'is_off'     => 'boolean',
+        'work_hours' => 'decimal:2',
     ];
 
     public function facility(): BelongsTo

@@ -5,7 +5,13 @@
     <style>
         @font-face {
             font-family: 'ipag';
-            src: url({{ storage_path('fonts/ipag.ttf') }}) format('truetype');
+            font-weight: normal;
+            src: url({{ storage_path('fonts/ipaexg.ttf') }}) format('truetype');
+        }
+        @font-face {
+            font-family: 'ipag';
+            font-weight: bold;
+            src: url({{ storage_path('fonts/ipaexg.ttf') }}) format('truetype');
         }
         body { font-family: 'ipag', sans-serif; font-size: 10px; color: #000; margin: 0; padding: 18px; }
         h1 { font-size: 15px; text-align: center; margin: 0 0 10px; border-bottom: 1.5px solid #000; padding-bottom: 4px; }

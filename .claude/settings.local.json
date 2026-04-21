@@ -32,7 +32,9 @@
       "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \"\nDELETE FROM support_records;\nDELETE FROM usage_records;\nSELECT COUNT\\(*\\) as usage_cnt FROM usage_records;\nSELECT COUNT\\(*\\) as support_cnt FROM support_records;\n\" 2>&1)",
       "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \"\nDELETE FROM support_records;\nDELETE FROM usage_records;\nSELECT 'CLEAN' as status, 0 as usage_cnt, 0 as support_cnt;\n\" 2>&1)",
       "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \"\nDELETE FROM support_records;\nDELETE FROM usage_records;\nSELECT 'CLEAN' as status;\n\" 2>&1)",
-      "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \":*)"
+      "Bash(/mnt/c/xampp/mysql/bin/mysql.exe -u root ucrm -e \":*)",
+      "Bash(xargs rm *)",
+      "Bash(node -e \"require\\('fs'\\).readFileSync\\('resources/js/Pages/Billing/Show.vue','utf8'\\).match\\(/<script setup>[\\\\s\\\\S]*?<\\\\/script>/\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,

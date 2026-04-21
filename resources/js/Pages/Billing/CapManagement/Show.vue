@@ -51,7 +51,11 @@ const confirmActual = () => {
     <template #header>
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-800">{{ management.child?.name }} - 上限管理詳細</h2>
-        <Link :href="route('billing.cap-management.index', { month: management.year_month })" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">戻る</Link>
+        <div class="flex gap-2">
+          <a :href="route('billing.cap-management.pdf', management.id)"
+            class="px-3 py-1.5 text-xs bg-rose-500 text-white rounded hover:bg-rose-600">管理結果票PDF</a>
+          <Link :href="route('billing.cap-management.index', { month: management.year_month })" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">戻る</Link>
+        </div>
       </div>
     </template>
 
