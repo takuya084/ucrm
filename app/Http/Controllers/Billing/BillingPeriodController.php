@@ -37,6 +37,7 @@ class BillingPeriodController extends Controller
     public function performancePdf(BillingDetail $billingDetail)
     {
         abort_if($billingDetail->billingPeriod->facility_id !== $this->facilityId(), 403);
+        \App\Models\AuditLog::record('exported', $billingDetail);
         $path = $this->performancePdfService->generate($billingDetail);
         return Storage::disk('local')->download($path);
     }
@@ -47,6 +48,7 @@ class BillingPeriodController extends Controller
     public function performancePdfBundle(BillingPeriod $billingPeriod)
     {
         $this->authorizeFacility($billingPeriod);
+        \App\Models\AuditLog::record('exported', $billingPeriod);
         $path = $this->performancePdfService->generateBundle($billingPeriod);
         return Storage::disk('local')->download($path);
     }
@@ -180,6 +182,7 @@ class BillingPeriodController extends Controller
     public function export(BillingPeriod $billingPeriod)
     {
         $this->authorizeFacility($billingPeriod);
+        \App\Models\AuditLog::record('exported', $billingPeriod);
 
         $billingCsvPath      = $this->csvExportService->generateBillingCsv($billingPeriod);
         $performanceCsvPath  = $this->csvExportService->generatePerformanceRecordCsv($billingPeriod);
@@ -194,6 +197,7 @@ class BillingPeriodController extends Controller
     public function exportPerformance(BillingPeriod $billingPeriod)
     {
         $this->authorizeFacility($billingPeriod);
+        \App\Models\AuditLog::record('exported', $billingPeriod);
 
         $path = $this->csvExportService->generatePerformanceRecordCsv($billingPeriod);
         return Storage::disk('local')->download($path);
@@ -217,6 +221,7 @@ class BillingPeriodController extends Controller
     public function exportBundle(BillingPeriod $billingPeriod)
     {
         $this->authorizeFacility($billingPeriod);
+        \App\Models\AuditLog::record('exported', $billingPeriod);
 
         $export = $this->bundleService->generateBundle($billingPeriod, auth()->id());
 
@@ -229,6 +234,7 @@ class BillingPeriodController extends Controller
     public function downloadExport(BillingExport $billingExport)
     {
         abort_if($billingExport->facility_id !== $this->facilityId(), 403);
+        \App\Models\AuditLog::record('exported', $billingExport);
         abort_unless(Storage::disk('local')->exists($billingExport->file_path), 404);
 
         return Storage::disk('local')->download($billingExport->file_path, $billingExport->file_name);

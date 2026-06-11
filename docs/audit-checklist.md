@@ -20,7 +20,8 @@
 
 - [x] P1-1: OpenAI 送信データの仮名化（実名除去）＋ AI 利用同意フラグ（児童単位）
       ※要実行: `php artisan migrate`（Windows/XAMPP側）と `npm run build`。TLS検証無効化（withoutVerifying）も同時に修正
-- [ ] P1-2: 監査ログ（audit_logs）導入 — 個人情報の閲覧・変更・出力の記録
+- [x] P1-2: 監査ログ（audit_logs）導入 — 個人情報の閲覧・変更・出力の記録
+      ※Eloquentイベント経由のため一括update/deleteは未記録（該当箇所は順次 AuditLog::record() 直接呼び出しを追加）。要 `php artisan migrate`
 - [ ] P1-3: 請求エンジンのテスト整備（BillingCalculationService / CopaymentCapService / ServiceCodeResolver）
 - [ ] P1-4: Laravel 11/12 + PHP 8.3 への移行（Sanctum 含む）
 - [ ] P1-5: 出欠記録の物理削除廃止（SoftDeletes + 請求確定済み月の編集ガード）

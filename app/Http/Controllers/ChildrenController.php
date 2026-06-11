@@ -64,6 +64,7 @@ class ChildrenController extends Controller
     public function show(Child $child)
     {
         abort_if($child->facility_id !== $this->facilityId(), 403);
+        \App\Models\AuditLog::record('viewed', $child);
         $child->load([
             'school',
             'guardians',
