@@ -124,6 +124,16 @@ class ServiceCodeResolver
     {
         $conditions = $code->conditions ?? [];
 
+        // 欠席時対応加算: 連絡ありの欠席のみ
+        if (isset($conditions['absent_with_notice']) && $conditions['absent_with_notice']) {
+            return $record->status === 'absent_notice';
+        }
+
+        // 欠席時対応加算以外の加算は出席日のみ算定（欠席日への算定は過請求となる）
+        if ($record->status !== 'attended') {
+            return false;
+        }
+
         // 送迎加算: 送迎実施の場合に適用
         if (isset($conditions['requires_pickup']) && $conditions['requires_pickup']) {
             return $record->pickup_done;
@@ -133,13 +143,8 @@ class ServiceCodeResolver
         }
 
         // 延長支援加算: 退所時間が基準時間を超えた場合
-        if (isset($conditions['extension_after']) && $record->check_out_time) {
-            return $record->check_out_time > $conditions['extension_after'];
-        }
-
-        // 欠席時対応加算: 連絡ありの欠席
-        if (isset($conditions['absent_with_notice']) && $conditions['absent_with_notice']) {
-            return $record->status === 'absent_notice';
+        if (isset($conditions['extension_after'])) {
+            return $record->check_out_time && $record->check_out_time > $conditions['extension_after'];
         }
 
         // 条件が無い、または一般的な加算はデフォルト適用

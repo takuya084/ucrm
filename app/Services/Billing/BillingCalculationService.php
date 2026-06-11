@@ -164,15 +164,17 @@ class BillingCalculationService
         string $serviceType,
         string $yearMonth
     ): void {
-        // 基本サービスコードの特定
-        $baseCode = $this->codeResolver->resolveBaseCode(
-            $serviceType,
-            $record->is_school_day ?? true,
-            $record->check_in_time,
-            $record->check_out_time,
-            $yearMonth,
-            $facility->capacity_per_day
-        );
+        // 基本サービスコードの特定（基本報酬は出席日のみ算定。欠席日への算定は過請求となる）
+        $baseCode = $record->status === 'attended'
+            ? $this->codeResolver->resolveBaseCode(
+                $serviceType,
+                $record->is_school_day ?? true,
+                $record->check_in_time,
+                $record->check_out_time,
+                $yearMonth,
+                $facility->capacity_per_day
+            )
+            : null;
 
         if ($baseCode) {
             DailyServiceRecord::create([

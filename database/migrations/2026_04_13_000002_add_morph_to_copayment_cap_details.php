@@ -8,6 +8,31 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // MySQL 以外（SQLite でのテスト実行など）は Schema ビルダーで同等の変更を行う
+        if (DB::getDriverName() !== 'mysql') {
+            if (!Schema::hasColumn('copayment_cap_details', 'billable_facility_type')) {
+                Schema::table('copayment_cap_details', function ($table) {
+                    $table->string('billable_facility_type')->nullable();
+                    $table->unsignedBigInteger('billable_facility_id')->nullable();
+                    $table->index(['billable_facility_type', 'billable_facility_id'], 'cap_detail_billable_idx');
+                });
+            }
+
+            DB::table('copayment_cap_details')
+                ->whereNotNull('facility_id')
+                ->whereNull('billable_facility_type')
+                ->update([
+                    'billable_facility_type' => \App\Models\Facility::class,
+                    'billable_facility_id'   => DB::raw('facility_id'),
+                ]);
+
+            Schema::table('copayment_cap_details', function ($table) {
+                $table->unsignedBigInteger('facility_id')->nullable()->change();
+            });
+
+            return;
+        }
+
         $db = DB::getDatabaseName();
 
         $hasType = DB::selectOne(

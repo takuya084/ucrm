@@ -7,7 +7,8 @@
     "require": {
         "php": "^8.0.2",
         "barryvdh/laravel-dompdf": "^3.1",
-        "doctrine/dbal": "*",
+        "carbonphp/carbon-doctrine-types": "^2.1",
+        "doctrine/dbal": "^3.6",
         "guzzlehttp/guzzle": "^7.2",
         "inertiajs/inertia-laravel": "^0.6",
         "laravel/framework": "^9.52",

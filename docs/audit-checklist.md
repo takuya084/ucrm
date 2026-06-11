@@ -15,6 +15,8 @@
 - [x] P0-5: 確定済み請求期間の再計算ガード（確定・送信済みデータの破壊防止）
 - [x] P0-6: `barryvdh/laravel-debugbar` を require-dev へ移動（本番デプロイは `composer install --no-dev` を徹底）
 - [x] P0-7: `.env.example` の本番向け既定値整備（SESSION_SECURE_COOKIE 等の注意書き）
+- [x] P0-8: 【テスト整備中に発見】欠席日にも基本報酬・一般加算が算定される過請求バグを修正
+      （BillingCalculationService / ServiceCodeResolver — 欠席日は欠席時対応加算のみ算定）
 
 ## P1: 〜1ヶ月（法令・基盤リスク）
 
@@ -22,7 +24,10 @@
       ※要実行: `php artisan migrate`（Windows/XAMPP側）と `npm run build`。TLS検証無効化（withoutVerifying）も同時に修正
 - [x] P1-2: 監査ログ（audit_logs）導入 — 個人情報の閲覧・変更・出力の記録
       ※Eloquentイベント経由のため一括update/deleteは未記録（該当箇所は順次 AuditLog::record() 直接呼び出しを追加）。要 `php artisan migrate`
-- [ ] P1-3: 請求エンジンのテスト整備（BillingCalculationService / CopaymentCapService / ServiceCodeResolver）
+- [x] P1-3: 請求エンジンのテスト整備（BillingCalculationService 8件・全25件パス）
+      ※phpunit を SQLite in-memory 化、doctrine/dbal を Laravel 9 互換の ^3.6 に固定、
+      無効化済みの自己登録を前提とした旧 RegistrationTest を現仕様に合わせ更新。
+      CopaymentCapService・CSV出力のテストは P2 の方式見直しと併せて追加予定
 - [ ] P1-4: Laravel 11/12 + PHP 8.3 への移行（Sanctum 含む）
 - [ ] P1-5: 出欠記録の物理削除廃止（SoftDeletes + 請求確定済み月の編集ガード）
 
