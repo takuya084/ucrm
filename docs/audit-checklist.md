@@ -9,8 +9,8 @@
 ## P0: 即時対応（セキュリティ・データ破壊リスク）
 
 - [x] P0-1: 未認証ルートの削除（`/analysis`, `/inertia-test`, `/component-test`, `/inertia/*`）
-- [ ] P0-2: 出欠一括登録のクロステナントIDOR修正（`BulkStoreUsageRecordRequest` の child_id 施設スコープ）
-- [ ] P0-3: 受給者証の `external_facility_ids` 施設スコープ修正（Store/Update 両リクエスト）
+- [x] P0-2: 出欠一括登録のクロステナントIDOR修正（`BulkStoreUsageRecordRequest` の child_id 施設スコープ）
+- [x] P0-3: 受給者証の `external_facility_ids` 施設スコープ修正（Store/Update 両リクエスト）
 - [ ] P0-4: Yoyaku Webhook の HMAC 認証必須化（フェイルクローズ）
 - [ ] P0-5: 確定済み請求期間の再計算ガード（確定・送信済みデータの破壊防止）
 - [ ] P0-6: `barryvdh/laravel-debugbar` を require-dev へ移動

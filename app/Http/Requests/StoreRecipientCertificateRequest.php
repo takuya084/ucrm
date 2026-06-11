@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRecipientCertificateRequest extends FormRequest
 {
@@ -13,6 +14,9 @@ class StoreRecipientCertificateRequest extends FormRequest
 
     public function rules(): array
     {
+        // 自施設で登録した他社事業所のみ紐付け可能
+        $facilityId = $this->user()?->staff?->facility_id;
+
         return [
             'certificate_number'          => ['nullable', 'string', 'max:20'],
             'municipality'                => ['nullable', 'string', 'max:50'],
@@ -28,7 +32,10 @@ class StoreRecipientCertificateRequest extends FormRequest
             'service_type'                => ['nullable', 'in:houday,jidou'],
             'municipality_code'           => ['nullable', 'string', 'max:6'],
             'external_facility_ids'       => ['nullable', 'array'],
-            'external_facility_ids.*'     => ['integer', 'exists:external_facilities,id'],
+            'external_facility_ids.*'     => [
+                'integer',
+                Rule::exists('external_facilities', 'id')->where('facility_id', $facilityId),
+            ],
         ];
     }
 
