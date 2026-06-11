@@ -25,6 +25,9 @@ class BillingDetail extends Model
         'copayment_amount',
         'copayment_cap',
         'copayment_cap_applied',
+        'cap_management_result_code',
+        'cap_managing_facility_code',
+        'cap_result_amount',
         'status',
     ];
 

@@ -90,9 +90,17 @@ class ServiceCodeMasterSeeder extends Seeder
             ],
             [
                 'service_type' => 'houday', 'service_code' => '636300',
-                'service_name' => '欠席時対応加算',
+                'service_name' => '欠席時対応加算（Ⅰ）',
                 'unit_count' => 94, 'unit_type' => 'per_day', 'category' => 'addition',
-                'conditions' => ['absent_with_notice' => true],
+                // 月4回が算定上限（こども家庭庁告示）
+                'conditions' => ['absent_with_notice' => true, 'monthly_limit' => 4],
+            ],
+            [
+                'service_type' => 'houday', 'service_code' => '636800',
+                'service_name' => '福祉・介護職員等処遇改善加算',
+                // 率ベース加算: 単位数は treatment_improvement_settings の加算率で計算
+                'unit_count' => 0, 'unit_type' => 'per_month', 'category' => 'addition',
+                'conditions' => ['rate_based' => true],
             ],
             [
                 'service_type' => 'houday', 'service_code' => '636400',

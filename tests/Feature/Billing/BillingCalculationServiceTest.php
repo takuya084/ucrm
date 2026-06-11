@@ -201,6 +201,86 @@ class BillingCalculationServiceTest extends TestCase
         $this->service()->calculateMonthlyBilling($this->facility->id, self::YEAR_MONTH);
     }
 
+    public function test_欠席時対応加算は月回数上限を超えて算定されない(): void
+    {
+        // 欠席時対応加算（月4回上限）に上限を設定
+        ServiceCodeMaster::where('service_code', '636300')->update([
+            'conditions' => json_encode(['absent_with_notice' => true, 'monthly_limit' => 4]),
+        ]);
+
+        // 連絡あり欠席が6日
+        foreach (range(11, 16) as $day) {
+            $this->createUsageRecord(sprintf('2026-05-%02d', $day), 'absent_notice');
+        }
+
+        $period = $this->service()->calculateMonthlyBilling($this->facility->id, self::YEAR_MONTH);
+        $detail = $period->billingDetails->firstWhere('child_id', $this->child->id);
+
+        $line = $detail->billingDetailLines()->where('service_code', '636300')->first();
+        $this->assertNotNull($line);
+        $this->assertSame(4, (int) $line->count);
+        $this->assertSame(94 * 4, (int) $line->total_units);
+    }
+
+    public function test_時間区分付き基本報酬は計画支援時間で選択される(): void
+    {
+        // 時間区分1（30分〜1.5h）と区分2（1.5h超〜3h）のコードを用意
+        ServiceCodeMaster::where('service_code', '631000')->delete();
+        $this->createCode('631101', 500, 'base', ['day_type' => 'school_day', 'time_category' => 1]);
+        $this->createCode('631102', 600, 'base', ['day_type' => 'school_day', 'time_category' => 2]);
+
+        // 個別支援計画: 支援時間 120分 → 区分2
+        $this->child->supportPlans()->create([
+            'plan_date'                => '2026-04-01',
+            'planned_duration_minutes' => 120,
+        ]);
+
+        $this->createUsageRecord('2026-05-07');
+
+        $period = $this->service()->calculateMonthlyBilling($this->facility->id, self::YEAR_MONTH);
+        $detail = $period->billingDetails->firstWhere('child_id', $this->child->id);
+
+        $codes = $detail->billingDetailLines()->pluck('service_code')->all();
+        $this->assertContains('631102', $codes);
+        $this->assertNotContains('631101', $codes);
+    }
+
+    public function test_無償化対象の児童は利用者負担が0円になる(): void
+    {
+        $this->child->recipientCertificates()->update(['is_free_of_charge' => true]);
+        $this->createUsageRecord('2026-05-07');
+
+        $period = $this->service()->calculateMonthlyBilling($this->facility->id, self::YEAR_MONTH);
+        $detail = $period->billingDetails->firstWhere('child_id', $this->child->id);
+
+        $this->assertSame(0, (int) $detail->copayment_cap_applied);
+        $this->assertSame((int) $detail->total_amount, (int) $detail->insurance_amount);
+    }
+
+    public function test_処遇改善加算は合計単位数に加算率を乗じて算定される(): void
+    {
+        $treatmentMaster = $this->createCode('636800', 0, 'addition', ['rate_based' => true], enable: true);
+
+        \App\Models\TreatmentImprovementSetting::create([
+            'facility_id'            => $this->facility->id,
+            'service_code_master_id' => $treatmentMaster->id,
+            'rate'                   => 13.10,
+            'effective_from'         => '2024-06-01',
+        ]);
+
+        // 2日出席 → 基本 604×2 = 1208単位 → 処遇改善 round(1208 × 13.1%) = 158単位
+        $this->createUsageRecord('2026-05-07');
+        $this->createUsageRecord('2026-05-08');
+
+        $period = $this->service()->calculateMonthlyBilling($this->facility->id, self::YEAR_MONTH);
+        $detail = $period->billingDetails->firstWhere('child_id', $this->child->id);
+
+        $line = $detail->billingDetailLines()->where('service_code', '636800')->first();
+        $this->assertNotNull($line);
+        $this->assertSame(158, (int) $line->total_units);
+        $this->assertSame(1208 + 158, (int) $detail->total_units);
+    }
+
     public function test_下書きの請求期間は再計算で明細が再生成される(): void
     {
         $this->createUsageRecord('2026-05-07');

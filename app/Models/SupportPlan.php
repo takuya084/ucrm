@@ -25,6 +25,10 @@ class SupportPlan extends Model
         'guardian_agreement',
         'guardian_agreement_date',
         'document_path',
+        'planned_start_time',
+        'planned_end_time',
+        'planned_duration_minutes',
+        'five_domains',
     ];
 
     protected $casts = [
@@ -33,6 +37,7 @@ class SupportPlan extends Model
         'valid_to'                => 'date',
         'guardian_agreement'      => 'boolean',
         'guardian_agreement_date' => 'date',
+        'five_domains'            => 'array',
     ];
 
     public function child(): BelongsTo

@@ -22,7 +22,8 @@ class ServiceCodeResolver
         ?string $checkInTime,
         ?string $checkOutTime,
         string $yearMonth,
-        ?int $capacityPerDay = null
+        ?int $capacityPerDay = null,
+        ?int $plannedMinutes = null
     ): ?ServiceCodeMaster {
         $query = ServiceCodeMaster::forServiceType($serviceType)
             ->ofCategory('base')
@@ -33,13 +34,23 @@ class ServiceCodeResolver
 
         $codes = $query->get();
 
+        // R6改定: 個別支援計画に定めた支援時間から時間区分を算出
+        $timeCategory = $this->resolveTimeCategory($plannedMinutes);
+
         // 条件JSONからマッチするものを探す
-        return $codes->first(function ($code) use ($dayType, $checkInTime, $checkOutTime, $capacityPerDay) {
+        return $codes->first(function ($code) use ($dayType, $checkInTime, $checkOutTime, $capacityPerDay, $timeCategory) {
             $conditions = $code->conditions ?? [];
 
             // day_type条件のチェック
             if (isset($conditions['day_type']) && $conditions['day_type'] !== $dayType) {
                 return false;
+            }
+
+            // 時間区分条件のチェック（R6改定: 計画上の支援時間で判定）
+            if (isset($conditions['time_category'])) {
+                if ($timeCategory === null || (int) $conditions['time_category'] !== $timeCategory) {
+                    return false;
+                }
             }
 
             // 定員条件のチェック
@@ -124,6 +135,11 @@ class ServiceCodeResolver
     {
         $conditions = $code->conditions ?? [];
 
+        // 率ベース加算（処遇改善加算等）は日次ではなく月次で別計算
+        if (!empty($conditions['rate_based'])) {
+            return false;
+        }
+
         // 欠席時対応加算: 連絡ありの欠席のみ
         if (isset($conditions['absent_with_notice']) && $conditions['absent_with_notice']) {
             return $record->status === 'absent_notice';
@@ -149,6 +165,29 @@ class ServiceCodeResolver
 
         // 条件が無い、または一般的な加算はデフォルト適用
         return true;
+    }
+
+    /**
+     * 計画上の支援時間（分）から R6 の時間区分を算出
+     *
+     *   区分1: 30分以上1時間30分以下
+     *   区分2: 1時間30分超3時間以下
+     *   区分3: 3時間超5時間以下（休業日・児童発達支援）
+     *   30分未満は原則算定不可（市町村が認めた場合を除く）→ null
+     */
+    private function resolveTimeCategory(?int $plannedMinutes): ?int
+    {
+        if ($plannedMinutes === null) {
+            return null;
+        }
+
+        return match (true) {
+            $plannedMinutes < 30   => null,
+            $plannedMinutes <= 90  => 1,
+            $plannedMinutes <= 180 => 2,
+            $plannedMinutes <= 300 => 3,
+            default                => 3, // 5時間超は区分3＋延長支援加算で対応
+        };
     }
 
     /**

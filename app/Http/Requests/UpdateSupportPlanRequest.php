@@ -21,6 +21,10 @@ class UpdateSupportPlanRequest extends FormRequest
             'program_content'         => ['nullable', 'string', 'max:3000'],
             'guardian_agreement'      => ['boolean'],
             'guardian_agreement_date' => ['nullable', 'date'],
+            'planned_start_time'      => ['nullable', 'date_format:H:i'],
+            'planned_end_time'        => ['nullable', 'date_format:H:i', 'after:planned_start_time'],
+            'planned_duration_minutes'=> ['nullable', 'integer', 'min:0', 'max:720'],
+            'five_domains'            => ['nullable', 'array'],
         ];
     }
 }

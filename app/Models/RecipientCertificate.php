@@ -25,6 +25,9 @@ class RecipientCertificate extends Model
         'cap_managing_facility_id',
         'service_type',
         'municipality_code',
+        'is_free_of_charge',
+        'reduction_type',
+        'guardian_name',
         'disability_support_category',
         'issue_date',
         'status',
@@ -36,6 +39,7 @@ class RecipientCertificate extends Model
         'valid_to'                 => 'date',
         'issue_date'               => 'date',
         'is_cap_management_target' => 'boolean',
+        'is_free_of_charge'        => 'boolean',
     ];
 
     public function child(): BelongsTo

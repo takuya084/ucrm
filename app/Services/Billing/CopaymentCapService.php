@@ -41,7 +41,7 @@ class CopaymentCapService
 
         $managingFacilityId = $certificate->cap_managing_facility_id ?? $facilityId;
 
-        return DB::transaction(function () use ($child, $yearMonth, $managingFacilityId, $capAmount) {
+        return DB::transaction(function () use ($child, $yearMonth, $managingFacilityId, $capAmount, $certificate) {
             $existing = CopaymentCapManagement::where([
                 'child_id' => $child->id,
                 'year_month' => $yearMonth,
@@ -135,12 +135,21 @@ class CopaymentCapService
                 $this->allocateAmongFacilities($management, $capAmount, $totalCopayment, $managingFacilityId);
             }
 
+            // 自社請求明細へ上限管理結果を反映（国保連明細書の上限管理欄）
+            $this->syncBillingDetails($management->fresh('details'));
+
             return $management->load('details');
         });
     }
 
     /**
-     * 複数事業所間での上限額按分
+     * 複数事業所間での上限額調整
+     *
+     * 既定は国保連の上限額管理事務の標準である「管理事業所優先充当方式」:
+     *   1. 管理事業所が自事業所の利用者負担を上限額まで優先的に充当
+     *   2. 残額を協力事業所（明細登録順）に順次充当
+     * 自治体が按分方式を指定している場合は config(billing.cap_allocation_method)
+     * を 'proportional' に設定する。
      */
     private function allocateAmongFacilities(
         CopaymentCapManagement $management,
@@ -148,7 +157,49 @@ class CopaymentCapService
         int $totalCopayment,
         int $managingFacilityId
     ): void {
-        $details = $management->details;
+        $details = $management->details()->orderBy('id')->get();
+
+        if (config('billing.cap_allocation_method', 'priority') === 'proportional') {
+            $this->allocateProportionally($details, $capAmount, $totalCopayment, $managingFacilityId);
+        } else {
+            $this->allocateByPriority($details, $capAmount, $managingFacilityId);
+        }
+
+        $management->update([
+            'total_copayment'     => $totalCopayment,
+            'adjusted_copayment'  => $capAmount,
+            'management_result'   => '3',
+            'status'              => in_array($management->status, ['sent','received','confirmed']) ? $management->status : 'created',
+        ]);
+    }
+
+    /** 管理事業所優先充当方式（標準） */
+    private function allocateByPriority($details, int $capAmount, int $managingFacilityId): void
+    {
+        $remaining = $capAmount;
+
+        // 1. 管理事業所へ優先充当
+        $managingDetail = $details->firstWhere('facility_id', $managingFacilityId);
+        if ($managingDetail) {
+            $adjusted = min($remaining, (int) $managingDetail->copayment_amount);
+            $managingDetail->update(['adjusted_amount' => $adjusted]);
+            $remaining -= $adjusted;
+        }
+
+        // 2. 協力事業所へ残額を順次充当
+        foreach ($details as $detail) {
+            if ($detail->facility_id === $managingFacilityId) {
+                continue;
+            }
+            $adjusted = min($remaining, (int) $detail->copayment_amount);
+            $detail->update(['adjusted_amount' => $adjusted]);
+            $remaining -= $adjusted;
+        }
+    }
+
+    /** 比例按分方式（自治体指定がある場合のみ） */
+    private function allocateProportionally($details, int $capAmount, int $totalCopayment, int $managingFacilityId): void
+    {
         $allocatedTotal = 0;
 
         foreach ($details as $detail) {
@@ -167,13 +218,43 @@ class CopaymentCapService
         if ($managingDetail) {
             $managingDetail->update(['adjusted_amount' => $capAmount - $allocatedTotal]);
         }
+    }
 
-        $management->update([
-            'total_copayment'     => $totalCopayment,
-            'adjusted_copayment'  => $capAmount,
-            'management_result'   => '3',
-            'status'              => in_array($management->status, ['sent','received','confirmed']) ? $management->status : 'created',
-        ]);
+    /**
+     * 上限管理結果を自社の請求明細（billing_details）へ反映する。
+     * 国保連明細書の「上限額管理事業所番号・管理結果・管理結果額」欄の元データ。
+     * 確定済みの明細は変更しない。
+     */
+    public function syncBillingDetails(CopaymentCapManagement $management): void
+    {
+        $managingFacilityCode = Facility::find($management->managing_facility_id)?->facility_code;
+
+        foreach ($management->details as $capDetail) {
+            if ($capDetail->billable_facility_type !== Facility::class || !$capDetail->facility_id) {
+                continue;
+            }
+
+            $billingDetail = BillingDetail::where('child_id', $management->child_id)
+                ->where('status', 'draft')
+                ->whereHas('billingPeriod', function ($q) use ($management, $capDetail) {
+                    $q->where('year_month', $management->year_month)
+                      ->where('facility_id', $capDetail->facility_id);
+                })
+                ->first();
+
+            if (!$billingDetail) {
+                continue;
+            }
+
+            $adjusted = (int) $capDetail->adjusted_amount;
+            $billingDetail->update([
+                'cap_management_result_code' => $management->management_result,
+                'cap_managing_facility_code' => $managingFacilityCode,
+                'cap_result_amount'          => $adjusted,
+                'copayment_cap_applied'      => $adjusted,
+                'insurance_amount'           => $billingDetail->total_amount - $adjusted,
+            ]);
+        }
     }
 
     /**
@@ -195,10 +276,12 @@ class CopaymentCapService
                 'adjusted_copayment' => $totalCopayment,
                 'management_result'  => $details->count() > 1 ? '2' : '1',
             ]);
+            $this->syncBillingDetails($management->fresh('details'));
             return;
         }
 
         $this->allocateAmongFacilities($management, $capAmount, $totalCopayment, $managingFacilityId);
+        $this->syncBillingDetails($management->fresh('details'));
     }
 
     /**
