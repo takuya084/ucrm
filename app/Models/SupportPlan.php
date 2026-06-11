@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SupportPlan extends Model
 {
-    use HasFactory, \App\Models\Concerns\Auditable;
+    use HasFactory, SoftDeletes, \App\Models\Concerns\Auditable;
 
     protected $fillable = [
         'child_id',
@@ -29,6 +30,9 @@ class SupportPlan extends Model
         'planned_end_time',
         'planned_duration_minutes',
         'five_domains',
+        'status',
+        'approved_by',
+        'approved_at',
     ];
 
     protected $casts = [
@@ -38,7 +42,23 @@ class SupportPlan extends Model
         'guardian_agreement'      => 'boolean',
         'guardian_agreement_date' => 'date',
         'five_domains'            => 'array',
+        'approved_at'             => 'datetime',
     ];
+
+    public function meetings(): HasMany
+    {
+        return $this->hasMany(SupportPlanMeeting::class);
+    }
+
+    public function consents(): HasMany
+    {
+        return $this->hasMany(SupportPlanConsent::class);
+    }
+
+    public function approvedByStaff(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'approved_by');
+    }
 
     public function child(): BelongsTo
     {

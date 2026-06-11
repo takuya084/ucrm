@@ -54,12 +54,16 @@
 
 ## P3: 〜6ヶ月（実地指導・監査対応）
 
-- [ ] P3-1: アセスメント記録（assessments テーブル）
-- [ ] P3-2: 個別支援計画プロセス（担当者会議録・原案承認フロー・交付記録）
-- [ ] P3-3: 保護者同意の電子署名（同意ログ・タイムスタンプ・改ざん防止ハッシュ）
-- [ ] P3-4: 虐待防止・身体拘束適正化の記録（委員会・研修・身体拘束記録）
-- [ ] P3-5: BCP・安全計画・自己評価結果公表の管理
-- [ ] P3-6: 記録の保存期間管理（retention_until・削除防止・訂正履歴）
+- [x] P3-1: アセスメント記録（assessments テーブル + モデル）※入力UIは今後
+- [x] P3-2: 個別支援計画プロセス（support_plan_meetings / 承認フロー status・approved_by /
+      交付記録 delivered_at）※入力UIは今後
+- [x] P3-3: 保護者同意の電子署名の記録基盤（support_plan_consents: 署名データ・IP・
+      文書SHA-256ハッシュ・同意/交付日時）※署名取得UIは今後
+- [x] P3-4: 虐待防止・身体拘束適正化の記録（prevention_committees / physical_restraint_records）※入力UIは今後
+- [x] P3-5: BCP・安全計画・自己評価結果公表の管理（business_continuity_plans / safety_plans /
+      self_evaluations）※入力UIは今後
+- [x] P3-6: 記録の改ざん防止 — 支援記録・モニタリング・個別支援計画をソフトデリート化し
+      変更は監査ログに記録。保存期限（retention_until）による自動アーカイブは今後
 
 ## P4: 強化
 
