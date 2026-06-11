@@ -15,7 +15,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // 保持期限を過ぎた請求CSV/PDF/ZIPの削除（個人情報の保持最小化）
+        $schedule->command('billing:cleanup-exports')->dailyAt('03:30');
     }
 
     /**

@@ -3,9 +3,6 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\ItemController;
-use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ChildrenController;
 use App\Http\Controllers\RecipientCertificateController;
@@ -263,16 +260,6 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function 
     Route::post('ai-draft/support-plan/{child}', [AiDraftController::class, 'supportPlan'])->name('ai-draft.support-plan');
     Route::post('ai-draft/monitoring/{child}',   [AiDraftController::class, 'monitoring'])  ->name('ai-draft.monitoring');
 });
-
-Route::resource('items', ItemController::class)
-->middleware(['auth', 'verified']);
-
-Route::resource('customers', CustomerController::class)
-->middleware(['auth', 'verified']);
-
-Route::resource('purchases', PurchaseController::class)
-->middleware(['auth', 'verified']);
-
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [

@@ -31,6 +31,8 @@
       無効化済みの自己登録を前提とした旧 RegistrationTest を現仕様に合わせ更新。
       CopaymentCapService・CSV出力のテストは P2 の方式見直しと併せて追加予定
 - [ ] P1-4: Laravel 11/12 + PHP 8.3 への移行（Sanctum 含む）
+      ※フロント（Inertia 0.6→1.x）全ページに影響する大規模作業のため専用ブランチで実施。
+      手順は docs/upgrade-plan.md に整理済み。composer audit で12件の勧告あり＝早期実施推奨
 - [x] P1-5: 出欠記録の物理削除廃止（SoftDeletes + 請求確定済み月の編集ガード）
       ※出欠一括保存・実績一括更新・Webhook の3経路すべてに適用。要 `php artisan migrate`
 
@@ -67,10 +69,20 @@
 
 ## P4: 強化
 
-- [ ] P4-1: 要配慮個人情報の暗号化（encrypted cast）
-- [ ] P4-2: 職員アカウントの2FA
-- [ ] P4-3: 請求CSV/PDF 出力ファイルの保持期限付き管理
-- [ ] P4-4: 同日複数サービス対応（usage_records ユニーク制約の見直し）
-- [ ] P4-5: uCRM残骸の削除（Customer/Item/Purchase/Analysis/InertiaTest）
-- [ ] P4-6: セキュリティヘッダ（CSP 等）
-- [ ] P4-7: facility スコープのグローバルスコープ化（BelongsToFacility trait）
+- [x] P4-1: 要配慮個人情報の暗号化 — disability_note / allergy_note / care_note を
+      EncryptedOrPlainText キャストで暗号化（平文フォールバック付き）。
+      既存データは `php artisan app:encrypt-sensitive-data` で一括暗号化（本番で要実行）
+- [ ] P4-2: 職員アカウントの2FA — Laravel Fortify 等のパッケージ導入が必要。
+      P1-4 のフレームワーク更新後に実施推奨
+- [x] P4-3: 出力ファイルの保持期限付き管理（billing:cleanup-exports を毎日03:30に実行、
+      保持日数は BILLING_EXPORT_RETENTION_DAYS で設定。本番サーバーで cron の
+      `schedule:run` が動いていることを要確認）
+- [ ] P4-4: 同日複数サービス対応 — unique(child_id,date) の変更は出欠保存・Webhook・
+      請求計算の updateOrCreate キー全体に波及するため、要件確定後に専用対応
+- [x] P4-5: uCRM残骸のルート削除（items/customers/purchases リソース、api/analysis、
+      api/searchCustomers）。コントローラ/ページ/モデル本体のファイル削除は任意の後続作業
+- [x] P4-6: セキュリティヘッダ（X-Frame-Options/nosniff/Referrer-Policy/HSTS）。
+      CSP は Vite ビルドとの調整が必要なため未設定
+- [ ] P4-7: facility スコープのグローバルスコープ化 — 全クエリの挙動が変わる
+      大規模リファクタのため専用ブランチで実施（現状は各コントローラの手動チェックで担保、
+      P0-2/P0-3 で漏れは修正済み）
