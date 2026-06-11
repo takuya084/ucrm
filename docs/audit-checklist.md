@@ -29,7 +29,8 @@
       無効化済みの自己登録を前提とした旧 RegistrationTest を現仕様に合わせ更新。
       CopaymentCapService・CSV出力のテストは P2 の方式見直しと併せて追加予定
 - [ ] P1-4: Laravel 11/12 + PHP 8.3 への移行（Sanctum 含む）
-- [ ] P1-5: 出欠記録の物理削除廃止（SoftDeletes + 請求確定済み月の編集ガード）
+- [x] P1-5: 出欠記録の物理削除廃止（SoftDeletes + 請求確定済み月の編集ガード）
+      ※出欠一括保存・実績一括更新・Webhook の3経路すべてに適用。要 `php artisan migrate`
 
 ## P2: 〜3ヶ月（請求の制度適合 — 完了まで実運用請求は不可）
 

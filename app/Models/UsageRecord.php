@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class UsageRecord extends Model
 {
-    use HasFactory, \App\Models\Concerns\Auditable;
+    use HasFactory, SoftDeletes, \App\Models\Concerns\Auditable;
 
     protected $fillable = [
         'child_id',

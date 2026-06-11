@@ -91,20 +91,38 @@ class UsageRecordController extends Controller
         $staffId    = auth()->user()->staff?->id;
         $dateStr    = \Carbon\Carbon::parse($date)->toDateString();
 
+        // 請求確定済み・提出済みの月の出欠記録は変更不可（請求の根拠データ保護）
+        $yearMonth = \Carbon\Carbon::parse($dateStr)->format('Y-m');
+        $lockedPeriod = \App\Models\BillingPeriod::where('facility_id', $facilityId)
+            ->where('year_month', $yearMonth)
+            ->first();
+
+        if ($lockedPeriod?->isLocked()) {
+            $message = "{$yearMonth}の請求は{$lockedPeriod->status_label}のため、出欠記録を変更できません。過誤申立・返戻処理を行ってください。";
+            if (! $request->header('X-Inertia')) {
+                return response()->json(['error' => $message], 423);
+            }
+            session()->flash('message', $message);
+            session()->flash('status', 'error');
+            return back();
+        }
+
         $savedIds = [];
 
         DB::transaction(function () use ($request, $dateStr, $facilityId, $staffId, &$savedIds) {
             $sentChildIds = collect($request->records)->pluck('child_id')->toArray();
 
-            // 1. リストから削除（バツ印）された児童の既存レコードをDBから物理削除
+            // 1. リストから削除（バツ印）された児童の既存レコードをソフトデリート
+            //    （出欠記録は保存義務対象のため物理削除しない）
             UsageRecord::where('date', $dateStr)
                 ->where('facility_id', $facilityId)
                 ->whereNotIn('child_id', $sentChildIds)
-                ->delete();
+                ->get()
+                ->each(fn ($record) => $record->delete());
 
-            // 2. 残りの児童を更新または作成
+            // 2. 残りの児童を更新または作成（過去にソフトデリートした記録があれば復活させる）
             foreach ($request->records as $rec) {
-                $ur = UsageRecord::updateOrCreate(
+                $ur = UsageRecord::withTrashed()->updateOrCreate(
                     ['child_id' => $rec['child_id'], 'date' => $dateStr],
                     [
                         'facility_id'    => $facilityId,
@@ -121,6 +139,9 @@ class UsageRecordController extends Controller
                         'service_type'    => $rec['service_type'] ?? null,
                     ]
                 );
+                if ($ur->trashed()) {
+                    $ur->restore();
+                }
                 $savedIds[$rec['child_id']] = $ur->id;
             }
         });

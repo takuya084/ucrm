@@ -69,8 +69,8 @@ class YoyakuWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // created / updated
-        UsageRecord::updateOrCreate(
+        // created / updated（ソフトデリート済みの記録がある日はユニーク制約衝突を避けるため復活させる）
+        $record = UsageRecord::withTrashed()->updateOrCreate(
             [
                 'facility_id' => $facility->id,
                 'child_id'    => $child->id,
@@ -83,6 +83,9 @@ class YoyakuWebhookController extends Controller
                 'check_out_time' => $payload['dropoff_time'] ?? null,
             ],
         );
+        if ($record->trashed()) {
+            $record->restore();
+        }
 
         return response()->json(['ok' => true]);
     }

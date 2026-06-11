@@ -85,19 +85,44 @@ class DailyServiceRecordController extends Controller
             'records.*.service_type'           => 'nullable|in:houday,jidou',
         ]);
 
+        $facilityId = $this->facilityId();
+
+        // 請求確定済み・提出済みの月の実績は変更不可（請求の根拠データ保護）
+        $lockedMonths = \App\Models\BillingPeriod::where('facility_id', $facilityId)
+            ->whereIn('status', ['confirmed', 'submitted', 'completed'])
+            ->pluck('year_month')
+            ->all();
+
+        $skipped = 0;
         foreach ($validated['records'] as $rec) {
-            UsageRecord::where('id', $rec['usage_record_id'])
-                ->where('facility_id', $this->facilityId())
-                ->update([
-                    'check_in_time'  => $rec['check_in_time'],
-                    'check_out_time' => $rec['check_out_time'],
-                    'is_school_day'  => $rec['is_school_day'],
-                    'service_type'   => $rec['service_type'] ?? null,
-                ]);
+            $record = UsageRecord::where('id', $rec['usage_record_id'])
+                ->where('facility_id', $facilityId)
+                ->first();
+
+            if (!$record) {
+                continue;
+            }
+
+            if (in_array($record->date->format('Y-m'), $lockedMonths, true)) {
+                $skipped++;
+                continue;
+            }
+
+            $record->update([
+                'check_in_time'  => $rec['check_in_time'],
+                'check_out_time' => $rec['check_out_time'],
+                'is_school_day'  => $rec['is_school_day'],
+                'service_type'   => $rec['service_type'] ?? null,
+            ]);
         }
 
-        session()->flash('message', '実績記録を更新しました。');
-        session()->flash('status', 'success');
+        if ($skipped > 0) {
+            session()->flash('message', "実績記録を更新しました（請求確定済みの {$skipped} 件はスキップ）。");
+            session()->flash('status', 'warning');
+        } else {
+            session()->flash('message', '実績記録を更新しました。');
+            session()->flash('status', 'success');
+        }
 
         return back();
     }
