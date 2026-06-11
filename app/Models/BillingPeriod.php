@@ -62,4 +62,12 @@ class BillingPeriod extends Model
     {
         return $this->status === 'confirmed';
     }
+
+    /**
+     * 確定後（確定済・提出済・完了）は再計算による明細の破壊を許さない
+     */
+    public function isLocked(): bool
+    {
+        return in_array($this->status, ['confirmed', 'submitted', 'completed'], true);
+    }
 }

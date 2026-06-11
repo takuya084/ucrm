@@ -12,7 +12,7 @@
 - [x] P0-2: 出欠一括登録のクロステナントIDOR修正（`BulkStoreUsageRecordRequest` の child_id 施設スコープ）
 - [x] P0-3: 受給者証の `external_facility_ids` 施設スコープ修正（Store/Update 両リクエスト）
 - [x] P0-4: Yoyaku Webhook の HMAC 認証必須化（フェイルクローズ）
-- [ ] P0-5: 確定済み請求期間の再計算ガード（確定・送信済みデータの破壊防止）
+- [x] P0-5: 確定済み請求期間の再計算ガード（確定・送信済みデータの破壊防止）
 - [ ] P0-6: `barryvdh/laravel-debugbar` を require-dev へ移動
 - [ ] P0-7: `.env.example` の本番向け既定値整備（SESSION_SECURE_COOKIE 等の注意書き）
 

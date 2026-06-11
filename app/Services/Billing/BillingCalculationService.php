@@ -2,6 +2,7 @@
 
 namespace App\Services\Billing;
 
+use App\Exceptions\BillingPeriodLockedException;
 use App\Models\BillingDetail;
 use App\Models\BillingDetailLine;
 use App\Models\BillingPeriod;
@@ -29,6 +30,17 @@ class BillingCalculationService
     public function calculateMonthlyBilling(int $facilityId, string $yearMonth): BillingPeriod
     {
         $facility = Facility::findOrFail($facilityId);
+
+        // 確定済み・提出済みの期間は再計算で明細を破壊しない（過誤・返戻処理を経ること）
+        $existing = BillingPeriod::where('facility_id', $facility->id)
+            ->where('year_month', $yearMonth)
+            ->first();
+
+        if ($existing && $existing->isLocked()) {
+            throw new BillingPeriodLockedException(
+                "{$yearMonth} は{$existing->status_label}のため再計算できません。過誤申立・返戻処理を行ってください。"
+            );
+        }
 
         return DB::transaction(function () use ($facility, $yearMonth) {
             // 請求期間を取得または作成

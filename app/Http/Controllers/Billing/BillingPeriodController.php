@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Billing;
 
+use App\Exceptions\BillingPeriodLockedException;
 use App\Http\Controllers\Controller;
 use App\Models\BillingExport;
 use App\Models\BillingPeriod;
@@ -133,7 +134,13 @@ class BillingPeriodController extends Controller
         $facilityId = $this->facilityId();
         $yearMonth  = $request->year_month;
 
-        $period = $this->calculationService->calculateMonthlyBilling($facilityId, $yearMonth);
+        try {
+            $period = $this->calculationService->calculateMonthlyBilling($facilityId, $yearMonth);
+        } catch (BillingPeriodLockedException $e) {
+            session()->flash('message', $e->getMessage());
+            session()->flash('status', 'error');
+            return back();
+        }
 
         session()->flash('message', "{$yearMonth}の請求計算が完了しました。");
         session()->flash('status', 'success');
