@@ -34,13 +34,15 @@ class Child extends Model
         'contract_status',
         'memo',
         'yoyaku_user_id',
+        'ai_draft_consented_at',
     ];
 
     protected $casts = [
-        'birthdate'           => 'date',
-        'pickup_required'     => 'boolean',
-        'contract_start_date' => 'date',
-        'contract_end_date'   => 'date',
+        'birthdate'             => 'date',
+        'pickup_required'       => 'boolean',
+        'contract_start_date'   => 'date',
+        'contract_end_date'     => 'date',
+        'ai_draft_consented_at' => 'datetime',
     ];
 
     public function facility(): BelongsTo

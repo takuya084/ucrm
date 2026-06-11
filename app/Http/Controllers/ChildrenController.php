@@ -42,7 +42,8 @@ class ChildrenController extends Controller
     /** 登録処理 */
     public function store(StoreChildRequest $request)
     {
-        $data = $request->safe()->except('schedule_days');
+        $data = $request->safe()->except(['schedule_days', 'ai_draft_consent']);
+        $data['ai_draft_consented_at'] = $request->boolean('ai_draft_consent') ? now() : null;
         $child = Child::create(array_merge($data, ['facility_id' => $this->facilityId()]));
 
         // 利用曜日の一括登録
@@ -92,7 +93,12 @@ class ChildrenController extends Controller
     public function update(UpdateChildRequest $request, Child $child)
     {
         abort_if($child->facility_id !== $this->facilityId(), 403);
-        $child->update($request->validated());
+        $data = $request->safe()->except('ai_draft_consent');
+        // 同意済みの日時は維持し、同意の取り下げは null に戻す
+        $data['ai_draft_consented_at'] = $request->boolean('ai_draft_consent')
+            ? ($child->ai_draft_consented_at ?? now())
+            : null;
+        $child->update($data);
 
         return to_route('children.show', $child)
             ->with(['message' => '情報を更新しました。', 'status' => 'success']);

@@ -28,6 +28,7 @@ class StoreChildRequest extends FormRequest
             'contract_start_date' => ['nullable', 'date'],
             'contract_status'     => ['required', 'in:active,suspended,ended'],
             'memo'                => ['nullable', 'string', 'max:2000'],
+            'ai_draft_consent'    => ['nullable', 'boolean'],
             'yoyaku_user_id'      => ['nullable', 'integer', 'min:1'],
             'schedule_days'       => ['nullable', 'array'],
             'schedule_days.*'     => ['in:mon,tue,wed,thu,fri,sat'],

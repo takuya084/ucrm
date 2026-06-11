@@ -29,6 +29,7 @@ class UpdateChildRequest extends FormRequest
             'contract_end_date'   => ['nullable', 'date', 'after_or_equal:contract_start_date'],
             'contract_status'     => ['required', 'in:active,suspended,ended'],
             'memo'                => ['nullable', 'string', 'max:2000'],
+            'ai_draft_consent'    => ['nullable', 'boolean'],
             'yoyaku_user_id'      => ['nullable', 'integer', 'min:1'],
         ];
     }

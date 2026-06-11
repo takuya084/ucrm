@@ -89,9 +89,10 @@ EOT;
     ): string {
         $conditionMap = ['good' => '良好', 'normal' => '普通', 'poor' => '不調'];
 
+        // 仮名化: 実名は外部APIへ送信しない（要配慮個人情報の保護）
         $lines = [];
         $lines[] = "【児童情報】";
-        $lines[] = "名前：{$child->name}、学年：{$child->grade}";
+        $lines[] = "対象児童（以下「本児」）、学年：{$child->grade}";
         $lines[] = "障がい種別：" . ($child->disability_type ?: 'なし');
         $lines[] = "配慮事項：" . ($child->care_note ?: 'なし');
 
@@ -126,7 +127,7 @@ EOT;
             $lines[] = "課題：{$monitoring->challenges}";
         }
 
-        return implode("\n", $lines);
+        return $this->scrubName($child, implode("\n", $lines));
     }
 
     private function buildMonitoringPrompt(
@@ -137,9 +138,10 @@ EOT;
     ): string {
         $conditionMap = ['good' => '良好', 'normal' => '普通', 'poor' => '不調'];
 
+        // 仮名化: 実名は外部APIへ送信しない（要配慮個人情報の保護）
         $lines = [];
         $lines[] = "【児童情報】";
-        $lines[] = "名前：{$child->name}、学年：{$child->grade}";
+        $lines[] = "対象児童（以下「本児」）、学年：{$child->grade}";
         $lines[] = "障がい種別：" . ($child->disability_type ?: 'なし');
 
         if ($plan) {
@@ -172,7 +174,29 @@ EOT;
             }
         }
 
-        return implode("\n", $lines);
+        return $this->scrubName($child, implode("\n", $lines));
+    }
+
+    /**
+     * プロンプト中に支援記録等の自由記述経由で混入した児童の実名を「本児」に置換する。
+     * 姓名の分かち書きには対応できないため、記録入力時から実名を書かない運用を推奨。
+     */
+    private function scrubName(Child $child, string $text): string
+    {
+        $tokens = array_filter([
+            $child->name,
+            $child->name_kana,
+            str_replace(['　', ' '], '', (string) $child->name),
+            str_replace(['　', ' '], '', (string) $child->name_kana),
+        ]);
+
+        foreach (array_unique($tokens) as $token) {
+            if (mb_strlen($token) >= 2) {
+                $text = str_replace($token, '本児', $text);
+            }
+        }
+
+        return $text;
     }
 
     private function callApi(string $systemPrompt, string $userPrompt): ?array
@@ -183,8 +207,7 @@ EOT;
         }
 
         try {
-            $response = Http::withoutVerifying()
-            ->withHeaders([
+            $response = Http::withHeaders([
                 'Authorization' => "Bearer {$this->apiKey}",
                 'Content-Type'  => 'application/json',
             ])

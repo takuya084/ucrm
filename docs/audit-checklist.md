@@ -18,7 +18,8 @@
 
 ## P1: 〜1ヶ月（法令・基盤リスク）
 
-- [ ] P1-1: OpenAI 送信データの仮名化（実名除去）＋ AI 利用同意フラグ（児童単位）
+- [x] P1-1: OpenAI 送信データの仮名化（実名除去）＋ AI 利用同意フラグ（児童単位）
+      ※要実行: `php artisan migrate`（Windows/XAMPP側）と `npm run build`。TLS検証無効化（withoutVerifying）も同時に修正
 - [ ] P1-2: 監査ログ（audit_logs）導入 — 個人情報の閲覧・変更・出力の記録
 - [ ] P1-3: 請求エンジンのテスト整備（BillingCalculationService / CopaymentCapService / ServiceCodeResolver）
 - [ ] P1-4: Laravel 11/12 + PHP 8.3 への移行（Sanctum 含む）

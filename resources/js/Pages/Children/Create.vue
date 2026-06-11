@@ -24,6 +24,7 @@ const form = reactive({
   contract_start_date: '',
   contract_status: 'active',
   memo: '',
+  ai_draft_consent: false,
   schedule_days: [],
 })
 
@@ -185,6 +186,18 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             <section>
               <label :class="labelClass">メモ</label>
               <textarea v-model="form.memo" :class="inputClass" rows="3" placeholder="その他の連絡事項など" />
+            </section>
+
+            <!-- AI利用同意 -->
+            <section>
+              <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">AI下書き生成の利用同意</h3>
+              <label class="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" v-model="form.ai_draft_consent" class="mt-0.5 rounded border-gray-300" />
+                <span>
+                  個別支援計画・モニタリング記録のAI下書き生成（外部AIサービスへの支援記録送信）について、保護者の同意を取得済み
+                  <span class="block text-xs text-gray-400 mt-1">※同意書等で保護者の同意を得てからチェックしてください。未チェックの場合、この児童のAI下書き機能は利用できません。</span>
+                </span>
+              </label>
             </section>
 
             <!-- ボタン -->
