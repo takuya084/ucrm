@@ -35,13 +35,18 @@ class YoyakuWebhookController extends Controller
             return response()->json(['ignored' => true]);
         }
 
-        // HMAC 署名検証
-        if ($facility->yoyaku_webhook_secret) {
-            $expected = hash_hmac('sha256', $body, $facility->yoyaku_webhook_secret);
-            $received = $request->header('X-Yoyaku-Signature', '');
-            if (!hash_equals($expected, $received)) {
-                return response()->json(['error' => 'invalid signature'], 401);
-            }
+        // HMAC 署名検証（secret 未設定の施設はフェイルクローズで拒否。
+        // 出欠記録は請求の元データのため、未認証の書き込みは受け付けない）
+        if (!$facility->yoyaku_webhook_secret) {
+            Log::warning('YoyakuWebhook: webhook secret 未設定のため拒否', ['facility_id' => $facility->id]);
+            return response()->json(['error' => 'webhook secret not configured'], 403);
+        }
+
+        $expected = hash_hmac('sha256', $body, $facility->yoyaku_webhook_secret);
+        $received = $request->header('X-Yoyaku-Signature', '');
+        if (!hash_equals($expected, $received)) {
+            Log::warning('YoyakuWebhook: 署名不一致', ['facility_id' => $facility->id, 'ip' => $request->ip()]);
+            return response()->json(['error' => 'invalid signature'], 401);
         }
 
         $child = Child::where('facility_id', $facility->id)
