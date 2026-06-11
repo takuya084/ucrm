@@ -3,11 +3,9 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\InertiaTestController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\PurchaseController;
-use App\Http\Controllers\AnalysisController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ChildrenController;
 use App\Http\Controllers\RecipientCertificateController;
@@ -41,8 +39,6 @@ use App\Http\Controllers\Billing\ErrorClaimController;
 use App\Http\Controllers\Billing\ClaimReturnController;
 use App\Http\Controllers\Billing\FacilityServiceSettingController;
 use App\Http\Controllers\Billing\MonthlyExpenseController;
-
-Route::get('analysis', [AnalysisController::class, 'index'])->name('analysis');
 
 // 施設設定（管理者のみ）
 Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
@@ -79,6 +75,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::get('shift-labels',                      [ShiftLabelController::class, 'index'])  ->name('shift-labels.index');
     Route::post('shift-labels',                     [ShiftLabelController::class, 'store'])  ->name('shift-labels.store');
+    Route::patch('shift-labels/{shiftLabel}',       [ShiftLabelController::class, 'update']) ->name('shift-labels.update');
     Route::delete('shift-labels/{shiftLabel}',      [ShiftLabelController::class, 'destroy'])->name('shift-labels.destroy');
 });
 
@@ -275,25 +272,6 @@ Route::resource('customers', CustomerController::class)
 
 Route::resource('purchases', PurchaseController::class)
 ->middleware(['auth', 'verified']);
-
-
-Route::get('/inertia-test', function () {
-    return Inertia::render('InertiaTest');
-    }
-);
-
-Route::get('/component-test', function () {
-    return Inertia::render('ComponentTest');
-    }
-);
-
-
-Route::get('/inertia/index', [InertiaTestController::class, 'index'])->name('inertia.index');
-Route::get('/inertia/create', [InertiaTestController::class, 'create'])->name('inertia.create');
-Route::post('/inertia', [InertiaTestController::class, 'store'])->name('inertia.store');
-Route::get('/inertia/show/{id}', [InertiaTestController::class, 'show'])->name('inertia.show');
-Route::delete('/inertia/{id}', [InertiaTestController::class, 'delete'])->name('inertia.delete');
-
 
 
 Route::get('/', function () {
