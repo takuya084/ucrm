@@ -2,7 +2,7 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/inertia-vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
 
 const props = defineProps({
@@ -16,6 +16,14 @@ const form = reactive({
   work_hours: null,
 })
 
+const editingId = ref(null)
+const editForm = reactive({
+  name: '',
+  is_off: false,
+  display_order: 0,
+  work_hours: null,
+})
+
 const store = () => {
   Inertia.post(route('shift-labels.store'), form, {
     onSuccess: () => {
@@ -23,6 +31,27 @@ const store = () => {
       form.is_off = false
       form.display_order = 0
       form.work_hours = null
+    },
+  })
+}
+
+const startEdit = (label) => {
+  editingId.value = label.id
+  editForm.name = label.name
+  editForm.is_off = !!label.is_off
+  editForm.display_order = label.display_order
+  editForm.work_hours = label.work_hours != null ? Number(label.work_hours) : null
+}
+
+const cancelEdit = () => {
+  editingId.value = null
+}
+
+const update = (label) => {
+  Inertia.patch(route('shift-labels.update', label.id), editForm, {
+    preserveScroll: true,
+    onSuccess: () => {
+      editingId.value = null
     },
   })
 }
@@ -63,26 +92,65 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
               </tr>
             </thead>
             <tbody>
-              <tr v-for="l in labels" :key="l.id" class="border-b">
-                <td class="py-2 px-2">
-                  <span :class="l.is_off ? 'text-gray-500' : 'text-gray-900'">{{ l.name }}</span>
-                </td>
-                <td class="py-2 px-2 text-center">
-                  <span v-if="l.is_off" class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">休み系</span>
-                </td>
-                <td class="py-2 px-2 text-center">
-                  <span v-if="l.is_off" class="text-gray-300">—</span>
-                  <span v-else-if="l.work_hours != null" class="text-gray-700">{{ l.work_hours }} h</span>
-                  <span v-else class="text-amber-500 text-xs" title="パート職員の人件費計算に必要">未設定</span>
-                </td>
-                <td class="py-2 px-2 text-center text-gray-500">{{ l.display_order }}</td>
-                <td class="py-2 px-2 text-right">
-                  <button v-if="!isProtected(l)" @click="destroy(l)"
-                    class="text-xs px-2 py-1 border border-red-200 text-red-400 rounded hover:bg-red-50">
-                    削除
-                  </button>
-                </td>
-              </tr>
+              <template v-for="l in labels" :key="l.id">
+                <!-- 通常表示行 -->
+                <tr v-if="editingId !== l.id" class="border-b">
+                  <td class="py-2 px-2">
+                    <span :class="l.is_off ? 'text-gray-500' : 'text-gray-900'">{{ l.name }}</span>
+                  </td>
+                  <td class="py-2 px-2 text-center">
+                    <span v-if="l.is_off" class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">休み系</span>
+                  </td>
+                  <td class="py-2 px-2 text-center">
+                    <span v-if="l.is_off" class="text-gray-300">—</span>
+                    <span v-else-if="l.work_hours != null" class="text-gray-700">{{ l.work_hours }} h</span>
+                    <span v-else class="text-amber-500 text-xs" title="パート職員の人件費計算に必要">未設定</span>
+                  </td>
+                  <td class="py-2 px-2 text-center text-gray-500">{{ l.display_order }}</td>
+                  <td class="py-2 px-2 text-right whitespace-nowrap">
+                    <button @click="startEdit(l)"
+                      class="text-xs px-2 py-1 border border-blue-200 text-blue-500 rounded hover:bg-blue-50 mr-1">
+                      編集
+                    </button>
+                    <button v-if="!isProtected(l)" @click="destroy(l)"
+                      class="text-xs px-2 py-1 border border-red-200 text-red-400 rounded hover:bg-red-50">
+                      削除
+                    </button>
+                  </td>
+                </tr>
+                <!-- 編集行 -->
+                <tr v-else class="border-b bg-blue-50/40">
+                  <td class="py-2 px-2">
+                    <input v-model="editForm.name" type="text" maxlength="30"
+                      :disabled="isProtected(l)"
+                      class="w-full border border-gray-300 rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:text-gray-500" />
+                  </td>
+                  <td class="py-2 px-2 text-center">
+                    <input v-model="editForm.is_off" type="checkbox"
+                      :disabled="isProtected(l)"
+                      class="rounded" />
+                  </td>
+                  <td class="py-2 px-2 text-center">
+                    <input v-model.number="editForm.work_hours" type="number" min="0" max="24" step="0.25"
+                      :disabled="editForm.is_off"
+                      class="w-20 border border-gray-300 rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:text-gray-400" />
+                  </td>
+                  <td class="py-2 px-2 text-center">
+                    <input v-model.number="editForm.display_order" type="number" min="0"
+                      class="w-16 border border-gray-300 rounded px-2 py-1 text-sm" />
+                  </td>
+                  <td class="py-2 px-2 text-right whitespace-nowrap">
+                    <button @click="update(l)"
+                      class="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 mr-1">
+                      保存
+                    </button>
+                    <button @click="cancelEdit"
+                      class="text-xs px-2 py-1 border border-gray-300 text-gray-500 rounded hover:bg-gray-50">
+                      取消
+                    </button>
+                  </td>
+                </tr>
+              </template>
               <tr v-if="labels.length === 0">
                 <td colspan="5" class="py-4 text-center text-gray-400">ラベルがありません</td>
               </tr>
