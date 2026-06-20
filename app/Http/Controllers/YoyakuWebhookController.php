@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BillingPeriod;
 use App\Models\Child;
 use App\Models\Facility;
 use App\Models\UsageRecord;
+use App\Observers\UsageRecordObserver;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,6 +20,9 @@ use Illuminate\Support\Facades\Log;
  */
 class YoyakuWebhookController extends Controller
 {
+    /** sent_at の許容ずれ（秒）。これより古いペイロードはリプレイとして拒否 */
+    private const REPLAY_TOLERANCE_SECONDS = 600;
+
     public function __invoke(Request $request)
     {
         $body      = $request->getContent();
@@ -49,6 +55,20 @@ class YoyakuWebhookController extends Controller
             return response()->json(['error' => 'invalid signature'], 401);
         }
 
+        // リプレイ防御: 署名対象の sent_at が古すぎる（または欠落した）ペイロードは拒否
+        try {
+            $sentAt = Carbon::parse($data['sent_at'] ?? '');
+        } catch (\Throwable) {
+            $sentAt = null;
+        }
+        if (!$sentAt || $sentAt->diffInSeconds(now()) > self::REPLAY_TOLERANCE_SECONDS) {
+            Log::warning('YoyakuWebhook: sent_at が無効または期限切れ', [
+                'facility_id' => $facility->id,
+                'sent_at'     => $data['sent_at'] ?? null,
+            ]);
+            return response()->json(['error' => 'stale or missing sent_at'], 401);
+        }
+
         $child = Child::where('facility_id', $facility->id)
             ->where('yoyaku_user_id', $payload['user_id'] ?? 0)
             ->first();
@@ -57,35 +77,61 @@ class YoyakuWebhookController extends Controller
         }
 
         $date = $payload['date'] ?? null;
-        if (!$date) {
-            return response()->json(['error' => 'date missing'], 400);
+        if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || !strtotime($date)) {
+            return response()->json(['error' => 'date missing or invalid'], 400);
+        }
+
+        // 請求確定済みの月の出欠は変更不可（請求の根拠データ保護）。
+        // 恒久的な状態のため 200 で応答し、p-yoyaku 側の無限リトライを避ける
+        $yearMonth = substr($date, 0, 7);
+        $period = BillingPeriod::where('facility_id', $facility->id)
+            ->where('year_month', $yearMonth)
+            ->first();
+        if ($period?->isLocked()) {
+            Log::warning('YoyakuWebhook: 請求確定済み期間のため変更を無視', [
+                'facility_id' => $facility->id,
+                'year_month'  => $yearMonth,
+                'event'       => $event,
+            ]);
+            return response()->json(['ignored' => 'billing period locked']);
         }
 
         if ($event === 'booking.deleted') {
-            UsageRecord::where('facility_id', $facility->id)
+            // モデル経由で更新する（Auditable の監査ログを発火させるため。
+            // クエリビルダの一括 update はイベントが発火しない）
+            $record = UsageRecord::where('facility_id', $facility->id)
                 ->where('child_id', $child->id)
                 ->whereDate('date', $date)
-                ->update(['pickup_done' => false, 'dropoff_done' => false]);
+                ->first();
+            if ($record) {
+                UsageRecordObserver::withoutPush(fn () => $record->update([
+                    'pickup_done'  => false,
+                    'dropoff_done' => false,
+                ]));
+            }
             return response()->json(['ok' => true]);
         }
 
         // created / updated（ソフトデリート済みの記録がある日はユニーク制約衝突を避けるため復活させる）
-        $record = UsageRecord::withTrashed()->updateOrCreate(
-            [
-                'facility_id' => $facility->id,
-                'child_id'    => $child->id,
-                'date'        => $date,
-            ],
-            [
-                'pickup_done'    => !empty($payload['pickup_time']) || !empty($payload['actual_pickup_at']),
-                'dropoff_done'   => !empty($payload['dropoff_time']) || !empty($payload['actual_dropoff_at']),
-                'check_in_time'  => $payload['pickup_time']  ?? null,
-                'check_out_time' => $payload['dropoff_time'] ?? null,
-            ],
-        );
-        if ($record->trashed()) {
-            $record->restore();
-        }
+        // withoutPush: 受信内容を p-yoyaku へ送り返すエコーループを防ぐ
+        UsageRecordObserver::withoutPush(function () use ($facility, $child, $date, $payload) {
+            $record = UsageRecord::withTrashed()->updateOrCreate(
+                [
+                    'facility_id' => $facility->id,
+                    'child_id'    => $child->id,
+                    'date'        => $date,
+                ],
+                [
+                    'pickup_done'    => !empty($payload['pickup_time']) || !empty($payload['actual_pickup_at']),
+                    'dropoff_done'   => !empty($payload['dropoff_time']) || !empty($payload['actual_dropoff_at']),
+                    'check_in_time'  => $payload['pickup_time']  ?? null,
+                    'check_out_time' => $payload['dropoff_time'] ?? null,
+                ],
+            );
+            if ($record->trashed()) {
+                $record->restore();
+            }
+        });
 
         return response()->json(['ok' => true]);
     }

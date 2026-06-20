@@ -17,6 +17,9 @@ class Kernel extends ConsoleKernel
     {
         // 保持期限を過ぎた請求CSV/PDF/ZIPの削除（個人情報の保持最小化）
         $schedule->command('billing:cleanup-exports')->dailyAt('03:30');
+
+        // p-yoyaku から前日分の送迎実績を取り込む
+        $schedule->command('yoyaku:import-actuals')->dailyAt('04:00');
     }
 
     /**

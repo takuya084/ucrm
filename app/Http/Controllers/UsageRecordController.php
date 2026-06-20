@@ -37,7 +37,7 @@ class UsageRecordController extends Controller
         } else {
             // ── テンプレートモード: 初めて開くときは予定を表示 ──
             $yoyakuBusinessId = $this->getYoyakuBusinessId($facilityId);
-            $yoyakuSchedules  = $yoyakuBusinessId ? $this->yoyakuApi->getDailySchedule($date, (int) $yoyakuBusinessId) : null;
+            $yoyakuSchedules  = $yoyakuBusinessId ? $this->yoyakuApi->getDailySchedule($date, (int) $yoyakuBusinessId, $facilityId) : null;
 
             if ($yoyakuSchedules !== null) {
                 $dataSource    = 'yoyaku';

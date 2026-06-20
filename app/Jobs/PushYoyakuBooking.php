@@ -27,7 +27,8 @@ class PushYoyakuBooking implements ShouldQueue
 
     public function handle(YoyakuApiService $api): void
     {
-        $ur = UsageRecord::find($this->usageRecordId);
+        // deleted observer から dispatch された時点でソフトデリート済みのため withTrashed で引く
+        $ur = UsageRecord::withTrashed()->find($this->usageRecordId);
         if (!$ur) return;
 
         $facility = Facility::find($ur->facility_id);
@@ -49,7 +50,7 @@ class PushYoyakuBooking implements ShouldQueue
             'dropoff_time' => $ur->dropoff_done ? ($ur->check_out_time ?: null) : null,
         ];
 
-        if ($this->delete || in_array($ur->status, ['absent', 'cancel'])) {
+        if ($this->delete || $ur->trashed() || in_array($ur->status, ['absent', 'absent_notice', 'cancel'])) {
             // 欠席/キャンセルは予約を消す扱い（external_ref 経由で再 upsert を潰す運用も可）
             $api->createBooking($payload + ['pickup_time' => null, 'dropoff_time' => null], $facility->id);
             return;
