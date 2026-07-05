@@ -18,7 +18,7 @@ class FacilityController extends Controller
             'facility' => $facility->only([
                 'id', 'name', 'address', 'tel', 'fax', 'capacity_per_day',
                 'yoyaku_business_id', 'yoyaku_api_token', 'yoyaku_webhook_secret',
-                'facility_code', 'service_type', 'area_unit_price', 'designated_date', 'administrator_name',
+                'facility_code', 'service_type', 'area_unit_price', 'area_category_code', 'designated_date', 'administrator_name',
             ]),
         ]);
     }
@@ -41,6 +41,7 @@ class FacilityController extends Controller
             'facility_code'      => ['nullable', 'string', 'max:10'],
             'service_type'       => ['nullable', 'in:houday,jidou,both'],
             'area_unit_price'    => ['nullable', 'numeric', 'min:0', 'max:20'],
+            'area_category_code' => ['nullable', 'string', 'regex:/^(0[1-9]|1[0-9]|20)$/'],
             'designated_date'    => ['nullable', 'date'],
             'administrator_name' => ['nullable', 'string', 'max:100'],
         ]);

@@ -52,6 +52,15 @@ const calculate = () => {
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <FlashMessage />
 
+        <!-- 毎月の流れ -->
+        <div class="bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-3 text-sm text-indigo-900">
+          <span class="font-semibold">毎月の流れ（1〜10日）：</span>
+          ① 前月分の出欠・送迎の入力もれを確認 →
+          ② 下で対象年月を選んで「計算実行」 →
+          ③ 一覧の「詳細」を開き、内容確認・確定・CSV出力・国保連への伝送まで進める
+          <span class="block text-xs text-indigo-600 mt-1">※ 詳細画面に手順ガイドが表示されます。迷ったら「次にやること」に従ってください。</span>
+        </div>
+
         <!-- 操作パネル -->
         <div class="bg-white shadow-sm rounded-lg p-5">
           <h3 class="text-sm font-semibold text-gray-700 mb-3">月次請求計算</h3>
@@ -91,7 +100,8 @@ const calculate = () => {
             <h3 class="text-sm font-semibold text-gray-700">請求期間一覧</h3>
           </div>
           <div v-if="periods.data.length === 0" class="py-12 text-center text-gray-400 text-sm">
-            請求データがありません
+            まだ請求データがありません。<br />
+            上の「対象年月」で請求したい月（通常は前月）を選び、「計算実行」を押してください。
           </div>
           <table v-else class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">

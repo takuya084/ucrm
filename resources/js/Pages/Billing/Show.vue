@@ -126,6 +126,29 @@ const CAP_STATUS_LABEL = {
   received:  { cls: 'bg-purple-100 text-purple-700',  label: '受領済' },
   confirmed: { cls: 'bg-green-100 text-green-700',    label: '確定済' },
 }
+
+// ── 請求業務ステップガイド ─────────────────
+const flowSteps = computed(() => {
+  const s = props.period.status
+  const confirmed = ['confirmed', 'submitted', 'completed'].includes(s)
+  const submitted = ['submitted', 'completed'].includes(s)
+  return [
+    { label: '請求計算',     done: true },
+    { label: '内容確認',     done: confirmed || reviewRollup.value.errors === 0 },
+    { label: '確定',         done: confirmed },
+    { label: 'CSV出力',      done: confirmed && props.exports.length > 0 },
+    { label: '国保連へ伝送', done: submitted },
+    { label: '支払突合',     done: s === 'completed' },
+  ]
+})
+const currentStep = computed(() => flowSteps.value.findIndex(st => !st.done))
+const NEXT_ACTIONS = {
+  1: '児童別明細の「✕ 要修正」を解消してください（各行の「詳細」から確認できます）。',
+  2: '内容に問題がなければ、右上の「確定する」を押してください（確定後は再計算できなくなります）。',
+  3: '右上の「複式CSV一括出力（ZIP）」を押して、提出用ファイルをダウンロードしてください。',
+  4: 'ダウンロードしたCSVを国保連の電子請求受付システム（取込送信）でアップロードし、送信できたら下の出力履歴で「送信済マーク」を押してください。',
+  5: '国保連から支払決定通知が届いたら、下の「支払決定通知との突合」に通知記載の金額を入力してください。',
+}
 </script>
 
 <template>
@@ -191,6 +214,38 @@ const CAP_STATUS_LABEL = {
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <FlashMessage />
+
+        <!-- 請求業務ステップガイド -->
+        <div class="bg-white shadow-sm rounded-lg p-4">
+          <ol class="flex flex-wrap items-center gap-y-2">
+            <li v-for="(step, i) in flowSteps" :key="step.label" class="flex items-center">
+              <span :class="[
+                  'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap',
+                  step.done ? 'bg-emerald-50 text-emerald-700'
+                    : i === currentStep ? 'bg-indigo-600 text-white shadow'
+                      : 'bg-gray-100 text-gray-400',
+                ]">
+                <span :class="[
+                    'inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold',
+                    step.done ? 'bg-emerald-500 text-white' : i === currentStep ? 'bg-white text-indigo-600' : 'bg-gray-300 text-white',
+                  ]">
+                  <template v-if="step.done">✓</template>
+                  <template v-else>{{ i + 1 }}</template>
+                </span>
+                {{ step.label }}
+              </span>
+              <svg v-if="i < flowSteps.length - 1" class="w-4 h-4 text-gray-300 mx-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+              </svg>
+            </li>
+          </ol>
+          <p v-if="currentStep !== -1 && NEXT_ACTIONS[currentStep]" class="mt-3 text-sm text-indigo-800 bg-indigo-50 rounded px-3 py-2">
+            <span class="font-semibold">次にやること：</span>{{ NEXT_ACTIONS[currentStep] }}
+          </p>
+          <p v-else-if="currentStep === -1" class="mt-3 text-sm text-emerald-700 bg-emerald-50 rounded px-3 py-2">
+            この月の請求業務はすべて完了しています。
+          </p>
+        </div>
 
         <!-- サマリ（基本情報＋確認状態ロールアップ） -->
         <div class="bg-white shadow-sm rounded-lg p-5">

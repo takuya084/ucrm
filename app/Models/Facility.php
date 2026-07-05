@@ -15,6 +15,7 @@ class Facility extends Model
         'facility_code',
         'service_type',
         'area_unit_price',
+        'area_category_code',
         'designated_date',
         'administrator_name',
         'address',

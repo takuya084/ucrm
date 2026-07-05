@@ -36,6 +36,10 @@ class BillingExportBundleService
             $warnings[] = ['level' => 'error', 'message' => "事業所番号が10桁の数字ではありません（現在値: {$facility->facility_code}）"];
         }
 
+        if (!$facility->area_category_code) {
+            $warnings[] = ['level' => 'error', 'message' => '地域区分コードが未設定です（施設情報で設定してください。明細書の必須項目です）'];
+        }
+
         if ($period->billingDetails->isEmpty()) {
             $warnings[] = ['level' => 'error', 'message' => '請求明細が0件です。計算を実行してください。'];
         }
@@ -57,6 +61,9 @@ class BillingExportBundleService
             }
             if ($detail->total_days <= 0) {
                 $warnings[] = ['level' => 'warning', 'message' => "{$label}: 利用日数が0日です"];
+            }
+            if (!$child?->name_kana) {
+                $warnings[] = ['level' => 'warning', 'message' => "{$label}: カナ氏名が未登録です（明細書・実績記録票のカナ欄が空欄になります）"];
             }
 
             // 支給量（月間支給日数）超過チェック
@@ -118,10 +125,11 @@ class BillingExportBundleService
             throw new \RuntimeException('ZIP ファイルを作成できませんでした。');
         }
 
+        // ZIP 内のファイル名は電子請求受付システムの規定（英字始まり8桁以内+.CSV）のまま同梱する
         $included = [
-            "{$baseName}_billing.csv"     => $billingCsvPath,
-            "{$baseName}_performance.csv" => $performanceCsvPath,
-            "{$baseName}_capmgmt.csv"     => $capCsvPath,
+            basename($billingCsvPath)     => $billingCsvPath,
+            basename($performanceCsvPath) => $performanceCsvPath,
+            basename($capCsvPath)         => $capCsvPath,
         ];
 
         foreach ($included as $localName => $srcRelative) {

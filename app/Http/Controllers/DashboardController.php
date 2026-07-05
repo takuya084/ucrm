@@ -61,6 +61,12 @@ class DashboardController extends Controller
             ->orderBy('valid_from')
             ->get(['id', 'child_id', 'valid_from', 'valid_to', 'plan_date']);
 
+        // 前月分の請求業務の進み具合（月初1〜10日が請求期間）
+        $billingMonth  = date('Y-m', strtotime('first day of last month'));
+        $billingPeriod = \App\Models\BillingPeriod::where('facility_id', $facilityId)
+            ->where('year_month', $billingMonth)
+            ->first(['id', 'year_month', 'status']);
+
         // 問い合わせ：未対応
         $openInquiries = Inquiry::whereIn('status', ['open', 'in_progress'])
             ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId))
@@ -81,6 +87,8 @@ class DashboardController extends Controller
             'monitoringDue'       => $monitoringDue,
             'pendingAgreements'   => $pendingAgreements,
             'openInquiries'       => $openInquiries,
+            'billingMonth'        => $billingMonth,
+            'billingPeriod'       => $billingPeriod,
         ]);
     }
 }

@@ -22,6 +22,7 @@ const form = reactive({
   facility_code:      props.facility.facility_code ?? '',
   service_type:       props.facility.service_type ?? 'houday',
   area_unit_price:    props.facility.area_unit_price ?? '10.00',
+  area_category_code: props.facility.area_category_code ?? '',
   designated_date:    props.facility.designated_date ?? '',
   administrator_name: props.facility.administrator_name ?? '',
 })
@@ -97,6 +98,17 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   <label :class="labelClass">地域区分単価（円）</label>
                   <input v-model="form.area_unit_price" type="number" step="0.01" min="0" max="20" :class="inputClass" />
                   <p class="text-xs text-gray-400 mt-1">地域区分に応じた1単位あたりの単価。例: 1級地=11.40、6級地=10.00</p>
+                </div>
+                <div>
+                  <label :class="labelClass">地域区分コード</label>
+                  <select v-model="form.area_category_code" :class="inputClass">
+                    <option value="">未設定</option>
+                    <option v-for="n in 19" :key="n" :value="String(n).padStart(2, '0')">
+                      {{ String(n).padStart(2, '0') }}：{{ ['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九'][n - 1] }}級地
+                    </option>
+                    <option value="20">20：その他</option>
+                  </select>
+                  <p class="text-xs text-gray-400 mt-1">国保連CSV（明細書）の必須項目。指定通知書に記載の地域区分を選択してください。</p>
                 </div>
                 <div>
                   <label :class="labelClass">管理者氏名</label>

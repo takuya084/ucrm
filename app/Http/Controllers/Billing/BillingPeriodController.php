@@ -318,6 +318,9 @@ class BillingPeriodController extends Controller
 
     /**
      * 国保連送信済マーク
+     *
+     * 出力ファイルの送信記録と同時に、請求期間を「提出済」へ進める
+     * （提出済にならないと支払決定通知との突合が開始できない）
      */
     public function markSubmitted(BillingExport $billingExport)
     {
@@ -327,6 +330,20 @@ class BillingPeriodController extends Controller
             'is_submitted' => true,
             'submitted_at' => now(),
         ]);
+
+        $period = $billingExport->billingPeriod;
+        if ($period && $period->status === 'confirmed') {
+            $period->update([
+                'status'       => 'submitted',
+                'submitted_at' => now(),
+            ]);
+            $period->billingDetails()->update(['status' => 'submitted']);
+
+            return back()->with([
+                'message' => '送信済にマークし、この月の請求を「提出済」にしました。国保連から支払決定通知が届いたら、請求詳細画面で金額の突合を行ってください。',
+                'status'  => 'success',
+            ]);
+        }
 
         return back()->with(['message' => '送信済にマークしました。', 'status' => 'success']);
     }

@@ -10,12 +10,27 @@ const props = defineProps({
   monitoringDue:         Array,
   pendingAgreements:     Array,
   openInquiries:         Array,
+  billingMonth:          String,
+  billingPeriod:         Object,
 })
 
 const daysUntil = (dateStr) => {
   const diff = Math.ceil((new Date(dateStr) - new Date()) / 86400000)
   return diff
 }
+
+// 前月分の請求業務ガイド（毎月1〜10日は請求期間として強調）
+const isBillingWindow = new Date().getDate() <= 10
+const BILLING_GUIDE = {
+  none:        { label: '未計算',   cls: 'bg-red-100 text-red-700',     text: '請求管理で「計算実行」を押してください。' },
+  draft:       { label: '下書き',   cls: 'bg-amber-100 text-amber-700', text: '内容を確認して「確定」してください。' },
+  calculating: { label: '計算中',   cls: 'bg-amber-100 text-amber-700', text: '計算が終わるまでお待ちください。' },
+  confirmed:   { label: '確定済',   cls: 'bg-blue-100 text-blue-700',   text: 'CSVを出力し、国保連へ伝送してください。' },
+  submitted:   { label: '提出済',   cls: 'bg-green-100 text-green-700', text: '支払決定通知が届いたら金額を突合してください。' },
+  completed:   { label: '完了',     cls: 'bg-green-200 text-green-800', text: '前月分の請求業務は完了しています。' },
+  error:       { label: 'エラー',   cls: 'bg-red-100 text-red-700',     text: '請求管理でエラー内容を確認してください。' },
+}
+const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BILLING_GUIDE.none
 </script>
 
 <template>
@@ -29,6 +44,21 @@ const daysUntil = (dateStr) => {
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
         <QuickNav />
+
+        <!-- 前月分 請求業務の状態 -->
+        <Link :href="billingPeriod ? route('billing.show', billingPeriod.id) : route('billing.index')"
+          class="block rounded-lg border px-4 py-3 transition hover:shadow"
+          :class="billingPeriod?.status === 'completed' ? 'bg-white border-gray-200' : isBillingWindow ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'">
+          <div class="flex items-center gap-3 flex-wrap text-sm">
+            <span class="font-semibold text-gray-700">{{ billingMonth }}分の国保連請求</span>
+            <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', billingGuide.cls]">{{ billingGuide.label }}</span>
+            <span class="text-gray-600">{{ billingGuide.text }}</span>
+            <span class="ml-auto text-xs text-indigo-600">開く →</span>
+          </div>
+          <p v-if="isBillingWindow && billingPeriod?.status !== 'completed'" class="text-xs text-amber-700 mt-1">
+            毎月10日が国保連への請求締切です。
+          </p>
+        </Link>
 
         <!-- 今日のサマリー -->
         <section>

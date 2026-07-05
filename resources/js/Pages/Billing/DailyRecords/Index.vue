@@ -180,7 +180,7 @@ const save = () => {
         </div>
 
         <div v-if="grouped.length === 0" class="bg-white shadow-sm rounded-lg py-12 text-center text-gray-400 text-sm">
-          実績データがありません
+          実績データがありません。先に「請求管理」で対象月の計算を実行すると、出欠記録から実績が作成されます。
         </div>
       </div>
     </div>
