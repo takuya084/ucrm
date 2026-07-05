@@ -42,9 +42,10 @@ class DailyServiceRecordController extends Controller
                         'id'                   => $record->id,
                         'date'                 => $record->date->format('Y-m-d'),
                         'status'               => $record->status,
-                        'check_in_time'        => $record->check_in_time,
-                        'check_out_time'       => $record->check_out_time,
-                        'is_school_day'        => $record->is_school_day,
+                        'check_in_time'        => $record->check_in_time ? substr($record->check_in_time, 0, 5) : null,
+                        'check_out_time'       => $record->check_out_time ? substr($record->check_out_time, 0, 5) : null,
+                        'is_school_day'        => (bool) $record->is_school_day,
+                        'service_type'         => $record->service_type,
                         'pickup_done'          => $record->pickup_done,
                         'dropoff_done'         => $record->dropoff_done,
                         'daily_service_records' => $record->dailyServiceRecords->map(fn($dsr) => [
@@ -63,11 +64,18 @@ class DailyServiceRecordController extends Controller
             ->orderBy('name_kana')
             ->get(['id', 'name', 'name_kana']);
 
+        // 請求確定済みの月は編集不可（UI 側で入力を無効化する）
+        $locked = \App\Models\BillingPeriod::where('facility_id', $facilityId)
+            ->where('year_month', $yearMonth)
+            ->whereIn('status', ['confirmed', 'submitted', 'completed'])
+            ->exists();
+
         return Inertia::render('Billing/DailyRecords/Index', [
             'grouped'   => $grouped,
             'yearMonth' => $yearMonth,
             'childId'   => $childId,
             'children'  => $children,
+            'locked'    => $locked,
         ]);
     }
 

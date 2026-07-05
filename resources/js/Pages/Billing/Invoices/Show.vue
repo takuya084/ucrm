@@ -32,7 +32,10 @@ const updatePayment = () => {
         <h2 class="font-semibold text-xl text-gray-800">{{ invoice.child?.name }} - 請求書詳細</h2>
         <div class="flex gap-2">
           <Link :href="route('billing.invoices.index', { month: invoice.year_month })" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">戻る</Link>
-          <a :href="route('billing.invoices.pdf', invoice.id)" class="px-4 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition">PDF出力</a>
+          <a v-if="['paid','partial'].includes(invoice.payment_status) && invoice.paid_at"
+            :href="route('billing.invoices.receipt-pdf', invoice.id)"
+            class="px-4 py-1.5 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700 transition">領収書PDF</a>
+          <a :href="route('billing.invoices.pdf', invoice.id)" class="px-4 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition">請求書PDF</a>
         </div>
       </div>
     </template>

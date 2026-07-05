@@ -58,14 +58,14 @@
 
 ## P3: 〜6ヶ月（実地指導・監査対応）
 
-- [x] P3-1: アセスメント記録（assessments テーブル + モデル）※入力UIは今後
+- [x] P3-1: アセスメント記録（assessments テーブル + モデル）— 入力UI実装済み（2026-07-05: 児童詳細「計画・記録」タブから作成・編集・閲覧）
 - [x] P3-2: 個別支援計画プロセス（support_plan_meetings / 承認フロー status・approved_by /
-      交付記録 delivered_at）※入力UIは今後
+      交付記録 delivered_at）— 入力UI実装済み（2026-07-05: 計画詳細に承認ステップ・担当者会議記録・同意/交付記録）
 - [x] P3-3: 保護者同意の電子署名の記録基盤（support_plan_consents: 署名データ・IP・
-      文書SHA-256ハッシュ・同意/交付日時）※署名取得UIは今後
-- [x] P3-4: 虐待防止・身体拘束適正化の記録（prevention_committees / physical_restraint_records）※入力UIは今後
+      文書SHA-256ハッシュ・同意/交付日時）— 同意・交付の記録UI実装済み（2026-07-05。署名パッド取得UIは保護者向け機能として今後）
+- [x] P3-4: 虐待防止・身体拘束適正化の記録（prevention_committees / physical_restraint_records）— 入力UI実装済み（2026-07-05: 運営記録ページ。保護者未報告の警告付き）
 - [x] P3-5: BCP・安全計画・自己評価結果公表の管理（business_continuity_plans / safety_plans /
-      self_evaluations）※入力UIは今後
+      self_evaluations）— 入力UI実装済み（2026-07-05: 運営記録ページ。未策定・未公表の減算警告付き）
 - [x] P3-6: 記録の改ざん防止 — 支援記録・モニタリング・個別支援計画をソフトデリート化し
       変更は監査ログに記録。保存期限（retention_until）による自動アーカイブは今後
 

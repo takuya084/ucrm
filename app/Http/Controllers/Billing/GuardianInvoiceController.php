@@ -30,9 +30,19 @@ class GuardianInvoiceController extends Controller
             ->orderBy('child_id')
             ->get();
 
+        $paidSum = $invoices->whereIn('payment_status', ['paid', 'partial'])
+            ->sum(fn ($i) => $i->paid_amount ?? ($i->payment_status === 'paid' ? $i->total_amount : 0));
+
         return Inertia::render('Billing/Invoices/Index', [
             'invoices'  => $invoices,
             'yearMonth' => $yearMonth,
+            'summary'   => [
+                'count'        => $invoices->count(),
+                'total'        => (int) $invoices->sum('total_amount'),
+                'paid'         => (int) $paidSum,
+                'outstanding'  => (int) $invoices->sum('total_amount') - (int) $paidSum,
+                'unpaid_count' => $invoices->whereIn('payment_status', ['unpaid', 'partial', 'overdue'])->count(),
+            ],
         ]);
     }
 
@@ -114,6 +124,25 @@ class GuardianInvoiceController extends Controller
         session()->flash('status', 'success');
 
         return back();
+    }
+
+    /**
+     * 領収書PDF（入金記録がある請求書のみ）
+     */
+    public function receiptPdf(GuardianInvoice $guardianInvoice, \App\Services\Billing\GuardianReceiptPdfService $receiptService)
+    {
+        $this->authorizeFacility($guardianInvoice);
+
+        abort_if(
+            !in_array($guardianInvoice->payment_status, ['paid', 'partial'], true) || !$guardianInvoice->paid_at,
+            422,
+            '領収書は入金記録（入金状態・入金日）を登録した後に発行できます。'
+        );
+
+        \App\Models\AuditLog::record('exported', $guardianInvoice);
+        $path = $receiptService->generate($guardianInvoice);
+
+        return Storage::disk('local')->download($path);
     }
 
     private function authorizeFacility(GuardianInvoice $invoice): void

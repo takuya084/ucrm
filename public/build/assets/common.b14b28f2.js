@@ -1,1 +1,0 @@
-const s=e=>{var t=e.replace(/\r\n/g,"<br>");return t=t.replace(/(\n|\r)/g,"<br>"),t},a=()=>{const e=new Date,t=e.getFullYear(),r=("0"+(e.getMonth()+1)).slice(-2),n=("0"+e.getDate()).slice(-2);return t+"-"+r+"-"+n};export{a as g,s as n};

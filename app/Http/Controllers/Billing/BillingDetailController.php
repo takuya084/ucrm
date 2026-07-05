@@ -22,6 +22,7 @@ class BillingDetailController extends Controller
             'billingDetailLines.serviceCodeMaster',
             'dailyServiceRecords.usageRecord',
             'billingPeriod',
+            'adjustedByUser:id,name',
         ]);
 
         return Inertia::render('Billing/Detail/Show', [
@@ -73,6 +74,9 @@ class BillingDetailController extends Controller
             'lines.*.count'          => 'required|integer|min:0',
             'lines.*.units_per_count' => 'required|integer|min:0',
             'lines.*.total_units'    => 'required|integer|min:0',
+            'adjustment_note'        => 'required|string|max:1000',
+        ], [
+            'adjustment_note.required' => '調整理由を入力してください（返戻・監査対応時の証跡になります）。',
         ]);
 
         foreach ($validated['lines'] as $lineData) {
@@ -99,6 +103,15 @@ class BillingDetailController extends Controller
             'copayment_amount'      => $copaymentAmount,
             'copayment_cap_applied' => $capApplied,
             'insurance_amount'      => $totalAmount - $capApplied,
+            'adjustment_note'       => $validated['adjustment_note'],
+            'adjusted_by'           => auth()->id(),
+            'adjusted_at'           => now(),
+        ]);
+
+        // 明細行はクエリビルダ更新でモデルイベントが発火しないため、監査ログを直接記録する
+        \App\Models\AuditLog::record('billing_detail.manual_adjustment', $billingDetail, null, [
+            'adjustment_note' => $validated['adjustment_note'],
+            'lines'           => $validated['lines'],
         ]);
 
         session()->flash('message', '明細を更新しました。');

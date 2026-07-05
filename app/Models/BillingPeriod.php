@@ -18,10 +18,14 @@ class BillingPeriod extends Model
         'submitted_at',
         'confirmed_by',
         'notes',
+        'payment_decided_amount',
+        'payment_decided_at',
+        'payment_difference_note',
     ];
 
     protected $casts = [
-        'submitted_at' => 'datetime',
+        'submitted_at'       => 'datetime',
+        'payment_decided_at' => 'date',
     ];
 
     public const STATUS_LABELS = [

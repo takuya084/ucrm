@@ -28,6 +28,16 @@ const CONTRACT_STATUS = {
 }
 
 const GENDER = { male: '男', female: '女', other: '他' }
+
+// 受給者証期限の残日数（マイナス=期限切れ）
+const daysUntil = (dateStr) => Math.ceil((new Date(dateStr.slice(0, 10)) - new Date()) / 86400000)
+
+const certExpiryClass = (dateStr) => {
+  const d = daysUntil(dateStr)
+  if (d < 0)   return 'bg-red-100 text-red-700 font-semibold'
+  if (d <= 30) return 'bg-amber-100 text-amber-700 font-medium'
+  return 'text-gray-600'
+}
 </script>
 
 <template>
@@ -93,6 +103,8 @@ const GENDER = { male: '男', female: '女', other: '他' }
                     <th class="px-4 py-3">性別</th>
                     <th class="px-4 py-3">学年</th>
                     <th class="px-4 py-3">学校</th>
+                    <th class="px-4 py-3">受給者証期限</th>
+                    <th class="px-4 py-3 text-right">支給量</th>
                     <th class="px-4 py-3">契約状況</th>
                     <th class="px-4 py-3"></th>
                   </tr>
@@ -114,6 +126,20 @@ const GENDER = { male: '男', female: '女', other: '他' }
                     <td class="px-4 py-3">{{ child.school?.name ?? '―' }}</td>
                     <td class="px-4 py-3">
                       <span
+                        v-if="child.active_recipient_certificate?.valid_to"
+                        :class="['px-2 py-0.5 rounded text-xs whitespace-nowrap', certExpiryClass(child.active_recipient_certificate.valid_to)]"
+                        :title="daysUntil(child.active_recipient_certificate.valid_to) < 0
+                          ? '期限切れ'
+                          : `あと${daysUntil(child.active_recipient_certificate.valid_to)}日`"
+                      >{{ child.active_recipient_certificate.valid_to.slice(0, 10) }}</span>
+                      <span v-else-if="child.contract_status === 'active'" class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">未登録</span>
+                      <span v-else class="text-gray-300 text-xs">―</span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-xs">
+                      {{ child.active_recipient_certificate?.monthly_limit ? `${child.active_recipient_certificate.monthly_limit}日/月` : '―' }}
+                    </td>
+                    <td class="px-4 py-3">
+                      <span
                         v-if="CONTRACT_STATUS[child.contract_status]"
                         :class="['px-2 py-1 rounded-full text-xs font-medium', CONTRACT_STATUS[child.contract_status].class]"
                       >{{ CONTRACT_STATUS[child.contract_status].label }}</span>
@@ -123,7 +149,7 @@ const GENDER = { male: '男', female: '女', other: '他' }
                     </td>
                   </tr>
                   <tr v-if="children.data.length === 0">
-                    <td colspan="7" class="px-4 py-8 text-center text-gray-400">該当する児童がいません</td>
+                    <td colspan="9" class="px-4 py-8 text-center text-gray-400">該当する児童がいません</td>
                   </tr>
                 </tbody>
               </table>

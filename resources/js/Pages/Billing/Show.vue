@@ -94,6 +94,22 @@ const confirmPeriod = () => {
   Inertia.patch(route('billing.confirm', props.period.id))
 }
 
+// ── 国保連支払通知との突合 ─────────────────
+const paymentForm = ref({
+  payment_decided_amount:  props.period.payment_decided_amount ?? null,
+  payment_decided_at:      props.period.payment_decided_at?.slice(0, 10) ?? '',
+  payment_difference_note: props.period.payment_difference_note ?? '',
+})
+
+const paymentDiff = computed(() => {
+  if (paymentForm.value.payment_decided_amount == null || paymentForm.value.payment_decided_amount === '') return null
+  return Number(paymentForm.value.payment_decided_amount) - Number(props.kpi.insurance_amount ?? 0)
+})
+
+const savePaymentDecision = () => {
+  Inertia.patch(route('billing.payment-decision', props.period.id), paymentForm.value, { preserveScroll: true })
+}
+
 const fmt = (n) => Number(n).toLocaleString()
 
 const REVIEW_BADGE = {
@@ -155,6 +171,10 @@ const CAP_STATUS_LABEL = {
                 <a :href="route('billing.cap-management.payment-list', { year_month: period.year_month })"
                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                   利用者負担額一覧表PDF
+                </a>
+                <a :href="route('billing.proxy-receipt-bundle', period.id)"
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  代理受領額通知書PDF（全員ZIP）
                 </a>
                 <div class="border-t my-1" />
                 <button @click="runValidate(); showOutputMenu = false" :disabled="checking"
@@ -243,6 +263,53 @@ const CAP_STATUS_LABEL = {
           </div>
         </div>
 
+        <!-- 国保連支払通知との突合（提出後に表示） -->
+        <div v-if="['submitted','completed'].includes(period.status)" class="bg-white shadow-sm rounded-lg p-5">
+          <div class="flex items-center gap-3 mb-3 flex-wrap">
+            <h3 class="text-sm font-semibold text-gray-700">国保連 支払決定通知との突合</h3>
+            <span v-if="period.payment_decided_amount != null && paymentDiff === 0"
+              class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">請求額と一致</span>
+            <span v-else-if="period.payment_decided_amount != null && paymentDiff !== null && paymentDiff !== 0"
+              class="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">
+              差異 {{ fmt(Math.abs(paymentDiff)) }}円（{{ paymentDiff > 0 ? '支払超過' : '支払不足' }}）
+            </span>
+            <span v-else class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500">未記録</span>
+          </div>
+          <div class="flex flex-wrap items-end gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">請求給付費（当システム）</label>
+              <div class="text-sm font-bold py-1.5">{{ fmt(kpi.insurance_amount ?? 0) }}円</div>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">支払決定額（通知記載額）</label>
+              <input v-model.number="paymentForm.payment_decided_amount" type="number" min="0"
+                class="border border-gray-300 rounded px-3 py-1.5 text-sm w-36 text-right" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">支払決定日</label>
+              <input v-model="paymentForm.payment_decided_at" type="date"
+                class="border border-gray-300 rounded px-3 py-1.5 text-sm" />
+            </div>
+            <div class="flex-1 min-w-[14rem]">
+              <label class="block text-xs text-gray-500 mb-1">差異メモ（差異がある場合は必須）</label>
+              <input v-model="paymentForm.payment_difference_note" type="text"
+                class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+                placeholder="例：○○さん分が受給者証番号誤りで返戻" />
+            </div>
+            <button @click="savePaymentDecision"
+              class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">
+              記録する
+            </button>
+          </div>
+          <p v-if="paymentDiff !== null && paymentDiff !== 0" class="mt-2 text-xs text-red-600">
+            差異があります。<Link :href="route('billing.returns.index')" class="underline">返戻管理</Link>・
+            <Link :href="route('billing.error-claims.index')" class="underline">過誤申立</Link>を確認してください。
+          </p>
+          <p v-else-if="period.status === 'submitted'" class="mt-2 text-xs text-gray-400">
+            支払決定額が請求額と一致した場合、この月の請求は自動的に「完了」になります。
+          </p>
+        </div>
+
         <!-- 事業所KPI -->
         <div class="bg-white shadow-sm rounded-lg p-5">
           <div class="flex items-center justify-between mb-3">
@@ -286,8 +353,9 @@ const CAP_STATUS_LABEL = {
             </div>
           </div>
 
-          <!-- 損益サマリ -->
-          <div class="mt-4 pt-3 border-t grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <!-- 損益サマリ（経営情報のため管理者のみ） -->
+          <div v-if="$page.props.auth.staff_role === 'admin'"
+            class="mt-4 pt-3 border-t grid grid-cols-2 sm:grid-cols-5 gap-4">
             <div class="border rounded-lg p-3">
               <div class="text-[10px] text-gray-500">売上（請求＋自己負担）</div>
               <div class="text-xl font-bold text-gray-800">{{ fmt(kpi.revenue ?? 0) }}円</div>

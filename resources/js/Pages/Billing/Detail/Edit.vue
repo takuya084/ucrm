@@ -22,7 +22,13 @@ const recalcLine = (line) => {
   line.total_units = line.count * line.units_per_count
 }
 
+const adjustmentNote = ref('')
+
 const save = () => {
+  if (!adjustmentNote.value.trim()) {
+    alert('調整理由を入力してください（返戻・監査対応時の証跡になります）。')
+    return
+  }
   Inertia.patch(route('billing.details.update', props.detail.id), {
     lines: lines.value.map(l => ({
       id: l.id,
@@ -30,6 +36,7 @@ const save = () => {
       units_per_count: l.units_per_count,
       total_units: l.total_units,
     })),
+    adjustment_note: adjustmentNote.value,
   })
 }
 </script>
@@ -78,10 +85,21 @@ const save = () => {
               </tr>
             </tbody>
           </table>
-          <div class="px-5 py-4 border-t flex justify-end">
-            <button @click="save" class="px-6 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition">
-              保存
-            </button>
+          <div class="px-5 py-4 border-t space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">
+                調整理由 <span class="text-red-500">*</span>
+                <span class="ml-2 font-normal text-gray-400">返戻・監査対応時の証跡として記録されます</span>
+              </label>
+              <textarea v-model="adjustmentNote" rows="2"
+                class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                placeholder="例：欠席時対応加算の算定漏れを追加（6/12 連絡帳記録あり）" />
+            </div>
+            <div class="flex justify-end">
+              <button @click="save" class="px-6 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition">
+                保存
+              </button>
+            </div>
           </div>
         </div>
       </div>

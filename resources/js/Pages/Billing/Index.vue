@@ -31,7 +31,12 @@ const STATUS_LABEL = {
 }
 
 const calculate = () => {
-  if (!confirm(`${selectedMonth.value} の請求計算を実行しますか？`)) return
+  const existing = props.periods.data.find(p => p.year_month === selectedMonth.value)
+  let message = `${selectedMonth.value} の請求計算を実行しますか？`
+  if (existing && existing.status === 'draft') {
+    message = `${selectedMonth.value} には計算済みの下書きがあります。\n再計算すると既存の明細（明細編集画面での手動調整を含む）はすべて削除され、出席実績から作り直されます。\n\n実行しますか？`
+  }
+  if (!confirm(message)) return
   Inertia.post(route('billing.calculate'), { year_month: selectedMonth.value })
 }
 </script>

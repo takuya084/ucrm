@@ -13,6 +13,8 @@ use App\Http\Controllers\UsageRecordController;
 use App\Http\Controllers\SupportRecordController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\MonitoringRecordController;
+use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\OperationRecordController;
 use App\Http\Controllers\SupportPlanController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\ExternalFacilityController;
@@ -181,6 +183,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('children/{child}/monitoring/{monitoringRecord}/pdf', [MonitoringRecordController::class, 'pdf'])->name('children.monitoring.pdf');
 });
 
+// アセスメント記録（閲覧: 全員、編集: leader以上）
+Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function () {
+    Route::get('children/{child}/assessments/create',               [AssessmentController::class, 'create'])->name('children.assessments.create');
+    Route::post('children/{child}/assessments',                     [AssessmentController::class, 'store'])->name('children.assessments.store');
+    Route::get('children/{child}/assessments/{assessment}/edit',    [AssessmentController::class, 'edit'])->name('children.assessments.edit');
+    Route::patch('children/{child}/assessments/{assessment}',       [AssessmentController::class, 'update'])->name('children.assessments.update');
+    Route::delete('children/{child}/assessments/{assessment}',      [AssessmentController::class, 'destroy'])->name('children.assessments.destroy');
+});
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('children/{child}/assessments/{assessment}', [AssessmentController::class, 'show'])->name('children.assessments.show');
+});
+
 // 個別支援計画（閲覧: 全員、編集: leader以上）
 Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function () {
     Route::get('children/{child}/support-plans/create',                    [SupportPlanController::class, 'create'])->name('children.support-plans.create');
@@ -188,6 +202,11 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function 
     Route::get('children/{child}/support-plans/{support_plan}/edit',       [SupportPlanController::class, 'edit'])->name('children.support-plans.edit');
     Route::patch('children/{child}/support-plans/{support_plan}',          [SupportPlanController::class, 'update'])->name('children.support-plans.update');
     Route::delete('children/{child}/support-plans/{support_plan}',         [SupportPlanController::class, 'destroy'])->name('children.support-plans.destroy');
+    // 計画プロセス（承認・担当者会議・同意/交付）
+    Route::post('children/{child}/support-plans/{support_plan}/approve',   [SupportPlanController::class, 'approve'])->name('children.support-plans.approve');
+    Route::post('children/{child}/support-plans/{support_plan}/meetings',  [SupportPlanController::class, 'storeMeeting'])->name('children.support-plans.meetings.store');
+    Route::delete('children/{child}/support-plans/{support_plan}/meetings/{meeting}', [SupportPlanController::class, 'destroyMeeting'])->name('children.support-plans.meetings.destroy');
+    Route::post('children/{child}/support-plans/{support_plan}/consents',  [SupportPlanController::class, 'storeConsent'])->name('children.support-plans.consents.store');
 });
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('children/{child}/support-plans/{support_plan}', [SupportPlanController::class, 'show'])->name('children.support-plans.show');
@@ -206,6 +225,7 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::get('/details/{billingDetail}/edit',  [BillingDetailController::class, 'edit'])   ->name('billing.details.edit');
     Route::patch('/details/{billingDetail}',     [BillingDetailController::class, 'update']) ->name('billing.details.update');
     Route::get('/details/{billingDetail}/performance-pdf', [BillingPeriodController::class, 'performancePdf'])->name('billing.details.performance-pdf');
+    Route::get('/details/{billingDetail}/proxy-receipt-pdf', [BillingPeriodController::class, 'proxyReceiptPdf'])->name('billing.details.proxy-receipt-pdf');
 
     // 実績記録票
     Route::get('/daily-records',             [DailyServiceRecordController::class, 'index'])     ->name('billing.daily-records.index');
@@ -228,6 +248,7 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::post('/invoices/generate',             [GuardianInvoiceController::class, 'generate'])     ->name('billing.invoices.generate');
     Route::get('/invoices/{guardianInvoice}',     [GuardianInvoiceController::class, 'show'])         ->name('billing.invoices.show');
     Route::get('/invoices/{guardianInvoice}/pdf', [GuardianInvoiceController::class, 'downloadPdf'])  ->name('billing.invoices.pdf');
+    Route::get('/invoices/{guardianInvoice}/receipt', [GuardianInvoiceController::class, 'receiptPdf'])->name('billing.invoices.receipt-pdf');
     Route::patch('/invoices/{guardianInvoice}/payment', [GuardianInvoiceController::class, 'updatePayment'])->name('billing.invoices.update-payment');
 
     // 過誤申立
@@ -258,11 +279,24 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     // 月次請求 詳細（ワイルドカードなので最後に配置）
     Route::get('/{billingPeriod}',           [BillingPeriodController::class, 'show'])              ->name('billing.show');
     Route::patch('/{billingPeriod}/confirm', [BillingPeriodController::class, 'confirm'])           ->name('billing.confirm');
+    Route::patch('/{billingPeriod}/payment-decision', [BillingPeriodController::class, 'recordPaymentDecision'])->name('billing.payment-decision');
     Route::get('/{billingPeriod}/export',    [BillingPeriodController::class, 'export'])            ->name('billing.export');
     Route::get('/{billingPeriod}/export-performance', [BillingPeriodController::class, 'exportPerformance'])->name('billing.export-performance');
     Route::get('/{billingPeriod}/validate-export',    [BillingPeriodController::class, 'validateExport'])   ->name('billing.validate-export');
     Route::get('/{billingPeriod}/export-bundle',      [BillingPeriodController::class, 'exportBundle'])     ->name('billing.export-bundle');
     Route::get('/{billingPeriod}/performance-pdf-bundle', [BillingPeriodController::class, 'performancePdfBundle'])->name('billing.performance-pdf-bundle');
+    Route::get('/{billingPeriod}/proxy-receipt-bundle',   [BillingPeriodController::class, 'proxyReceiptPdfBundle'])->name('billing.proxy-receipt-bundle');
+});
+
+// 運営記録（委員会・研修/身体拘束/BCP・安全計画/自己評価。leader以上）
+Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('operation-records')->group(function () {
+    Route::get('/',                 [OperationRecordController::class, 'index'])->name('operation-records.index');
+    Route::post('/committees',      [OperationRecordController::class, 'storeCommittee'])->name('operation-records.committees.store');
+    Route::post('/restraints',      [OperationRecordController::class, 'storeRestraint'])->name('operation-records.restraints.store');
+    Route::patch('/restraints/{restraint}/notified', [OperationRecordController::class, 'markRestraintNotified'])->name('operation-records.restraints.notified');
+    Route::post('/bcp',             [OperationRecordController::class, 'upsertBcp'])->name('operation-records.bcp.upsert');
+    Route::post('/safety-plan',     [OperationRecordController::class, 'upsertSafetyPlan'])->name('operation-records.safety-plan.upsert');
+    Route::post('/self-evaluation', [OperationRecordController::class, 'upsertSelfEvaluation'])->name('operation-records.self-evaluation.upsert');
 });
 
 // AI下書き生成（leader以上）

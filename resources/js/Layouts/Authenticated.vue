@@ -44,6 +44,10 @@ watch(showingNavigationDropdown, (open) => {
                   ダッシュボード
                 </BreezeNavLink>
 
+                <BreezeNavLink :href="route('children.index')" :active="route().current('children.*')">
+                  児童
+                </BreezeNavLink>
+
                 <!-- 利用管理ドロップダウン -->
                 <div class="relative flex items-center h-full">
                   <BreezeDropdown align="left" width="48" @click.stop>
@@ -133,6 +137,9 @@ watch(showingNavigationDropdown, (open) => {
                 <BreezeNavLink :href="route('program-progress.index')" :active="route().current('program-progress.*')">
                   療育進度
                 </BreezeNavLink>
+                <BreezeNavLink :href="route('shifts.index')" :active="route().current('shifts.*')">
+                  シフト
+                </BreezeNavLink>
                 <BreezeNavLink :href="route('inquiries.index')" :active="route().current('inquiries.*')">
                   問い合わせ
                 </BreezeNavLink>
@@ -159,17 +166,14 @@ watch(showingNavigationDropdown, (open) => {
                   <BreezeDropdownLink v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('external-facilities.index')">
                     他社事業所マスタ
                   </BreezeDropdownLink>
+                  <BreezeDropdownLink v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('operation-records.index')">
+                    運営記録
+                  </BreezeDropdownLink>
                   <BreezeDropdownLink :href="route('programs.index')">
                     プログラムマスタ
                   </BreezeDropdownLink>
-                  <BreezeDropdownLink :href="route('children.index')">
-                    児童管理
-                  </BreezeDropdownLink>
                   <BreezeDropdownLink v-if="$page.props.auth.staff_role === 'admin'" :href="route('staff.index')">
                     職員管理
-                  </BreezeDropdownLink>
-                  <BreezeDropdownLink :href="route('shifts.index')">
-                    シフト管理
                   </BreezeDropdownLink>
                   <BreezeDropdownLink v-if="$page.props.auth.staff_role === 'admin'" :href="route('facility.edit')">
                     施設設定
@@ -258,6 +262,11 @@ watch(showingNavigationDropdown, (open) => {
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"/></svg>
                     ダッシュボード
                   </Link>
+                  <Link :href="route('children.index')" @click="showingNavigationDropdown = false"
+                    :class="['mobile-nav-item', route().current('children.*') && 'mobile-nav-active']">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    児童管理
+                  </Link>
                   <Link :href="route('usage-records.index')" @click="showingNavigationDropdown = false"
                     :class="['mobile-nav-item', route().current('usage-records.index') && 'mobile-nav-active']">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
@@ -272,6 +281,11 @@ watch(showingNavigationDropdown, (open) => {
                     :class="['mobile-nav-item', route().current('program-progress.*') && 'mobile-nav-active']">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     療育進度
+                  </Link>
+                  <Link :href="route('shifts.index')" @click="showingNavigationDropdown = false"
+                    :class="['mobile-nav-item', route().current('shifts.*') && 'mobile-nav-active']">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    シフト管理
                   </Link>
                   <Link :href="route('inquiries.index')" @click="showingNavigationDropdown = false"
                     :class="['mobile-nav-item', route().current('inquiries.*') && 'mobile-nav-active']">
@@ -358,26 +372,22 @@ watch(showingNavigationDropdown, (open) => {
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                     他社事業所マスタ
                   </Link>
+                  <Link v-if="['admin','leader'].includes($page.props.auth.staff_role)"
+                    :href="route('operation-records.index')" @click="showingNavigationDropdown = false"
+                    :class="['mobile-nav-item', route().current('operation-records.*') && 'mobile-nav-active']">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 12h6m-6 4h6M9 8h6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    運営記録
+                  </Link>
                   <Link :href="route('programs.index')" @click="showingNavigationDropdown = false"
                     :class="['mobile-nav-item', route().current('programs.*') && 'mobile-nav-active']">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                     プログラムマスタ
-                  </Link>
-                  <Link :href="route('children.index')" @click="showingNavigationDropdown = false"
-                    :class="['mobile-nav-item', route().current('children.*') && 'mobile-nav-active']">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    児童管理
                   </Link>
                   <Link v-if="$page.props.auth.staff_role === 'admin'"
                     :href="route('staff.index')" @click="showingNavigationDropdown = false"
                     :class="['mobile-nav-item', route().current('staff.*') && 'mobile-nav-active']">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
                     職員管理
-                  </Link>
-                  <Link :href="route('shifts.index')" @click="showingNavigationDropdown = false"
-                    :class="['mobile-nav-item', route().current('shifts.*') && 'mobile-nav-active']">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    シフト管理
                   </Link>
                   <Link v-if="$page.props.auth.staff_role === 'admin'"
                     :href="route('facility.edit')" @click="showingNavigationDropdown = false"

@@ -12,7 +12,14 @@ const fmt = (n) => Number(n).toLocaleString()
     <template #header>
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-800">{{ detail.child?.name }} - 請求明細</h2>
-        <Link :href="route('billing.show', detail.billing_period_id)" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">戻る</Link>
+        <div class="flex items-center gap-2">
+          <a v-if="['confirmed','submitted','completed'].includes(detail.billing_period?.status)"
+            :href="route('billing.details.proxy-receipt-pdf', detail.id)"
+            class="px-3 py-1.5 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700">
+            代理受領額通知書PDF
+          </a>
+          <Link :href="route('billing.show', detail.billing_period_id)" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">戻る</Link>
+        </div>
       </div>
     </template>
 
@@ -30,6 +37,15 @@ const fmt = (n) => Number(n).toLocaleString()
             <div><span class="text-xs text-gray-500 block">利用者負担(計算値)</span>{{ fmt(detail.copayment_amount) }}円</div>
             <div><span class="text-xs text-gray-500 block">利用者負担(上限適用後)</span><span class="font-bold text-red-600">{{ fmt(detail.copayment_cap_applied) }}円</span></div>
           </div>
+        </div>
+
+        <!-- 手動調整の記録 -->
+        <div v-if="detail.adjustment_note" class="bg-white shadow-sm rounded-lg p-5 border-l-4 border-amber-400">
+          <h3 class="text-sm font-semibold text-gray-700 mb-1">手動調整あり</h3>
+          <p class="text-sm text-gray-800 whitespace-pre-wrap">{{ detail.adjustment_note }}</p>
+          <p class="text-xs text-gray-400 mt-2">
+            {{ detail.adjusted_by_user?.name ?? '—' }}／{{ detail.adjusted_at ? new Date(detail.adjusted_at).toLocaleString('ja-JP') : '' }}
+          </p>
         </div>
 
         <!-- サービスコード別内訳 -->

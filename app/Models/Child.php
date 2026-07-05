@@ -106,6 +106,11 @@ class Child extends Model
         return $this->hasMany(MonitoringRecord::class);
     }
 
+    public function assessments(): HasMany
+    {
+        return $this->hasMany(Assessment::class);
+    }
+
     public function supportPlans(): HasMany
     {
         return $this->hasMany(SupportPlan::class);

@@ -54,6 +54,73 @@ class BillingPeriodController extends Controller
     }
 
     /**
+     * 国保連の支払決定通知の記録（請求額との突合）
+     */
+    public function recordPaymentDecision(Request $request, BillingPeriod $billingPeriod)
+    {
+        $this->authorizeFacility($billingPeriod);
+
+        abort_if(!in_array($billingPeriod->status, ['submitted', 'completed'], true), 422,
+            '支払決定の記録は国保連への提出後に行えます。');
+
+        $validated = $request->validate([
+            'payment_decided_amount'  => 'required|integer|min:0',
+            'payment_decided_at'      => 'required|date',
+            'payment_difference_note' => 'nullable|string|max:2000',
+        ]);
+
+        $claimedAmount = (int) $billingPeriod->billingDetails()->sum('insurance_amount');
+        $matched = $validated['payment_decided_amount'] === $claimedAmount;
+
+        // 差異があるのにメモが無い場合は原因の記録を求める（返戻・過誤対応の証跡）
+        if (!$matched && empty($validated['payment_difference_note'])) {
+            return back()->withErrors([
+                'payment_difference_note' => sprintf(
+                    '請求額 %s円 と支払決定額 %s円 に差異があります。原因（返戻・過誤・上限管理結果の変更等）をメモに記録してください。',
+                    number_format($claimedAmount),
+                    number_format($validated['payment_decided_amount']),
+                ),
+            ]);
+        }
+
+        $validated['status'] = $matched ? 'completed' : $billingPeriod->status;
+        $billingPeriod->update($validated);
+
+        return back()->with([
+            'message' => $matched
+                ? '支払決定額は請求額と一致しました。この月の請求を完了にしました。'
+                : '支払決定額を記録しました。差異があるため返戻管理・過誤申立を確認してください。',
+            'status'  => $matched ? 'success' : 'error',
+        ]);
+    }
+
+    /**
+     * 法定代理受領額通知書PDF（児童単位）
+     */
+    public function proxyReceiptPdf(BillingDetail $billingDetail, \App\Services\Billing\ProxyReceiptNoticePdfService $service)
+    {
+        abort_if($billingDetail->billingPeriod->facility_id !== $this->facilityId(), 403);
+        abort_if(!in_array($billingDetail->billingPeriod->status, ['confirmed', 'submitted', 'completed'], true), 422,
+            '代理受領額通知書は請求確定後に発行できます。');
+        \App\Models\AuditLog::record('exported', $billingDetail);
+        $path = $service->generate($billingDetail);
+        return Storage::disk('local')->download($path);
+    }
+
+    /**
+     * 法定代理受領額通知書PDF（月次一括ZIP）
+     */
+    public function proxyReceiptPdfBundle(BillingPeriod $billingPeriod, \App\Services\Billing\ProxyReceiptNoticePdfService $service)
+    {
+        $this->authorizeFacility($billingPeriod);
+        abort_if(!in_array($billingPeriod->status, ['confirmed', 'submitted', 'completed'], true), 422,
+            '代理受領額通知書は請求確定後に発行できます。');
+        \App\Models\AuditLog::record('exported', $billingPeriod);
+        $path = $service->generateBundle($billingPeriod);
+        return Storage::disk('local')->download($path);
+    }
+
+    /**
      * 月次請求一覧
      */
     public function index(Request $request)
@@ -95,6 +162,15 @@ class BillingPeriodController extends Controller
         $this->attachReviewMetrics($billingPeriod);
         $kpi   = $this->buildFacilityKpi($billingPeriod);
         $trend = $this->buildRevenueTrend($billingPeriod, 6);
+
+        // 損益（人件費・経費・利益）は経営情報のため管理者のみに返す
+        if (auth()->user()?->staff?->role !== 'admin') {
+            unset(
+                $kpi['revenue'], $kpi['labor_cost'], $kpi['labor_breakdown'],
+                $kpi['expenses'], $kpi['total_cost'], $kpi['net_profit'],
+                $kpi['labor_ratio'], $kpi['profit_ratio'],
+            );
+        }
 
         return Inertia::render('Billing/Show', [
             'period'  => $billingPeriod,

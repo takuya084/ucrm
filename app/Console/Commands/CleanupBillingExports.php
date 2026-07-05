@@ -17,6 +17,8 @@ class CleanupBillingExports extends Command
         'billing_exports',
         'performance-records',
         'cap-management',
+        'proxy-receipts',
+        'receipts',
     ];
 
     public function handle(): int

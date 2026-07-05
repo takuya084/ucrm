@@ -29,11 +29,20 @@ class BillingDetail extends Model
         'cap_managing_facility_code',
         'cap_result_amount',
         'status',
+        'adjustment_note',
+        'adjusted_by',
+        'adjusted_at',
     ];
 
     protected $casts = [
         'unit_price_yen' => 'decimal:2',
+        'adjusted_at'    => 'datetime',
     ];
+
+    public function adjustedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'adjusted_by');
+    }
 
     public function billingPeriod(): BelongsTo
     {

@@ -19,7 +19,7 @@ class ChildrenController extends Controller
     {
         $facilityId = $this->facilityId();
 
-        $query = Child::with(['school'])
+        $query = Child::with(['school', 'activeRecipientCertificate:id,child_id,valid_to,monthly_limit'])
             ->where('facility_id', $facilityId)
             ->search($request->search)
             ->when($request->status, fn ($q, $s) => $q->where('contract_status', $s))
@@ -242,9 +242,10 @@ class ChildrenController extends Controller
             'guardians',
             'schedules' => fn ($q) => $q->active()->orderBy('day_of_week'),
             'activeRecipientCertificate',
-            'usageRecords' => fn ($q) => $q->orderByDesc('date')->limit(5),
+            'usageRecords' => fn ($q) => $q->orderByDesc('date')->limit(10)->with('supportRecord:id,usage_record_id'),
             'monitoringRecords' => fn ($q) => $q->orderByDesc('monitoring_date')->limit(10),
             'supportPlans' => fn ($q) => $q->orderByDesc('plan_date')->limit(10),
+            'assessments' => fn ($q) => $q->orderByDesc('assessed_at')->limit(10)->with('staff:id,name'),
         ]);
 
         return Inertia::render('Children/Show', [
