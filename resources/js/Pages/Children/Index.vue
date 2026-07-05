@@ -67,9 +67,19 @@ const GENDER = { male: '男', female: '女', other: '他' }
                 class="bg-indigo-500 text-white px-4 py-2 rounded text-sm hover:bg-indigo-600"
               >検索</button>
               <Link
+                v-if="$page.props.auth.staff_role === 'admin'"
+                :href="route('children.yoyaku-link')"
+                class="ml-auto text-sm text-indigo-600 hover:underline"
+              >p-yoyaku連携</Link>
+              <Link
+                v-if="['admin','leader'].includes($page.props.auth.staff_role)"
+                :href="route('children.bulk')"
+                class="text-sm text-indigo-600 hover:underline"
+              >CSV一括登録</Link>
+              <Link
                 v-if="['admin','leader'].includes($page.props.auth.staff_role)"
                 :href="route('children.create')"
-                class="ml-auto bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600"
+                class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600"
               >＋ 新規登録</Link>
             </div>
 

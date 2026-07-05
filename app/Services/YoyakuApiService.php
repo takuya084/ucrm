@@ -102,6 +102,35 @@ class YoyakuApiService
     }
 
     /**
+     * p-yoyaku 側の利用者(児童)一覧。既存アカウントとの突合参照用
+     */
+    public function listUsers(int $businessId, ?int $facilityId = null): ?array
+    {
+        $client = $this->client($facilityId);
+        if (!$client) return null;
+
+        return $this->safe(fn() =>
+            $client->get("{$this->baseUrl}/api/users", [
+                'business_id' => $businessId,
+            ])
+        );
+    }
+
+    /**
+     * p-yoyaku 側に利用者(児童)アカウントを作成（冪等: external_ref を渡すと upsert）。
+     * 新規作成時のみレスポンスに平文パスワードが含まれる。
+     */
+    public function createUser(array $payload, ?int $facilityId = null): ?array
+    {
+        $client = $this->client($facilityId);
+        if (!$client) return null;
+
+        return $this->safe(fn() =>
+            $client->post("{$this->baseUrl}/api/users", $payload)
+        );
+    }
+
+    /**
      * Http 呼び出しの共通例外ハンドリング
      */
     private function safe(\Closure $fn): ?array

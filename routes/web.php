@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ChildrenController;
+use App\Http\Controllers\ChildrenYoyakuLinkController;
 use App\Http\Controllers\RecipientCertificateController;
 use App\Http\Controllers\ChildScheduleController;
 use App\Http\Controllers\ProgramController;
@@ -80,9 +81,18 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function () {
     Route::get('children/create',              [ChildrenController::class, 'create'])->name('children.create');
     Route::post('children',                    [ChildrenController::class, 'store'])->name('children.store');
+    Route::get('children/bulk',                [ChildrenController::class, 'createBulk'])->name('children.bulk');
+    Route::post('children/bulk',               [ChildrenController::class, 'storeBulk'])->name('children.bulk.store');
+    Route::get('children/bulk/template',       [ChildrenController::class, 'bulkTemplate'])->name('children.bulk.template');
     Route::get('children/{child}/edit',        [ChildrenController::class, 'edit'])->name('children.edit');
     Route::patch('children/{child}',           [ChildrenController::class, 'update'])->name('children.update');
     Route::delete('children/{child}',          [ChildrenController::class, 'destroy'])->name('children.destroy');
+});
+// p-yoyaku 連携: 児童とp-yoyaku利用者の紐付け（アカウント発行を伴うため管理者のみ）
+Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
+    Route::get('children/yoyaku-link',        [ChildrenYoyakuLinkController::class, 'index'])->name('children.yoyaku-link');
+    Route::post('children/yoyaku-link/create',[ChildrenYoyakuLinkController::class, 'createAccounts'])->name('children.yoyaku-link.create');
+    Route::post('children/yoyaku-link/csv',   [ChildrenYoyakuLinkController::class, 'linkCsv'])->name('children.yoyaku-link.csv');
 });
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('children',              [ChildrenController::class, 'index'])->name('children.index');

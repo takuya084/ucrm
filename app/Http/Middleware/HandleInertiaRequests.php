@@ -60,9 +60,10 @@ class HandleInertiaRequests extends Middleware
                 ]);
             },
             'flash' => [
-                'message'       => fn() => $request->session()->get('message'),
-                'status'        => fn() => $request->session()->get('status'),
-                'import_errors' => fn() => $request->session()->get('import_errors'),
+                'message'             => fn() => $request->session()->get('message'),
+                'status'              => fn() => $request->session()->get('status'),
+                'import_errors'       => fn() => $request->session()->get('import_errors'),
+                'yoyaku_link_results' => fn() => $request->session()->get('yoyaku_link_results'),
             ]
         ]);
     }

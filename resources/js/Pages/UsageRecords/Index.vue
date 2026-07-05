@@ -344,6 +344,7 @@ const rowBg = (status) => ({
                   type="text"
                   placeholder="欠席理由（例：体調不良）"
                   class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs"
+                  @change="autoSave"
                 />
               </div>
 
@@ -365,6 +366,13 @@ const rowBg = (status) => ({
                   <option value="houday">放デイ</option>
                   <option value="jidou">児発</option>
                 </select>
+                <input
+                  v-model="row.memo"
+                  type="text"
+                  placeholder="メモ"
+                  class="flex-1 min-w-[10rem] border border-gray-300 rounded px-2 py-1 text-xs"
+                  @change="autoSave"
+                />
               </div>
 
               <!-- 送迎チェック（出席時のみ） -->
@@ -383,13 +391,13 @@ const rowBg = (status) => ({
                 </div>
                 <div class="flex gap-4 text-xs text-gray-600">
                   <label class="flex items-center gap-1 cursor-pointer">
-                    <input v-model="row.pickup_done" type="checkbox" class="w-3 h-3" />迎え完了
+                    <input v-model="row.pickup_done" type="checkbox" class="w-3 h-3" @change="autoSave" />迎え完了
                   </label>
                   <label class="flex items-center gap-1 cursor-pointer">
-                    <input v-model="row.dropoff_done" type="checkbox" class="w-3 h-3" />送り完了
+                    <input v-model="row.dropoff_done" type="checkbox" class="w-3 h-3" @change="autoSave" />送り完了
                   </label>
                   <label class="flex items-center gap-1 cursor-pointer">
-                    <input v-model="row.billing_target" type="checkbox" class="w-3 h-3" />請求対象
+                    <input v-model="row.billing_target" type="checkbox" class="w-3 h-3" @change="autoSave" />請求対象
                   </label>
                 </div>
               </div>

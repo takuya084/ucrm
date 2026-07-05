@@ -12,6 +12,17 @@ const props = defineProps({
 
 const today = new Date().toISOString().slice(0, 10)
 
+// R6基準の5領域（支援計画は各領域との関連を明示する）
+const FIVE_DOMAINS = [
+  { key: 'health_life',            label: '健康・生活' },
+  { key: 'motor_sensory',          label: '運動・感覚' },
+  { key: 'cognition_behavior',     label: '認知・行動' },
+  { key: 'language_communication', label: '言語・コミュニケーション' },
+  { key: 'social_relations',       label: '人間関係・社会性' },
+]
+
+const timeHM = (t) => t ? t.slice(0, 5) : ''
+
 const form = reactive({
   previous_plan_id:        props.previousPlan?.id ?? null,
   plan_date:               today,
@@ -21,12 +32,36 @@ const form = reactive({
   short_term_goal:         '',
   support_policy:          props.previousPlan?.support_policy ?? '',
   program_content:         '',
+  planned_start_time:      timeHM(props.previousPlan?.planned_start_time),
+  planned_end_time:        timeHM(props.previousPlan?.planned_end_time),
+  planned_duration_minutes: props.previousPlan?.planned_duration_minutes ?? null,
+  five_domains:            Object.fromEntries(
+    FIVE_DOMAINS.map(d => [d.key, props.previousPlan?.five_domains?.[d.key] ?? ''])
+  ),
   guardian_agreement:      false,
   guardian_agreement_date: '',
 })
 
+// 開始・終了時刻から支援時間（分）を自動計算（手入力での上書きも可）
+const syncDuration = () => {
+  if (!form.planned_start_time || !form.planned_end_time) return
+  const [sh, sm] = form.planned_start_time.split(':').map(Number)
+  const [eh, em] = form.planned_end_time.split(':').map(Number)
+  const diff = (eh * 60 + em) - (sh * 60 + sm)
+  if (diff > 0) form.planned_duration_minutes = diff
+}
+
 const store = () => {
-  Inertia.post(route('children.support-plans.store', props.child.id), form)
+  const domains = Object.fromEntries(
+    Object.entries(form.five_domains).filter(([, v]) => v && v.trim() !== '')
+  )
+  Inertia.post(route('children.support-plans.store', props.child.id), {
+    ...form,
+    planned_start_time:       form.planned_start_time || null,
+    planned_end_time:         form.planned_end_time || null,
+    planned_duration_minutes: form.planned_duration_minutes || null,
+    five_domains:             Object.keys(domains).length ? domains : null,
+  })
 }
 
 const aiLoading = ref(false)
@@ -146,6 +181,43 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               <h3 class="text-sm font-semibold text-gray-600 mb-3 pb-1 border-b">支援内容</h3>
               <textarea v-model="form.program_content" :class="inputClass" rows="4"
                 placeholder="実施する支援プログラム、活動内容など" />
+            </section>
+
+            <!-- 計画支援時間 -->
+            <section>
+              <h3 class="text-sm font-semibold text-gray-600 mb-1 pb-1 border-b">計画支援時間</h3>
+              <p class="text-xs text-gray-500 mb-3">
+                基本報酬の時間区分は、計画に定めた支援時間で算定されます（令和6年度報酬改定）。未入力の場合、請求計算で時間区分を判定できません。
+              </p>
+              <div class="grid grid-cols-3 gap-4">
+                <div>
+                  <label :class="labelClass">開始時刻</label>
+                  <input v-model="form.planned_start_time" type="time" :class="inputClass" @change="syncDuration" />
+                </div>
+                <div>
+                  <label :class="labelClass">終了時刻</label>
+                  <input v-model="form.planned_end_time" type="time" :class="inputClass" @change="syncDuration" />
+                </div>
+                <div>
+                  <label :class="labelClass">支援時間（分）</label>
+                  <input v-model.number="form.planned_duration_minutes" type="number" min="0" max="720" :class="inputClass" placeholder="例：180" />
+                </div>
+              </div>
+            </section>
+
+            <!-- 5領域との関連 -->
+            <section>
+              <h3 class="text-sm font-semibold text-gray-600 mb-1 pb-1 border-b">5領域との関連</h3>
+              <p class="text-xs text-gray-500 mb-3">
+                各領域に関連する支援内容を記載します（関連しない領域は空欄で構いません）。
+              </p>
+              <div class="space-y-3">
+                <div v-for="d in FIVE_DOMAINS" :key="d.key">
+                  <label :class="labelClass">{{ d.label }}</label>
+                  <textarea v-model="form.five_domains[d.key]" :class="inputClass" rows="2"
+                    :placeholder="`「${d.label}」に関連する支援内容`" />
+                </div>
+              </div>
             </section>
 
             <!-- 保護者同意 -->

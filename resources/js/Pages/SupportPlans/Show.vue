@@ -14,6 +14,17 @@ const destroy = () => {
     Inertia.delete(route('children.support-plans.destroy', [props.child.id, props.plan.id]))
   }
 }
+
+const DOMAIN_LABELS = {
+  health_life:            '健康・生活',
+  motor_sensory:          '運動・感覚',
+  cognition_behavior:     '認知・行動',
+  language_communication: '言語・コミュニケーション',
+  social_relations:       '人間関係・社会性',
+}
+
+const timeHM = (t) => t ? t.slice(0, 5) : null
+const hasDomains = props.plan.five_domains && Object.values(props.plan.five_domains).some(v => v)
 </script>
 
 <template>
@@ -79,6 +90,14 @@ const destroy = () => {
                 </Link>
               </dd>
             </div>
+            <div>
+              <dt class="text-xs text-gray-500">計画支援時間（時間区分算定の根拠）</dt>
+              <dd v-if="plan.planned_duration_minutes">
+                <span v-if="timeHM(plan.planned_start_time)">{{ timeHM(plan.planned_start_time) }} 〜 {{ timeHM(plan.planned_end_time) }}／</span>
+                {{ plan.planned_duration_minutes }}分
+              </dd>
+              <dd v-else class="text-red-600 text-xs font-medium">未設定 — 請求計算で時間区分を判定できません</dd>
+            </div>
           </dl>
         </div>
 
@@ -100,6 +119,19 @@ const destroy = () => {
             <h3 class="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">支援内容・プログラム</h3>
             <p class="text-sm text-gray-800 whitespace-pre-wrap bg-green-50 p-3 rounded">{{ plan.program_content }}</p>
           </div>
+        </div>
+
+        <!-- 5領域との関連 -->
+        <div v-if="hasDomains" class="bg-white shadow-sm rounded-lg p-5">
+          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">5領域との関連</h3>
+          <dl class="space-y-3">
+            <template v-for="(label, key) in DOMAIN_LABELS" :key="key">
+              <div v-if="plan.five_domains?.[key]">
+                <dt class="text-xs font-medium text-gray-600 mb-1">{{ label }}</dt>
+                <dd class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 p-2 rounded">{{ plan.five_domains[key] }}</dd>
+              </div>
+            </template>
+          </dl>
         </div>
       </div>
     </div>
