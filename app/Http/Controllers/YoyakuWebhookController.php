@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BillingPeriod;
 use App\Models\Child;
+use App\Models\ContactNote;
 use App\Models\Facility;
 use App\Models\UsageRecord;
 use App\Observers\UsageRecordObserver;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * p-yoyaku からの booking.{created,updated,deleted} を受信し、
  * UsageRecord と同期する。
+ * contact_note.{read,guardian_entry} も受信し、連絡帳の既読・家庭側記入を反映する。
  *
  * 署名: X-Yoyaku-Signature (HMAC-SHA256, body x webhook_secret)
  * 認証は HMAC のみ（Sanctum を介さない）
@@ -81,6 +83,11 @@ class YoyakuWebhookController extends Controller
             return response()->json(['error' => 'date missing or invalid'], 400);
         }
 
+        // 連絡帳イベント（出欠と違い請求に影響しないため、請求ロックの対象外）
+        if (str_starts_with($event, 'contact_note.')) {
+            return $this->handleContactNoteEvent($event, $facility, $child, $date, $payload);
+        }
+
         // 請求確定済みの月の出欠は変更不可（請求の根拠データ保護）。
         // 恒久的な状態のため 200 で応答し、p-yoyaku 側の無限リトライを避ける
         $yearMonth = substr($date, 0, 7);
@@ -134,5 +141,65 @@ class YoyakuWebhookController extends Controller
         });
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * 連絡帳イベントの処理。
+     * - contact_note.read: 保護者が公開済み連絡帳を開いた（既読）
+     * - contact_note.guardian_entry: 保護者が家庭側記入を送信した
+     *   （施設側が未作成でも下書きとして作成する＝朝の家庭記入が先行するケース）
+     */
+    private function handleContactNoteEvent(string $event, Facility $facility, Child $child, string $date, array $payload)
+    {
+        // ソフトデリート済みがあると unique(child_id, date) に当たるため withTrashed で引く
+        $note = ContactNote::withTrashed()
+            ->where('child_id', $child->id)
+            ->whereDate('date', $date)
+            ->first();
+
+        if ($event === 'contact_note.read') {
+            if (!$note || $note->trashed() || !$note->isPublished()) {
+                return response()->json(['ignored' => 'note not published']);
+            }
+            if (!$note->read_at) {
+                $note->update(['read_at' => now()]);
+            }
+            return response()->json(['ok' => true]);
+        }
+
+        if ($event === 'contact_note.guardian_entry') {
+            if (!$note) {
+                $note = new ContactNote([
+                    'child_id' => $child->id,
+                    'date'     => $date,
+                ]);
+                $note->facility_id = $facility->id;
+            }
+            if ($note->trashed()) {
+                $note->deleted_at = null;
+            }
+
+            // ペイロードに含まれる項目だけを反映する（部分送信で既存の家庭側記入を消さない）。
+            // null が明示的に送られた場合はクリア扱い
+            $fields = ['guardian_submitted_at' => now()];
+            $maxLengths = [
+                'home_temperature' => 10,
+                'home_sleep'       => 100,
+                'home_medication'  => 100,
+                'home_condition'   => 100,
+                'guardian_comment' => 2000,
+            ];
+            foreach ($maxLengths as $key => $len) {
+                if (array_key_exists($key, $payload)) {
+                    $fields[$key] = $payload[$key] === null ? null : mb_substr((string) $payload[$key], 0, $len);
+                }
+            }
+            $note->fill($fields);
+            $note->save();
+
+            return response()->json(['ok' => true]);
+        }
+
+        return response()->json(['ignored' => 'unknown contact_note event']);
     }
 }

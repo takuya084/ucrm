@@ -1,12 +1,24 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Inertia } from '@inertiajs/inertia'
 import FlashMessage from '@/Components/FlashMessage.vue'
 
 const props = defineProps({
-  record:     Object,
-  recordDate: String,
+  record:             Object,
+  recordDate:         String,
+  contactNote:        Object,
+  shortTermGoal:      String,
+  fiveDomainLabels:   Object,
+  goalProgressLabels: Object,
 })
+
+const publishNote = () => {
+  if (!confirm('連絡帳を保護者に公開します。よろしいですか？')) return
+  Inertia.post(route('contact-notes.publish', props.contactNote.id), {}, { preserveScroll: true })
+}
+
+const fmtDateTime = (v) => v ? v.replace('T', ' ').slice(0, 16) : null
 
 const CONDITION = {
   good:   { label: '良好', icon: '😊', class: 'bg-green-100 text-green-700 border-green-200' },
@@ -43,9 +55,12 @@ const CATEGORY_LABELS = {
                 <span>{{ CONDITION[record.condition]?.icon }}</span>
                 {{ CONDITION[record.condition]?.label ?? '未設定' }}
               </span>
-              <span v-if="record.is_shared_with_guardian"
-                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200">
-                連絡帳記載済
+              <span v-if="contactNote"
+                :class="['inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border',
+                  contactNote.status === 'published'
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                    : 'bg-gray-50 text-gray-500 border-gray-200']">
+                📖 連絡帳{{ contactNote.status === 'published' ? '公開済み' : '（下書き）' }}
               </span>
             </div>
             <div class="flex items-center gap-3">
@@ -107,6 +122,50 @@ const CATEGORY_LABELS = {
               <p :class="['text-sm whitespace-pre-wrap leading-relaxed rounded px-3 py-2', record.next_action ? 'text-gray-800 bg-indigo-50' : 'text-gray-400']">
                 {{ record.next_action || '―' }}
               </p>
+            </div>
+
+            <!-- 連絡帳（保護者に公開される内容） -->
+            <div v-if="contactNote" class="bg-white shadow-sm rounded-lg border-2 border-emerald-200 overflow-hidden">
+              <div class="flex items-center justify-between px-5 py-3 bg-emerald-50 border-b border-emerald-200">
+                <h3 class="text-sm font-semibold text-emerald-700">📖 連絡帳（保護者に公開される内容）</h3>
+                <div class="flex items-center gap-2">
+                  <span v-if="contactNote.status === 'published'" class="text-xs text-emerald-600">
+                    {{ fmtDateTime(contactNote.published_at) }} 公開
+                    <span v-if="contactNote.read_at" class="ml-1 font-bold">✓ 既読</span>
+                  </span>
+                  <button
+                    v-else
+                    @click="publishNote"
+                    class="px-3 py-1.5 text-xs text-white bg-emerald-500 rounded hover:bg-emerald-600"
+                  >保護者に公開する</button>
+                </div>
+              </div>
+              <div class="p-5 space-y-3">
+                <div v-if="contactNote.guardian_submitted_at" class="p-3 bg-amber-50 border border-amber-200 rounded">
+                  <p class="text-xs font-bold text-amber-700 mb-1">🏠 家庭からの連絡</p>
+                  <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-amber-800 mb-1">
+                    <span v-if="contactNote.home_temperature">体温：{{ contactNote.home_temperature }}℃</span>
+                    <span v-if="contactNote.home_sleep">睡眠：{{ contactNote.home_sleep }}</span>
+                    <span v-if="contactNote.home_medication">服薬：{{ contactNote.home_medication }}</span>
+                    <span v-if="contactNote.home_condition">朝の様子：{{ contactNote.home_condition }}</span>
+                  </div>
+                  <p v-if="contactNote.guardian_comment" class="text-sm text-amber-900 whitespace-pre-wrap">{{ contactNote.guardian_comment }}</p>
+                </div>
+                <p class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{{ contactNote.guardian_message || '（メッセージ未記入）' }}</p>
+                <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-600">
+                  <span v-if="contactNote.meal_note">🍪 {{ contactNote.meal_note }}</span>
+                  <span v-if="contactNote.health_note">🌡 {{ contactNote.health_note }}</span>
+                </div>
+                <div v-if="contactNote.five_domain_tags?.length || contactNote.goal_progress" class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-gray-100">
+                  <span
+                    v-for="tag in contactNote.five_domain_tags ?? []" :key="tag"
+                    class="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-full text-xs"
+                  >{{ fiveDomainLabels?.[tag] ?? tag }}</span>
+                  <span v-if="contactNote.goal_progress" class="px-2 py-0.5 bg-gray-50 border border-gray-200 text-gray-600 rounded-full text-xs">
+                    目標: {{ goalProgressLabels?.[contactNote.goal_progress] ?? contactNote.goal_progress }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 

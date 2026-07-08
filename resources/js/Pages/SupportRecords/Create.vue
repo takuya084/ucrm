@@ -2,17 +2,22 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/inertia-vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
+import ContactNoteZone from '@/Components/ContactNoteZone.vue'
 import { reactive, computed, ref } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
 import axios from 'axios'
 
 const props = defineProps({
-  child:          Object,
-  date:           String,
-  usageRecordId:  Number,
-  programs:       Array,
-  staffList:      Array,
-  defaultStaffId: Number,
+  child:              Object,
+  date:               String,
+  usageRecordId:      Number,
+  programs:           Array,
+  staffList:          Array,
+  defaultStaffId:     Number,
+  contactNote:        Object,
+  shortTermGoal:      String,
+  fiveDomainLabels:   Object,
+  goalProgressLabels: Object,
 })
 
 const form = reactive({
@@ -26,11 +31,27 @@ const form = reactive({
   challenge_note:           '',
   care_note:                props.child.care_note ?? '',
   next_action:              '',
-  is_shared_with_guardian:  false,
   program_ids:              [],
   program_durations:        {},
   program_items:            {}, // { programId: [itemId, ...] }
+  // 連絡帳（保護者公開ゾーン）— 家庭側記入が先行している場合は既存値を引き継ぐ
+  contact_note: {
+    meal_note:        props.contactNote?.meal_note ?? '',
+    health_note:      props.contactNote?.health_note ?? '',
+    guardian_message: props.contactNote?.guardian_message ?? '',
+    five_domain_tags: props.contactNote?.five_domain_tags ?? [],
+    goal_progress:    props.contactNote?.goal_progress ?? null,
+    publish_now:      false,
+  },
 })
+
+// AI下書き用: 内部記録の現在値（保存前でも使えるようフォームから渡す）
+const aiContext = computed(() => ({
+  condition:        form.condition,
+  behavior_note:    form.behavior_note,
+  achievement_note: form.achievement_note,
+  program_names:    props.programs.filter(p => form.program_ids.includes(p.id)).map(p => p.name),
+}))
 
 // 項目展開状態
 const expandedPrograms = ref(new Set())
@@ -139,6 +160,10 @@ const CONDITION_OPTIONS = [
           <div v-if="child.care_note" class="mb-5 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
             <span class="font-medium text-yellow-700">⚠ 配慮事項：</span>
             <span class="text-yellow-800">{{ child.care_note }}</span>
+          </div>
+
+          <div class="mb-5 p-2.5 bg-gray-100 border border-gray-200 rounded text-xs text-gray-600">
+            🔒 このフォームは<span class="font-bold">施設内記録</span>です。保護者に公開されるのは下部の「📖 連絡帳」欄のみです。
           </div>
 
           <form @submit.prevent="store" class="space-y-6">
@@ -328,16 +353,16 @@ const CONDITION_OPTIONS = [
               </select>
             </section>
 
-            <!-- 保護者共有 -->
-            <section>
-              <label class="flex items-center gap-3 cursor-pointer p-3 bg-blue-50 border border-blue-200 rounded">
-                <input v-model="form.is_shared_with_guardian" type="checkbox" class="w-4 h-4" />
-                <div>
-                  <span class="text-sm font-medium text-blue-700">連絡帳として保護者に共有する</span>
-                  <p class="text-xs text-blue-500 mt-0.5">チェックを入れると保護者共有フラグが立ちます</p>
-                </div>
-              </label>
-            </section>
+            <!-- 連絡帳（保護者公開ゾーン） -->
+            <ContactNoteZone
+              :form="form.contact_note"
+              :contact-note="contactNote"
+              :short-term-goal="shortTermGoal"
+              :five-domain-labels="fiveDomainLabels"
+              :goal-progress-labels="goalProgressLabels"
+              :child-id="child.id"
+              :ai-context="aiContext"
+            />
 
             <div class="flex justify-end gap-3 pt-4 border-t">
               <Link

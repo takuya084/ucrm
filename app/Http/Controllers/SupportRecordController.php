@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSupportRecordRequest;
 use App\Http\Requests\UpdateSupportRecordRequest;
+use App\Jobs\PushContactNote;
 use App\Models\Child;
+use App\Models\ContactNote;
 use App\Models\Program;
 use App\Models\Staff;
+use App\Models\SupportPlan;
 use App\Models\SupportRecord;
 use App\Models\UsageRecord;
 use Illuminate\Http\Request;
@@ -22,6 +25,91 @@ class SupportRecordController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
+    }
+
+    /**
+     * 連絡帳ゾーン用の共通 props（既存の連絡帳・家庭側記入・有効な支援計画の短期目標）
+     */
+    private function contactNoteProps(int $childId, string $date): array
+    {
+        $note = ContactNote::where('child_id', $childId)
+            ->whereDate('date', $date)
+            ->first();
+
+        $activePlan = SupportPlan::where('child_id', $childId)
+            ->where('valid_from', '<=', $date)
+            ->where(fn ($q) => $q->whereNull('valid_to')->orWhere('valid_to', '>=', $date))
+            ->orderBy('valid_from', 'desc')
+            ->first(['id', 'short_term_goal']);
+
+        return [
+            'contactNote'        => $note,
+            'shortTermGoal'      => $activePlan?->short_term_goal,
+            'fiveDomainLabels'   => ContactNote::FIVE_DOMAIN_LABELS,
+            'goalProgressLabels' => ContactNote::GOAL_PROGRESS_LABELS,
+        ];
+    }
+
+    /**
+     * 支援記録の保存に合わせて連絡帳を upsert する。
+     * 連絡帳ゾーンに何も書かれておらず既存もなければ作らない。
+     * publish_now が立っていれば公開し p-yoyaku へ配信する。
+     */
+    private function upsertContactNote(Request $request, SupportRecord $record): void
+    {
+        $data = $request->input('contact_note');
+        if (!is_array($data)) {
+            return;
+        }
+
+        $fields = [
+            'meal_note'        => $data['meal_note'] ?? null,
+            'health_note'      => $data['health_note'] ?? null,
+            'guardian_message' => $data['guardian_message'] ?? null,
+            'five_domain_tags' => array_values($data['five_domain_tags'] ?? []) ?: null,
+            'goal_progress'    => $data['goal_progress'] ?? null,
+        ];
+
+        // ソフトデリート済みがあると unique(child_id, date) に当たるため withTrashed で引く
+        $note = ContactNote::withTrashed()
+            ->where('child_id', $record->child_id)
+            ->whereDate('date', $record->date->toDateString())
+            ->first()
+            ?? new ContactNote([
+                'child_id' => $record->child_id,
+                'date'     => $record->date->toDateString(),
+            ]);
+
+        if (!$note->exists && !array_filter($fields, fn ($v) => filled($v))) {
+            return;
+        }
+
+        $note->fill($fields);
+        $note->facility_id       = $record->child->facility_id;
+        $note->support_record_id = $record->id;
+        $note->staff_id          = $record->staff_id;
+        if ($note->trashed()) {
+            $note->deleted_at = null;
+        }
+
+        $publishNow = (bool) ($data['publish_now'] ?? false);
+        if ($publishNow && !$note->isPublished() && $note->hasFacilityContent()) {
+            $note->status       = ContactNote::STATUS_PUBLISHED;
+            $note->published_at = now();
+            $note->published_by = auth()->user()->staff?->id;
+        }
+
+        $note->save();
+
+        // 支援記録側の保護者共有フラグは「連絡帳あり」の意味に統一
+        if ($note->hasFacilityContent() && !$record->is_shared_with_guardian) {
+            $record->is_shared_with_guardian = true;
+            $record->saveQuietly();
+        }
+
+        if ($note->isPublished()) {
+            PushContactNote::dispatch($note->id)->afterCommit();
+        }
     }
 
     /**
@@ -41,25 +129,29 @@ class SupportRecordController extends Controller
 
         if ($request->usage_record_id) {
             $usageRecord = UsageRecord::with('child')->findOrFail($request->usage_record_id);
+            abort_if($usageRecord->child->facility_id !== $facilityId, 403);
+            $date = $usageRecord->date->format('Y-m-d');
             return Inertia::render('SupportRecords/Create', [
                 'child'          => $usageRecord->child->only('id', 'name', 'care_note'),
-                'date'           => $usageRecord->date->format('Y-m-d'),
+                'date'           => $date,
                 'usageRecordId'  => $usageRecord->id,
                 'programs'       => $programs,
                 'staffList'      => $this->staffList(),
                 'defaultStaffId' => $defaultStaffId,
-            ]);
+            ] + $this->contactNoteProps($usageRecord->child->id, $date));
         }
 
         $child = Child::findOrFail($request->child_id);
+        abort_if($child->facility_id !== $facilityId, 403);
+        $date = \Carbon\Carbon::parse($request->date ?? today())->format('Y-m-d');
         return Inertia::render('SupportRecords/Create', [
             'child'          => $child->only('id', 'name', 'care_note'),
-            'date'           => \Carbon\Carbon::parse($request->date ?? today())->format('Y-m-d'),
+            'date'           => $date,
             'usageRecordId'  => null,
             'programs'       => $programs,
             'staffList'      => $this->staffList(),
             'defaultStaffId' => $defaultStaffId,
-        ]);
+        ] + $this->contactNoteProps($child->id, $date));
     }
 
     /** 支援記録保存 */
@@ -91,6 +183,8 @@ class SupportRecordController extends Controller
                 }
                 $record->programs()->sync($sync);
             }
+
+            $this->upsertContactNote($request, $record);
         });
 
         $dateStr = \Carbon\Carbon::parse($request->date)->toDateString();
@@ -118,7 +212,7 @@ class SupportRecordController extends Controller
         return Inertia::render('SupportRecords/Show', [
             'record'     => $supportRecord,
             'recordDate' => $supportRecord->date->format('Y-m-d'),
-        ]);
+        ] + $this->contactNoteProps($supportRecord->child_id, $supportRecord->date->format('Y-m-d')));
     }
 
     /** 編集フォーム */
@@ -150,7 +244,7 @@ class SupportRecordController extends Controller
             'selectedPrograms' => $selectedPrograms,
             'selectedItems'    => $selectedItems,
             'staffList'        => $this->staffList(),
-        ]);
+        ] + $this->contactNoteProps($supportRecord->child_id, $supportRecord->date->format('Y-m-d')));
     }
 
     /** 更新処理 */
@@ -178,6 +272,8 @@ class SupportRecordController extends Controller
                 ];
             }
             $supportRecord->programs()->sync($sync);
+
+            $this->upsertContactNote($request, $supportRecord);
         });
 
         $dateStr = \Carbon\Carbon::parse($supportRecord->date)->toDateString();

@@ -150,6 +150,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('usage-records/bulk-store',[UsageRecordController::class, 'bulkStore']) ->name('usage-records.bulk-store');
 });
 
+// 連絡帳
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('contact-notes',                        [\App\Http\Controllers\ContactNoteController::class, 'index'])  ->name('contact-notes.index');
+    Route::post('contact-notes/{contactNote}/publish', [\App\Http\Controllers\ContactNoteController::class, 'publish'])->name('contact-notes.publish');
+});
+
+// 連絡帳の年間PDF出力（要配慮個人情報の一括出力のためリーダー以上に限定）
+Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function () {
+    Route::get('contact-notes/export-yearly',     [\App\Http\Controllers\ContactNoteController::class, 'exportYearly'])   ->name('contact-notes.export-yearly');
+    Route::get('contact-notes/export-yearly-zip', [\App\Http\Controllers\ContactNoteController::class, 'exportYearlyZip'])->name('contact-notes.export-yearly-zip');
+});
+
 // 支援記録
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('support-records/create',          [SupportRecordController::class, 'create']) ->name('support-records.create');
@@ -299,11 +311,16 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('operati
     Route::post('/self-evaluation', [OperationRecordController::class, 'upsertSelfEvaluation'])->name('operation-records.self-evaluation.upsert');
 });
 
-// AI下書き生成（leader以上）
+// AI下書き生成（計画・モニタリングは作成権限のある leader 以上）
 Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function () {
     Route::post('ai-draft/support-plan/{child}', [AiDraftController::class, 'supportPlan'])->name('ai-draft.support-plan');
     Route::post('ai-draft/monitoring/{child}',   [AiDraftController::class, 'monitoring'])  ->name('ai-draft.monitoring');
 });
+
+// 連絡帳のAI下書きは支援記録フォームから全スタッフが使う（保護者同意チェックはコントローラ側）
+Route::post('ai-draft/contact-note/{child}', [AiDraftController::class, 'contactNote'])
+    ->middleware(['auth', 'verified'])
+    ->name('ai-draft.contact-note');
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [

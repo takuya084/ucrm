@@ -96,6 +96,11 @@ class Child extends Model
         return $this->hasMany(SupportRecord::class);
     }
 
+    public function contactNotes(): HasMany
+    {
+        return $this->hasMany(ContactNote::class);
+    }
+
     public function inquiries(): HasMany
     {
         return $this->hasMany(Inquiry::class);

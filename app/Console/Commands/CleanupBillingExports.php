@@ -9,9 +9,9 @@ class CleanupBillingExports extends Command
 {
     protected $signature = 'billing:cleanup-exports';
 
-    protected $description = '保持期限（config: billing.export_retention_days）を過ぎた請求CSV/PDF/ZIPを削除する';
+    protected $description = '保持期限（config: billing.export_retention_days）を過ぎた出力ファイル（請求CSV/PDF/ZIP・連絡帳PDF）を削除する';
 
-    /** 請求関連の出力ファイルが置かれるディレクトリ */
+    /** 出力ファイルが置かれるディレクトリ（個人情報を含むため保持期限で削除する） */
     private const TARGET_DIRECTORIES = [
         'billing_csv',
         'billing_exports',
@@ -19,6 +19,7 @@ class CleanupBillingExports extends Command
         'cap-management',
         'proxy-receipts',
         'receipts',
+        'contact-notes',
     ];
 
     public function handle(): int

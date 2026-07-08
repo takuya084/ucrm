@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ContactNote;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateSupportRecordRequest extends FormRequest
 {
@@ -25,6 +27,16 @@ class UpdateSupportRecordRequest extends FormRequest
             'program_ids.*'           => ['exists:programs,id'],
             'program_durations'       => ['nullable', 'array'],
             'program_durations.*'     => ['nullable', 'integer', 'min:5', 'max:180'],
+
+            // 連絡帳（保護者に公開される内容）
+            'contact_note'                    => ['nullable', 'array'],
+            'contact_note.meal_note'          => ['nullable', 'string', 'max:255'],
+            'contact_note.health_note'        => ['nullable', 'string', 'max:255'],
+            'contact_note.guardian_message'   => ['nullable', 'string', 'max:2000'],
+            'contact_note.five_domain_tags'   => ['nullable', 'array'],
+            'contact_note.five_domain_tags.*' => [Rule::in(array_keys(ContactNote::FIVE_DOMAIN_LABELS))],
+            'contact_note.goal_progress'      => ['nullable', Rule::in(array_keys(ContactNote::GOAL_PROGRESS_LABELS))],
+            'contact_note.publish_now'        => ['nullable', 'boolean'],
         ];
     }
 }

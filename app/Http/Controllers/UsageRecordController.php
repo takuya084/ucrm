@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\BulkStoreUsageRecordRequest;
 use App\Models\Child;
 use App\Models\ChildSchedule;
+use App\Models\ContactNote;
 use App\Models\Facility;
 use App\Models\UsageRecord;
 use App\Services\YoyakuApiService;
@@ -30,9 +31,15 @@ class UsageRecordController extends Controller
 
         $hasRecords = $savedRecords->isNotEmpty();
 
+        // 連絡帳の状態（児童ID => 連絡帳）。バッジ表示用
+        $noteMap = ContactNote::where('facility_id', $facilityId)
+            ->whereDate('date', $date)
+            ->get(['id', 'child_id', 'status', 'read_at', 'guardian_submitted_at'])
+            ->keyBy('child_id');
+
         if ($hasRecords) {
             // ── 保存済みモード: DBにあるものだけを表示する（勝手な補充はしない） ──
-            $rows = $savedRecords->map(fn($rec) => $this->rowFromRecord($rec));
+            $rows = $savedRecords->map(fn($rec) => $this->rowFromRecord($rec, $noteMap->get($rec->child_id)));
             $dataSource = 'records';
         } else {
             // ── テンプレートモード: 初めて開くときは予定を表示 ──
@@ -49,7 +56,7 @@ class UsageRecordController extends Controller
                     ->orderBy('name_kana')
                     ->get();
 
-                $rows = $templateChildren->map(fn($c) => $this->rowFromChild($c, $yoyakuMap->get($c->yoyaku_user_id)));
+                $rows = $templateChildren->map(fn($c) => $this->rowFromChild($c, $yoyakuMap->get($c->yoyaku_user_id), $noteMap->get($c->id)));
             } else {
                 $dataSource = 'schedule';
                 $scheduled = ChildSchedule::with('child.school')
@@ -58,7 +65,7 @@ class UsageRecordController extends Controller
                     ->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', $date))
                     ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId)->where('contract_status', 'active'))
                     ->get();
-                $rows = $scheduled->map(fn($s) => $this->rowFromChild($s->child));
+                $rows = $scheduled->map(fn($s) => $this->rowFromChild($s->child, null, $noteMap->get($s->child_id)));
             }
         }
 
@@ -159,7 +166,7 @@ class UsageRecordController extends Controller
     // ── private helpers ──────────────────────────────────────────────────
 
     /** usage_record モデルから行データを生成 */
-    private function rowFromRecord(UsageRecord $rec): array
+    private function rowFromRecord(UsageRecord $rec, ?ContactNote $note = null): array
     {
         return [
             'child_id'                => $rec->child_id,
@@ -185,11 +192,14 @@ class UsageRecordController extends Controller
             'service_type'            => $rec->service_type ?? '',
             'has_support_record'      => $rec->supportRecord !== null,
             'support_record_id'       => $rec->supportRecord?->id,
+            'contact_note_status'     => $note?->status,
+            'contact_note_read'       => (bool) $note?->read_at,
+            'contact_note_home_entry' => (bool) $note?->guardian_submitted_at,
         ];
     }
 
     /** Child モデルからテンプレート行データを生成（未保存） */
-    private function rowFromChild(Child $child, ?array $yoyaku = null): array
+    private function rowFromChild(Child $child, ?array $yoyaku = null, ?ContactNote $note = null): array
     {
         return [
             'child_id'                => $child->id,
@@ -215,6 +225,9 @@ class UsageRecordController extends Controller
             'service_type'            => '',
             'has_support_record'      => false,
             'support_record_id'       => null,
+            'contact_note_status'     => $note?->status,
+            'contact_note_read'       => (bool) $note?->read_at,
+            'contact_note_home_entry' => (bool) $note?->guardian_submitted_at,
         ];
     }
 

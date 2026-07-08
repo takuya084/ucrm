@@ -308,8 +308,23 @@ const rowBg = (status) => ({
                   >{{ opt.label }}</button>
                 </div>
 
-                <!-- 右端：支援記録ボタン + 削除ボタン -->
+                <!-- 右端：連絡帳バッジ + 支援記録ボタン + 削除ボタン -->
                 <div class="ml-auto flex items-center gap-2">
+                  <span
+                    v-if="row.contact_note_home_entry"
+                    class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200"
+                    title="保護者からの連絡帳記入があります"
+                  >🏠 家庭記入</span>
+                  <span
+                    v-if="row.contact_note_status === 'published'"
+                    class="text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200"
+                    :title="row.contact_note_read ? '保護者が既読' : '公開済み（未読）'"
+                  >📖 {{ row.contact_note_read ? '既読' : '公開済' }}</span>
+                  <span
+                    v-else-if="row.contact_note_status === 'draft'"
+                    class="text-xs px-2 py-1 rounded-full bg-gray-50 text-gray-500 border border-gray-200"
+                    title="連絡帳は下書きです（未公開）"
+                  >📖 下書き</span>
                   <Link
                     v-if="row.has_support_record"
                     :href="route('support-records.show', row.support_record_id)"

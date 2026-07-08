@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Child;
+use App\Models\ContactNote;
 use App\Models\SupportPlan;
 use App\Models\MonitoringRecord;
 use App\Models\SupportRecord;
@@ -64,8 +65,13 @@ EOT;
             ->orderBy('date', 'desc')
             ->limit(30)
             ->get();
+        $recentNotes     = ContactNote::where('child_id', $child->id)
+            ->where('date', '>=', $periodFrom)
+            ->orderBy('date', 'desc')
+            ->limit(30)
+            ->get();
 
-        $userPrompt = $this->buildMonitoringPrompt($child, $latestPlan, $lastMonitoring, $recentRecords);
+        $userPrompt = $this->buildMonitoringPrompt($child, $latestPlan, $lastMonitoring, $recentRecords, $recentNotes);
 
         $systemPrompt = <<<EOT
 あなたは放課後等デイサービスのモニタリング記録作成を支援する専門家AIです。
@@ -77,6 +83,47 @@ EOT;
 EOT;
 
         return $this->callApi($systemPrompt, $userPrompt);
+    }
+
+    /**
+     * 連絡帳の保護者向けメッセージ下書きを生成
+     * 内部記録（様子・できたこと・実施プログラム）を保護者向けの表現に変換する。
+     * @param array{condition?:string, behavior_note?:string, achievement_note?:string, program_names?:array} $context
+     * @return array{guardian_message:string}|null
+     */
+    public function generateContactNoteDraft(Child $child, array $context): ?array
+    {
+        $conditionMap = ['good' => '良好', 'normal' => '普通', 'poor' => '不調'];
+
+        $lines   = [];
+        $lines[] = "【今日の内部記録】";
+        $lines[] = "様子：" . ($conditionMap[$context['condition'] ?? ''] ?? '不明');
+        if (!empty($context['program_names'])) {
+            $lines[] = "実施した活動：" . implode('、', $context['program_names']);
+        }
+        if (!empty($context['behavior_note'])) {
+            $lines[] = "行動・様子メモ：{$context['behavior_note']}";
+        }
+        if (!empty($context['achievement_note'])) {
+            $lines[] = "できたこと：{$context['achievement_note']}";
+        }
+
+        $systemPrompt = <<<EOT
+あなたは放課後等デイサービスの連絡帳（保護者向け）の文章作成を支援するAIです。
+職員の内部記録を元に、保護者に今日の様子を伝えるメッセージを作成してください。
+
+ルール：
+- 記録にある事実だけを使い、書かれていないことを創作しない
+- 温かく丁寧な語り口で、専門用語を避ける
+- 課題や問題行動の指摘・支援上の見立ては書かない（それらは職員が直接伝える）
+- 児童は「お子さま」と表現する（実名・「本児」は使わない）
+- 200〜300字程度
+
+必ず以下のJSON形式のみで返してください（余分な説明文は不要です）：
+{"guardian_message":"..."}
+EOT;
+
+        return $this->callApi($systemPrompt, $this->scrubName($child, implode("\n", $lines)));
     }
 
     // ── private ──────────────────────────────────────────────────────────
@@ -134,7 +181,8 @@ EOT;
         Child $child,
         ?SupportPlan $plan,
         ?MonitoringRecord $lastMonitoring,
-        $records
+        $records,
+        $contactNotes = null
     ): string {
         $conditionMap = ['good' => '良好', 'normal' => '普通', 'poor' => '不調'];
 
@@ -170,6 +218,35 @@ EOT;
                 ]);
                 if ($parts) {
                     $lines[] = "{$r->date}（{$cond}）" . implode('　', $parts);
+                }
+            }
+        }
+
+        // 連絡帳から: 短期目標への手応えの集計と保護者コメント（保護者ニーズの材料）
+        if ($contactNotes && $contactNotes->isNotEmpty()) {
+            $progressCounts = collect(ContactNote::GOAL_PROGRESS_LABELS)
+                ->map(fn ($label, $key) => $label . '：' . $contactNotes->where('goal_progress', $key)->count() . '件')
+                ->values();
+            $lines[] = "\n【短期目標への手応え（連絡帳の日次評価の集計）】";
+            $lines[] = $progressCounts->implode('　');
+
+            $comments = $contactNotes->filter(fn ($n) => filled($n->guardian_comment))->take(10);
+            if ($comments->isNotEmpty()) {
+                $lines[] = "\n【保護者からの連絡帳コメント（新しい順）】";
+                foreach ($comments as $n) {
+                    $lines[] = "{$n->date->format('Y-m-d')}：{$n->guardian_comment}";
+                }
+            }
+
+            $homeNotes = $contactNotes->filter(fn ($n) => filled($n->home_condition) || filled($n->home_sleep))->take(10);
+            if ($homeNotes->isNotEmpty()) {
+                $lines[] = "\n【家庭からの様子（新しい順）】";
+                foreach ($homeNotes as $n) {
+                    $parts = array_filter([
+                        $n->home_condition ? "朝の様子：{$n->home_condition}" : null,
+                        $n->home_sleep     ? "睡眠：{$n->home_sleep}" : null,
+                    ]);
+                    $lines[] = "{$n->date->format('Y-m-d')}　" . implode('　', $parts);
                 }
             }
         }

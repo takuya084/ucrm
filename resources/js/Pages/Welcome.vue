@@ -36,22 +36,32 @@ const features = [
   {
     image: '/images/feature-attendance.png',
     title: '出席・送迎管理',
-    desc: '毎日の出席状況をワンクリックで記録。送迎の迎え・送り完了も一画面で管理できます。',
+    desc: '当日の利用予定を予約システムや固定スケジュールから自動で読み込み。出席・欠席・送迎をワンタップで記録し、変更は自動保存されます。欠席理由も残せるので加算の根拠づけも安心です。',
+  },
+  {
+    emoji: '📖',
+    title: 'デジタル連絡帳',
+    desc: '支援記録と同じ画面で連絡帳まで記入完了。施設内記録と保護者公開欄が構造的に分かれているため、内部の見立てが誤って保護者に届くことはありません。公開すると保護者アプリに即配信され、既読や家庭からの体温・服薬連絡も自動で届きます。年度末は1年分をPDFで一括保存できます。',
   },
   {
     image: '/images/feature-children.png',
     title: '児童管理',
-    desc: '受給者証の期限管理、固定スケジュール、保護者情報をまとめて管理。期限アラートで更新漏れを防ぎます。',
+    desc: '受給者証の期限・支給量、固定スケジュール、保護者情報、障がい・アレルギーなどの配慮事項をまとめて管理。期限アラートで更新漏れを防ぎ、要配慮情報は暗号化して保管します。',
   },
   {
     image: '/images/feature-plan.png',
     title: '個別支援計画',
-    desc: '前回の計画と日々の支援記録をもとに、AIが次回計画の下書きを自動生成。編集して保存するだけで完成です。',
+    desc: 'アセスメントから計画・モニタリングまで法令のPDCAサイクルに沿って管理。5領域との関連づけや保護者同意の記録、PDF出力・押印運用にも対応し、AIが計画の下書きを自動生成します。',
   },
   {
     image: '/images/feature-monitoring.png',
     title: 'モニタリング記録',
-    desc: '支援期間中の経過をAIがまとめ、強み・課題・保護者ニーズを自動下書き。記録の負担を大幅に削減します。',
+    desc: '作成画面に期間中の記録サマリーを自動表示。日々の様子の推移、5領域タグの分布、短期目標への手応え（◎○△）の集計、保護者の連絡帳コメントの引用まで、判断材料がそろった状態で書き始められます。',
+  },
+  {
+    emoji: '🧾',
+    title: '国保連請求・利用者請求',
+    desc: '出席記録から日次実績を集計し、請求計算から国保連CSV・利用者請求書・代理受領額通知書・領収書の出力までを一気通貫で処理。上限額管理、過誤・返戻、入金管理にも対応しています。',
   },
   {
     image: '/images/feature-grid.png',
@@ -59,20 +69,18 @@ const features = [
     desc: 'プログラム項目ごとの習熟度を一覧で把握。「今日の出席児童のみ表示」でその日の支援に集中できます。',
   },
   {
-    image: '/images/feature-schedule.png',
-    title: '空き枠調整',
-    desc: '曜日ごとの利用スケジュールを視覚的に確認。欠席が出たときの補充候補もすぐに見つかります。',
-  },
-  {
     image: '/images/feature-shuttle.png',
-    title: '送迎予約システム連携',
-    desc: '別途ご利用の送迎予約システム（houkago-plus）と連携し、当日の送迎時刻・場所を自動取り込みできます。',
+    title: '保護者アプリ連携',
+    desc: '予約システム（houkago-plus）と双方向に連携。当日の予約・送迎時刻の自動取り込みに加え、連絡帳の配信・既読確認・家庭からの朝の連絡受信までアプリで完結します。',
   },
-  {
-    image: '/images/feature-inquiry.png',
-    title: '問い合わせ管理',
-    desc: '見学・体験のお問い合わせを一元管理。対応状況をステータスで追跡し、入力漏れを防ぎます。',
-  },
+]
+
+// コンパクト表示のその他機能
+const subFeatures = [
+  { emoji: '🗓', title: '空き枠調整', desc: '曜日ごとの利用枠の空きを視覚的に確認。欠席時の振替・補充候補がすぐ見つかります。' },
+  { emoji: '👥', title: 'シフト管理', desc: '月間シフトの作成と人員配置基準のチェック。配置漏れをその場で確認できます。' },
+  { emoji: '📋', title: '運営記録', desc: 'BCP・虐待防止委員会・身体拘束・自己評価の記録を管理。実地指導への備えに。' },
+  { emoji: '💬', title: '問い合わせ管理', desc: '見学・体験のお問い合わせを一元管理。対応状況をステータスで追跡します。' },
 ]
 
 const faqs = [
@@ -86,7 +94,11 @@ const faqs = [
   },
   {
     q: 'AI機能の利用に追加料金はかかりますか？',
-    a: 'いいえ。月額料金にAI機能（個別支援計画・モニタリング記録の自動下書き）が含まれています。',
+    a: 'いいえ。月額料金にAI機能（個別支援計画・モニタリング記録・連絡帳の自動下書き）が含まれています。AI下書きは保護者の同意を記録した児童にのみ利用でき、児童の実名は外部に送信されません。',
+  },
+  {
+    q: '保護者とのやりとりはどのように行えますか？',
+    a: '連携する保護者アプリ（予約システム）に連絡帳を配信できます。保護者は既読・家庭からの連絡（体温・睡眠・服薬など）を送信でき、施設側の画面に自動で反映されます。',
   },
   {
     q: '複数事業所での利用は可能ですか？',
@@ -146,7 +158,7 @@ const faqs = [
           支援の記録を、<br>もっとスマートに。
         </h1>
         <p class="text-base sm:text-lg text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
-          出席管理から個別支援計画まで、放デイの日常業務をひとつに集約。<br class="hidden sm:block">
+          出席管理・連絡帳から個別支援計画、国保連請求まで、放デイの日常業務をひとつに集約。<br class="hidden sm:block">
           AIが記録の下書きを自動生成し、スタッフの負担を大幅に削減します。
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -171,9 +183,9 @@ const faqs = [
         </div>
         <div class="grid sm:grid-cols-3 gap-5">
           <div v-for="(item, i) in [
-            { q: '記録に時間がかかりすぎる', s: '支援記録・個別支援計画・モニタリング…書類業務が多くて残業が続いている' },
+            { q: '記録に時間がかかりすぎる', s: '支援記録・連絡帳・個別支援計画・モニタリング…書類業務が多くて残業が続いている' },
             { q: '情報がバラバラで見つからない', s: 'Excelやノートに分散した児童情報、受給者証の期限管理が追いつかない' },
-            { q: '複数スタッフで共有できない', s: 'その場にいないスタッフへの申し送りが口頭頼みで伝わっていない' },
+            { q: '保護者への連絡が手書き・電話頼み', s: '紙の連絡帳の転記が二度手間。伝わったかどうかも確認できない' },
           ]" :key="i"
             class="relative bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center mb-4">
@@ -204,10 +216,10 @@ const faqs = [
             ]">
             <!-- 画像エリア -->
             <div class="sm:w-1/2 w-full bg-gray-100 aspect-video flex items-center justify-center shrink-0">
-              <img :src="f.image" :alt="f.title" class="w-full h-full object-cover"
+              <img v-if="f.image" :src="f.image" :alt="f.title" class="w-full h-full object-cover"
                 @error="(e) => e.target.style.display='none'">
-              <div class="text-gray-300 text-sm font-medium select-none">
-                <!-- 画像が読み込めない場合のフォールバック -->
+              <div v-else class="w-full h-full bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center select-none">
+                <span class="text-6xl">{{ f.emoji }}</span>
               </div>
             </div>
             <!-- テキストエリア -->
@@ -218,6 +230,16 @@ const faqs = [
               <h3 class="text-lg font-bold text-gray-900 mb-3">{{ f.title }}</h3>
               <p class="text-sm text-gray-500 leading-relaxed">{{ f.desc }}</p>
             </div>
+          </div>
+        </div>
+
+        <!-- その他の機能 -->
+        <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div v-for="s in subFeatures" :key="s.title"
+            class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <div class="text-2xl mb-3 select-none">{{ s.emoji }}</div>
+            <h3 class="font-bold text-gray-900 mb-2 text-sm">{{ s.title }}</h3>
+            <p class="text-xs text-gray-500 leading-relaxed">{{ s.desc }}</p>
           </div>
         </div>
       </div>
@@ -235,12 +257,13 @@ const faqs = [
               記録の下書きを<br>AIが自動生成
             </h2>
             <p class="text-gray-400 leading-relaxed text-sm sm:text-base max-w-xl">
-              日々の支援記録と前回の個別支援計画・モニタリング記録をもとに、
-              AIが次回分の下書きを自動作成。長期目標・短期目標・支援方針・支援内容を
-              ワンクリックで生成し、そのまま編集して保存できます。
+              個別支援計画・モニタリングは、日々の支援記録と前回の記録をもとにAIが次回分の下書きを自動作成。
+              連絡帳は、その日の内部記録から保護者向けの温かい文章をワンクリックで生成します。
+              いずれも編集して保存するだけ。児童の実名は外部に送信せず、
+              保護者の同意を記録した児童にのみ利用できます。
             </p>
             <div class="mt-8 flex flex-wrap gap-3">
-              <span v-for="tag in ['個別支援計画', 'モニタリング記録', '支援方針の提案']" :key="tag"
+              <span v-for="tag in ['個別支援計画', 'モニタリング記録', '連絡帳の文章生成', '支援方針の提案']" :key="tag"
                 class="text-xs bg-white/10 border border-white/10 text-gray-300 px-4 py-2 rounded-full">
                 {{ tag }}
               </span>
@@ -269,7 +292,7 @@ const faqs = [
               '全機能利用可能',
               'AI自動下書き機能',
               '職員アカウント無制限',
-              '送迎予約システム連携',
+              '保護者アプリ連携（予約・連絡帳）',
               'メール・チャットサポート',
             ]" :key="item" class="flex items-center gap-3 text-sm text-gray-600">
               <svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

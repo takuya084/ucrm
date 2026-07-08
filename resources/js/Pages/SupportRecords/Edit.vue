@@ -2,17 +2,22 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/inertia-vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
+import ContactNoteZone from '@/Components/ContactNoteZone.vue'
 import { reactive, computed, ref } from 'vue'
 import { Inertia } from '@inertiajs/inertia'
 import axios from 'axios'
 
 const props = defineProps({
-  record:           Object,
-  recordDate:       String,  // Y-m-d 形式（タイムゾーンずれ防止）
-  programs:         Array,
-  selectedPrograms: Object,
-  selectedItems:    Object,
-  staffList:        Array,
+  record:             Object,
+  recordDate:         String,  // Y-m-d 形式（タイムゾーンずれ防止）
+  programs:           Array,
+  selectedPrograms:   Object,
+  selectedItems:      Object,
+  staffList:          Array,
+  contactNote:        Object,
+  shortTermGoal:      String,
+  fiveDomainLabels:   Object,
+  goalProgressLabels: Object,
 })
 
 const form = reactive({
@@ -23,13 +28,29 @@ const form = reactive({
   challenge_note:          props.record.challenge_note ?? '',
   care_note:               props.record.care_note ?? '',
   next_action:             props.record.next_action ?? '',
-  is_shared_with_guardian: props.record.is_shared_with_guardian ?? false,
   program_ids:             Object.keys(props.selectedPrograms).map(Number),
   program_durations:       { ...props.selectedPrograms },
   program_items:           Object.fromEntries(
     Object.entries(props.selectedItems ?? {}).map(([k, v]) => [Number(k), v ?? []])
   ),
+  // 連絡帳（保護者公開ゾーン）
+  contact_note: {
+    meal_note:        props.contactNote?.meal_note ?? '',
+    health_note:      props.contactNote?.health_note ?? '',
+    guardian_message: props.contactNote?.guardian_message ?? '',
+    five_domain_tags: props.contactNote?.five_domain_tags ?? [],
+    goal_progress:    props.contactNote?.goal_progress ?? null,
+    publish_now:      false,
+  },
 })
+
+// AI下書き用: 内部記録の現在値
+const aiContext = computed(() => ({
+  condition:        form.condition,
+  behavior_note:    form.behavior_note,
+  achievement_note: form.achievement_note,
+  program_names:    props.programs.filter(p => form.program_ids.includes(p.id)).map(p => p.name),
+}))
 
 // 既存選択プログラムは展開済みにする
 const expandedPrograms = ref(new Set(form.program_ids))
@@ -138,6 +159,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
           <div v-if="record.child?.care_note" class="mb-5 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
             <span class="font-medium text-yellow-700">⚠ 配慮事項：</span>
             <span class="text-yellow-800">{{ record.child.care_note }}</span>
+          </div>
+
+          <div class="mb-5 p-2.5 bg-gray-100 border border-gray-200 rounded text-xs text-gray-600">
+            🔒 このフォームは<span class="font-bold">施設内記録</span>です。保護者に公開されるのは下部の「📖 連絡帳」欄のみです。
           </div>
 
           <form @submit.prevent="update" class="space-y-6">
@@ -320,16 +345,16 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               </select>
             </section>
 
-            <!-- 保護者共有 -->
-            <section>
-              <label class="flex items-center gap-3 cursor-pointer p-3 bg-blue-50 border border-blue-200 rounded">
-                <input v-model="form.is_shared_with_guardian" type="checkbox" class="w-4 h-4" />
-                <div>
-                  <span class="text-sm font-medium text-blue-700">連絡帳として保護者に共有する</span>
-                  <p class="text-xs text-blue-500 mt-0.5">チェックを入れると保護者共有フラグが立ちます</p>
-                </div>
-              </label>
-            </section>
+            <!-- 連絡帳（保護者公開ゾーン） -->
+            <ContactNoteZone
+              :form="form.contact_note"
+              :contact-note="contactNote"
+              :short-term-goal="shortTermGoal"
+              :five-domain-labels="fiveDomainLabels"
+              :goal-progress-labels="goalProgressLabels"
+              :child-id="record.child_id"
+              :ai-context="aiContext"
+            />
 
             <div class="flex justify-end gap-3 pt-4 border-t">
               <Link :href="route('support-records.show', record.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">

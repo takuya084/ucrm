@@ -102,6 +102,20 @@ class YoyakuApiService
     }
 
     /**
+     * 連絡帳を p-yoyaku へ配信（冪等: external_ref で upsert）。
+     * 保護者に公開する内容のみを送ること（内部の見立ては送らない）。
+     */
+    public function upsertContactNote(array $payload, ?int $facilityId = null): ?array
+    {
+        $client = $this->client($facilityId);
+        if (!$client) return null;
+
+        return $this->safe(fn() =>
+            $client->post("{$this->baseUrl}/api/contact-notes", $payload)
+        );
+    }
+
+    /**
      * p-yoyaku 側の利用者(児童)一覧。既存アカウントとの突合参照用
      */
     public function listUsers(int $businessId, ?int $facilityId = null): ?array
