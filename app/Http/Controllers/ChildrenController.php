@@ -19,7 +19,13 @@ class ChildrenController extends Controller
     {
         $facilityId = $this->facilityId();
 
-        $query = Child::with(['school', 'activeRecipientCertificate:id,child_id,valid_to,monthly_limit'])
+        // latestOfMany は集計サブクエリと JOIN されるため、カラムはテーブル名で修飾する（未修飾だと ambiguous になる）
+        $query = Child::with(['school', 'activeRecipientCertificate' => fn ($q) => $q->select(
+                'recipient_certificates.id',
+                'recipient_certificates.child_id',
+                'recipient_certificates.valid_to',
+                'recipient_certificates.monthly_limit',
+            )])
             ->where('facility_id', $facilityId)
             ->search($request->search)
             ->when($request->status, fn ($q, $s) => $q->where('contract_status', $s))
