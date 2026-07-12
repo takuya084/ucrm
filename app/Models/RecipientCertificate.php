@@ -70,7 +70,8 @@ class RecipientCertificate extends Model
     // 有効期限まで残り何日か
     public function getDaysUntilExpiryAttribute(): ?int
     {
-        return $this->valid_to?->diffInDays(now(), false) * -1;
+        // Carbon 3 は符号付き float を返すため、Carbon 2 相当の整数（ゼロ方向切り捨て）に揃える
+        return $this->valid_to ? (int) $this->valid_to->diffInDays(now(), false) * -1 : null;
     }
 
     // 当月の残り利用可能回数
@@ -89,6 +90,6 @@ class RecipientCertificate extends Model
     // 有効期限が近い（30日以内）かどうか
     public function isExpiringSoon(): bool
     {
-        return $this->valid_to && $this->valid_to->diffInDays(now(), false) >= -30 && !$this->isExpired();
+        return $this->valid_to && (int) $this->valid_to->diffInDays(now(), false) >= -30 && !$this->isExpired();
     }
 }

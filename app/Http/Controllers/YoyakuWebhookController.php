@@ -63,7 +63,7 @@ class YoyakuWebhookController extends Controller
         } catch (\Throwable) {
             $sentAt = null;
         }
-        if (!$sentAt || $sentAt->diffInSeconds(now()) > self::REPLAY_TOLERANCE_SECONDS) {
+        if (!$sentAt || $sentAt->diffInSeconds(now(), true) > self::REPLAY_TOLERANCE_SECONDS) {
             Log::warning('YoyakuWebhook: sent_at が無効または期限切れ', [
                 'facility_id' => $facility->id,
                 'sent_at'     => $data['sent_at'] ?? null,

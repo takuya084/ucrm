@@ -455,7 +455,7 @@ class NhifCsvExportService
         }
 
         if ($usage->check_in_time && $usage->check_out_time) {
-            $minutes = Carbon::parse($usage->check_out_time)->diffInMinutes(Carbon::parse($usage->check_in_time));
+            $minutes = Carbon::parse($usage->check_in_time)->diffInMinutes(Carbon::parse($usage->check_out_time), true);
 
             return round($minutes / 60, 2);
         }
