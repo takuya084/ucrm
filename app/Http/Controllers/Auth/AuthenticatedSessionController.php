@@ -33,7 +33,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
-        $request->authenticate();
+        $twoFactorUser = $request->authenticateOrGetTwoFactorUser();
+
+        if ($twoFactorUser) {
+            // まだログインさせない。チャレンジ画面でコード検証後に確定する
+            $request->session()->put([
+                'login.id'       => $twoFactorUser->getKey(),
+                'login.remember' => $request->boolean('remember'),
+            ]);
+
+            return redirect()->route('two-factor.login');
+        }
 
         $request->session()->regenerate();
 

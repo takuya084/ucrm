@@ -182,6 +182,9 @@ watch(showingNavigationDropdown, (open) => {
                   <BreezeDropdownLink v-if="$page.props.auth.staff_role === 'admin'" :href="route('facility.edit')">
                     施設設定
                   </BreezeDropdownLink>
+                  <BreezeDropdownLink :href="route('account.security')">
+                    アカウントのセキュリティ（2FA）
+                  </BreezeDropdownLink>
                   <BreezeDropdownLink :href="route('logout')" method="post" as="button"
                     class="block w-full px-4 py-2 text-left text-sm leading-5 text-red-600 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition duration-150 ease-in-out">
                     ログアウト
