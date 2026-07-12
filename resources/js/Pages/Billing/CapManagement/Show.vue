@@ -1,8 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 import { reactive } from 'vue'
 
 const props = defineProps({
@@ -19,7 +19,7 @@ const editing = reactive({})
 const startEdit = (d) => editing[d.id] = { total_amount: d.total_amount, copayment_amount: d.copayment_amount }
 const cancelEdit = (d) => delete editing[d.id]
 const saveEdit = (d) => {
-  Inertia.patch(route('billing.cap-management.details.update', {
+  router.patch(route('billing.cap-management.details.update', {
     copaymentCapManagement: props.management.id,
     copaymentCapDetail: d.id,
   }), editing[d.id], { onSuccess: () => delete editing[d.id] })
@@ -27,7 +27,7 @@ const saveEdit = (d) => {
 
 const transition = (action, label) => {
   if (!confirm(`「${label}」に遷移しますか？`)) return
-  Inertia.post(route('billing.cap-management.transition', props.management.id), { action })
+  router.post(route('billing.cap-management.transition', props.management.id), { action })
 }
 
 const attrs = reactive({
@@ -36,12 +36,12 @@ const attrs = reactive({
   remarks:         props.management.remarks ?? '',
 })
 const saveAttrs = () => {
-  Inertia.patch(route('billing.cap-management.attributes', props.management.id), attrs)
+  router.patch(route('billing.cap-management.attributes', props.management.id), attrs)
 }
 
 const confirmActual = () => {
   if (!confirm('実績を確定しますか？')) return
-  Inertia.post(route('billing.cap-management.transition', props.management.id), { action: 'confirm_actual' })
+  router.post(route('billing.cap-management.transition', props.management.id), { action: 'confirm_actual' })
 }
 </script>
 

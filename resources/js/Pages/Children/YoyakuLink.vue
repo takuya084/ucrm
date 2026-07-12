@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link, usePage } from '@inertiajs/inertia-vue3'
+import { Head, Link, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { ref, computed } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   configured: Boolean,
@@ -15,8 +15,8 @@ const props = defineProps({
 })
 
 const page = usePage()
-const importErrors = computed(() => page.props.value.flash?.import_errors ?? [])
-const linkResults = computed(() => page.props.value.flash?.yoyaku_link_results ?? [])
+const importErrors = computed(() => page.props.flash?.import_errors ?? [])
+const linkResults = computed(() => page.props.flash?.yoyaku_link_results ?? [])
 
 // --- 新規作成 ---
 const selectedIds = ref([])
@@ -32,7 +32,7 @@ const submitCreate = () => {
     return
   }
   creating.value = true
-  Inertia.post(route('children.yoyaku-link.create'), { child_ids: selectedIds.value }, {
+  router.post(route('children.yoyaku-link.create'), { child_ids: selectedIds.value }, {
     onFinish: () => { creating.value = false; selectedIds.value = [] },
   })
 }
@@ -49,7 +49,7 @@ const submitCsv = () => {
   const fd = new FormData()
   fd.append('csv_file', csvFile.value)
   uploading.value = true
-  Inertia.post(route('children.yoyaku-link.csv'), fd, {
+  router.post(route('children.yoyaku-link.csv'), fd, {
     forceFormData: true,
     onFinish: () => { uploading.value = false; csvFile.value = null },
   })

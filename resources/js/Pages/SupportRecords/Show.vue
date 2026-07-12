@@ -1,7 +1,7 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
-import { Inertia } from '@inertiajs/inertia'
+import { Head, Link } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 
 const props = defineProps({
@@ -15,7 +15,7 @@ const props = defineProps({
 
 const publishNote = () => {
   if (!confirm('連絡帳を保護者に公開します。よろしいですか？')) return
-  Inertia.post(route('contact-notes.publish', props.contactNote.id), {}, { preserveScroll: true })
+  router.post(route('contact-notes.publish', props.contactNote.id), {}, { preserveScroll: true })
 }
 
 const fmtDateTime = (v) => v ? v.replace('T', ' ').slice(0, 16) : null

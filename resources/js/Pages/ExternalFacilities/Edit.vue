@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 import Form from './_Form.vue'
 
 const props = defineProps({
@@ -26,7 +26,7 @@ const form = reactive({
 })
 
 const update = () => {
-  Inertia.patch(route('external-facilities.update', props.externalFacility.id), form)
+  router.patch(route('external-facilities.update', props.externalFacility.id), form)
 }
 </script>
 

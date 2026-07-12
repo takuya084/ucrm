@@ -1,8 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   externalFacilities:  Array,
@@ -20,7 +20,7 @@ const TYPE_COLORS = {
 
 const destroy = (ef) => {
   if (confirm(`「${ef.name}」を削除しますか？`)) {
-    Inertia.delete(route('external-facilities.destroy', ef.id))
+    router.delete(route('external-facilities.destroy', ef.id))
   }
 }
 </script>

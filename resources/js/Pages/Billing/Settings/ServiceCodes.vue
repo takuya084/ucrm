@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { ref, computed } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   items: Array,
@@ -36,7 +36,7 @@ const hasChanges = computed(() =>
 )
 
 const save = () => {
-  Inertia.post(route('billing.settings.service-codes.update'), {
+  router.post(route('billing.settings.service-codes.update'), {
     settings: settings.value.map(s => ({
       service_code_master_id: s.id,
       is_enabled: s.is_enabled,
@@ -58,7 +58,7 @@ const submitImport = () => {
   fd.append('file', importFile.value)
   importing.value = true
   importErrors.value = []
-  Inertia.post(route('billing.settings.service-codes.import'), fd, {
+  router.post(route('billing.settings.service-codes.import'), fd, {
     forceFormData: true,
     onSuccess: (page) => {
       importErrors.value = page.props.flash?.import_errors ?? []

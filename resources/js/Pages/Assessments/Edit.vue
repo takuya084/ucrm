@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   child:      Object,
@@ -34,7 +34,7 @@ const update = () => {
   const domains = Object.fromEntries(
     Object.entries(form.five_domains).filter(([, v]) => v && v.trim() !== '')
   )
-  Inertia.patch(route('children.assessments.update', [props.child.id, props.assessment.id]), {
+  router.patch(route('children.assessments.update', [props.child.id, props.assessment.id]), {
     ...form,
     five_domains: Object.keys(domains).length ? domains : null,
   })

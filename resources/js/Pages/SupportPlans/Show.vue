@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 import { ref, reactive, computed } from 'vue'
 
 const props = defineProps({
@@ -22,7 +22,7 @@ const stepIndex = computed(() => ({ draft: 0, approved: 1, delivered: 2 }[props.
 
 const approve = () => {
   if (!confirm('この計画を児発管として承認しますか？')) return
-  Inertia.post(route('children.support-plans.approve', [props.child.id, props.plan.id]))
+  router.post(route('children.support-plans.approve', [props.child.id, props.plan.id]))
 }
 
 // ── 担当者会議 ─────────────────────────────
@@ -33,7 +33,7 @@ const meetingForm = reactive({
   minutes: '',
 })
 const storeMeeting = () => {
-  Inertia.post(route('children.support-plans.meetings.store', [props.child.id, props.plan.id]), meetingForm, {
+  router.post(route('children.support-plans.meetings.store', [props.child.id, props.plan.id]), meetingForm, {
     onSuccess: () => {
       showMeetingForm.value = false
       meetingForm.attendees = ''
@@ -43,7 +43,7 @@ const storeMeeting = () => {
 }
 const destroyMeeting = (m) => {
   if (!confirm('この会議記録を削除しますか？')) return
-  Inertia.delete(route('children.support-plans.meetings.destroy', [props.child.id, props.plan.id, m.id]))
+  router.delete(route('children.support-plans.meetings.destroy', [props.child.id, props.plan.id, m.id]))
 }
 
 // ── 同意・交付 ─────────────────────────────
@@ -55,7 +55,7 @@ const consentForm = reactive({
   delivered_at: new Date().toISOString().slice(0, 10),
 })
 const storeConsent = () => {
-  Inertia.post(route('children.support-plans.consents.store', [props.child.id, props.plan.id]), {
+  router.post(route('children.support-plans.consents.store', [props.child.id, props.plan.id]), {
     ...consentForm,
     guardian_id:  consentForm.guardian_id || null,
     delivered_at: consentForm.delivered_at || null,
@@ -68,7 +68,7 @@ const fmtDateTime = (s) => s ? new Date(s).toLocaleString('ja-JP', { dateStyle: 
 
 const destroy = () => {
   if (confirm('この個別支援計画を削除しますか？')) {
-    Inertia.delete(route('children.support-plans.destroy', [props.child.id, props.plan.id]))
+    router.delete(route('children.support-plans.destroy', [props.child.id, props.plan.id]))
   }
 }
 

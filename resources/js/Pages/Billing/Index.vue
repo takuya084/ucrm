@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   periods:      Object,
@@ -37,7 +37,7 @@ const calculate = () => {
     message = `${selectedMonth.value} には計算済みの下書きがあります。\n再計算すると既存の明細（明細編集画面での手動調整を含む）はすべて削除され、出席実績から作り直されます。\n\n実行しますか？`
   }
   if (!confirm(message)) return
-  Inertia.post(route('billing.calculate'), { year_month: selectedMonth.value })
+  router.post(route('billing.calculate'), { year_month: selectedMonth.value })
 }
 </script>
 

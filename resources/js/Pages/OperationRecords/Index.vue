@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head } from '@inertiajs/inertia-vue3'
+import { Head } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { ref, reactive, computed } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   committees:      Array,
@@ -36,7 +36,7 @@ const committeeForm = reactive({
 const showCommitteeForm = ref(false)
 
 const storeCommittee = () => {
-  Inertia.post(route('operation-records.committees.store'), committeeForm, {
+  router.post(route('operation-records.committees.store'), committeeForm, {
     onSuccess: () => {
       showCommitteeForm.value = false
       committeeForm.attendees = ''
@@ -63,7 +63,7 @@ const restraintForm = reactive({
 const showRestraintForm = ref(false)
 
 const storeRestraint = () => {
-  Inertia.post(route('operation-records.restraints.store'), {
+  router.post(route('operation-records.restraints.store'), {
     ...restraintForm,
     guardian_notified_at: restraintForm.guardian_notified_at || null,
     duration_minutes: restraintForm.duration_minutes || null,
@@ -77,7 +77,7 @@ const storeRestraint = () => {
 
 const markNotified = (r) => {
   if (!confirm(`${r.child?.name} の身体拘束について、保護者へ報告済みとして記録しますか？`)) return
-  Inertia.patch(route('operation-records.restraints.notified', r.id))
+  router.patch(route('operation-records.restraints.notified', r.id))
 }
 
 // ── BCP ─────────────────────────────────
@@ -96,7 +96,7 @@ const bcpForms = reactive({
     last_training_at: props.bcps?.disaster?.last_training_at?.slice(0, 10) ?? '',
   },
 })
-const saveBcp = (type) => Inertia.post(route('operation-records.bcp.upsert'), bcpForms[type])
+const saveBcp = (type) => router.post(route('operation-records.bcp.upsert'), bcpForms[type])
 
 // ── 安全計画 / 自己評価 ───────────────────
 const safetyForm = reactive({
@@ -108,7 +108,7 @@ if (currentSafety) {
   safetyForm.established_at   = currentSafety.established_at?.slice(0, 10) ?? ''
   safetyForm.last_reviewed_at = currentSafety.last_reviewed_at?.slice(0, 10) ?? ''
 }
-const saveSafety = () => Inertia.post(route('operation-records.safety-plan.upsert'), safetyForm)
+const saveSafety = () => router.post(route('operation-records.safety-plan.upsert'), safetyForm)
 
 const selfEvalForm = reactive({
   fiscal_year: currentFiscalYear,
@@ -120,7 +120,7 @@ if (currentEval) {
   selfEvalForm.published_at       = currentEval.published_at?.slice(0, 10) ?? ''
   selfEvalForm.published_url      = currentEval.published_url ?? ''
 }
-const saveSelfEval = () => Inertia.post(route('operation-records.self-evaluation.upsert'), selfEvalForm)
+const saveSelfEval = () => router.post(route('operation-records.self-evaluation.upsert'), selfEvalForm)
 
 const TABS = [
   { key: 'committee', label: '委員会・研修' },

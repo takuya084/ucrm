@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head } from '@inertiajs/inertia-vue3'
+import { Head } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import ShiftCell from '@/Components/ShiftCell.vue'
 import { reactive, computed } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   shift:                Object,   // { id, year, month, status }
@@ -73,7 +73,7 @@ const save = () => {
   }
   const flatDayNotes = Object.entries(notes).map(([date, note]) => ({ date, note: note || null }))
 
-  Inertia.post(route('shifts.bulk-save', props.shift.id), {
+  router.post(route('shifts.bulk-save', props.shift.id), {
     entries:   flatEntries,
     day_notes: flatDayNotes,
   }, { preserveScroll: true })
@@ -82,7 +82,7 @@ const save = () => {
 const toggleStatus = () => {
   const newStatus = props.shift.status === 'draft' ? 'confirmed' : 'draft'
   if (newStatus === 'confirmed' && !confirm('このシフトを確定しますか？確定後はleaderロールでは編集できなくなります。')) return
-  Inertia.patch(route('shifts.update-status', props.shift.id), { status: newStatus })
+  router.patch(route('shifts.update-status', props.shift.id), { status: newStatus })
 }
 
 const printShift = () => window.print()

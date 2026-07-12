@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   schools: Array,
@@ -38,7 +38,7 @@ const DAY_OPTIONS = [
 ]
 
 const store = () => {
-  Inertia.post(route('children.store'), form)
+  router.post(route('children.store'), form)
 }
 
 // 入力フィールドの共通クラス

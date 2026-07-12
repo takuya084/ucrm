@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { ref, computed } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   yearMonth: String,
@@ -17,11 +17,11 @@ const items = ref(props.rows.map(r => ({ ...r })))
 const totalAmount = computed(() => items.value.reduce((s, r) => s + Number(r.amount || 0), 0))
 
 const changeMonth = () => {
-  Inertia.get(route('billing.expenses.index'), { month: selectedMonth.value }, { preserveState: false })
+  router.get(route('billing.expenses.index'), { month: selectedMonth.value }, { preserveState: false })
 }
 
 const save = () => {
-  Inertia.post(route('billing.expenses.upsert'), {
+  router.post(route('billing.expenses.upsert'), {
     year_month: props.yearMonth,
     items: items.value.map(r => ({
       category: r.category,

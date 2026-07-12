@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const CATEGORY_OPTIONS = [
   { value: 'physical',    label: '運動' },
@@ -30,7 +30,7 @@ const form = reactive({
 })
 
 const store = () => {
-  Inertia.post(route('programs.store'), form)
+  router.post(route('programs.store'), form)
 }
 
 const setExample = (name) => {

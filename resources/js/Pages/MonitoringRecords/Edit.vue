@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive, ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   child:  Object,
@@ -23,7 +23,7 @@ const form = reactive({
 })
 
 const update = () => {
-  Inertia.patch(route('children.monitoring.update', [props.child.id, props.record.id]), form)
+  router.patch(route('children.monitoring.update', [props.child.id, props.record.id]), form)
 }
 
 const aiLoading = ref(false)

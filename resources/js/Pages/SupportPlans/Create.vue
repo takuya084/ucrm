@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive, ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   child:        Object,
@@ -55,7 +55,7 @@ const store = () => {
   const domains = Object.fromEntries(
     Object.entries(form.five_domains).filter(([, v]) => v && v.trim() !== '')
   )
-  Inertia.post(route('children.support-plans.store', props.child.id), {
+  router.post(route('children.support-plans.store', props.child.id), {
     ...form,
     planned_start_time:       form.planned_start_time || null,
     planned_end_time:         form.planned_end_time || null,

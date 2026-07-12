@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   staff:     Object,   // { id, name }
@@ -32,7 +32,7 @@ for (let h = 6; h <= 22; h++) {
 }
 
 const save = () => {
-  Inertia.patch(route('staff.work-patterns.update', props.staff.id), form)
+  router.patch(route('staff.work-patterns.update', props.staff.id), form)
 }
 </script>
 

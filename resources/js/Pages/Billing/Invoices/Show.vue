@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({ invoice: Object })
 const fmt = (n) => Number(n).toLocaleString()
@@ -20,7 +20,7 @@ const paymentForm = ref({
 })
 
 const updatePayment = () => {
-  Inertia.patch(route('billing.invoices.update-payment', props.invoice.id), paymentForm.value)
+  router.patch(route('billing.invoices.update-payment', props.invoice.id), paymentForm.value)
 }
 </script>
 

@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { ref, reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   returns:      Object,
@@ -31,7 +31,7 @@ const filters = reactive({
   return_code: props.filters.return_code ?? '',
 })
 const applyFilter = () => {
-  Inertia.get(route('billing.returns.index'), filters, { preserveState: true, replace: true })
+  router.get(route('billing.returns.index'), filters, { preserveState: true, replace: true })
 }
 const resetFilter = () => {
   filters.month = ''; filters.status = ''; filters.child_id = ''; filters.return_code = ''
@@ -50,7 +50,7 @@ const applyPreset = (code) => {
   if (code !== 'OTHER') form.return_reason = props.codePresets[code]
 }
 const submitReturn = () => {
-  Inertia.post(route('billing.returns.store'), form, {
+  router.post(route('billing.returns.store'), form, {
     onSuccess: () => { showForm.value = false }
   })
 }
@@ -67,7 +67,7 @@ const startEdit = (ret) => {
 }
 const cancelEdit = () => { editing.value = null }
 const saveEdit = (id) => {
-  Inertia.patch(route('billing.returns.update', id), editForm, {
+  router.patch(route('billing.returns.update', id), editForm, {
     onSuccess: () => { editing.value = null }
   })
 }
@@ -84,7 +84,7 @@ const submitImport = () => {
   fd.append('file', importFile.value)
   importing.value = true
   importErrors.value = []
-  Inertia.post(route('billing.returns.import'), fd, {
+  router.post(route('billing.returns.import'), fd, {
     forceFormData: true,
     onSuccess: (page) => {
       importErrors.value = page.props.flash?.import_errors ?? []
@@ -97,7 +97,7 @@ const submitImport = () => {
 // --- 状態遷移 ---
 const transition = (id, action, label) => {
   if (!confirm(`「${label}」に遷移しますか？`)) return
-  Inertia.post(route('billing.returns.transition', id), { action })
+  router.post(route('billing.returns.transition', id), { action })
 }
 </script>
 

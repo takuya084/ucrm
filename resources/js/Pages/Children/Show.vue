@@ -1,8 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 
 const props = defineProps({
@@ -28,7 +28,7 @@ const USAGE_STATUS = {
 
 const destroy = () => {
   if (confirm('この児童を削除しますか？（削除後も管理者が復元できます）')) {
-    Inertia.delete(route('children.destroy', props.child.id))
+    router.delete(route('children.destroy', props.child.id))
   }
 }
 

@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import QuickNav from '@/Components/QuickNav.vue'
 import { ref, computed } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   programs:            Array,
@@ -48,7 +48,7 @@ const cycleStatus = (childId, itemId) => {
   if (!localProgress.value[childId]) localProgress.value[childId] = {}
   localProgress.value[childId][itemId] = next
 
-  Inertia.post(route('program-progress.update'), {
+  router.post(route('program-progress.update'), {
     child_id:        childId,
     program_item_id: itemId,
     status:          next ?? 'none',
@@ -56,10 +56,10 @@ const cycleStatus = (childId, itemId) => {
 }
 
 const goToCategory = (cat) => {
-  Inertia.get(route('program-progress.index'), { category: cat }, { preserveState: false })
+  router.get(route('program-progress.index'), { category: cat }, { preserveState: false })
 }
 const goToProgram = (programId) => {
-  Inertia.get(route('program-progress.index'), {
+  router.get(route('program-progress.index'), {
     category:   props.categoryFilter,
     program_id: programId,
   }, { preserveState: false })

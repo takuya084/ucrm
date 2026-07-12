@@ -1,8 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   child:      Object,
@@ -21,7 +21,7 @@ const hasDomains = props.assessment.five_domains && Object.values(props.assessme
 
 const destroy = () => {
   if (confirm('このアセスメントを削除しますか？（削除後も管理者が復元できます）')) {
-    Inertia.delete(route('children.assessments.destroy', [props.child.id, props.assessment.id]))
+    router.delete(route('children.assessments.destroy', [props.child.id, props.assessment.id]))
   }
 }
 

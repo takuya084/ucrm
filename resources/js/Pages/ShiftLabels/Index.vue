@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { reactive, ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   labels: Array,
@@ -25,7 +25,7 @@ const editForm = reactive({
 })
 
 const store = () => {
-  Inertia.post(route('shift-labels.store'), form, {
+  router.post(route('shift-labels.store'), form, {
     onSuccess: () => {
       form.name = ''
       form.is_off = false
@@ -48,7 +48,7 @@ const cancelEdit = () => {
 }
 
 const update = (label) => {
-  Inertia.patch(route('shift-labels.update', label.id), editForm, {
+  router.patch(route('shift-labels.update', label.id), editForm, {
     preserveScroll: true,
     onSuccess: () => {
       editingId.value = null
@@ -58,7 +58,7 @@ const update = (label) => {
 
 const destroy = (label) => {
   if (confirm(`「${label.name}」を削除しますか？`)) {
-    Inertia.delete(route('shift-labels.destroy', label.id))
+    router.delete(route('shift-labels.destroy', label.id))
   }
 }
 

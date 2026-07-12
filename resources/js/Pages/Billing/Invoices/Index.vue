@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { ref, reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   invoices:  Array,
@@ -24,12 +24,12 @@ const STATUS_LABEL = { unpaid: '未入金', paid: '入金済', partial: '一部�
 const METHOD_LABEL = { bank_transfer: '振込', cash: '現金', other: 'その他' }
 
 const changeMonth = () => {
-  Inertia.get(route('billing.invoices.index'), { month: selectedMonth.value }, { preserveState: true, replace: true })
+  router.get(route('billing.invoices.index'), { month: selectedMonth.value }, { preserveState: true, replace: true })
 }
 
 const generate = () => {
   if (!confirm(`${selectedMonth.value} の利用者請求書を生成しますか？`)) return
-  Inertia.post(route('billing.invoices.generate'), { year_month: selectedMonth.value })
+  router.post(route('billing.invoices.generate'), { year_month: selectedMonth.value })
 }
 
 // ── 入金クイック記録 ─────────────────────
@@ -48,7 +48,7 @@ const openPay = (inv) => {
 }
 
 const savePay = (inv) => {
-  Inertia.patch(route('billing.invoices.update-payment', inv.id), {
+  router.patch(route('billing.invoices.update-payment', inv.id), {
     payment_status: payForm.paid_amount >= inv.total_amount ? 'paid' : 'partial',
     payment_method: payForm.payment_method,
     paid_amount:    payForm.paid_amount,

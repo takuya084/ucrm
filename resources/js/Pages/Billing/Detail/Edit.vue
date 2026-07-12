@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({ detail: Object })
 
@@ -29,7 +29,7 @@ const save = () => {
     alert('調整理由を入力してください（返戻・監査対応時の証跡になります）。')
     return
   }
-  Inertia.patch(route('billing.details.update', props.detail.id), {
+  router.patch(route('billing.details.update', props.detail.id), {
     lines: lines.value.map(l => ({
       id: l.id,
       count: l.count,

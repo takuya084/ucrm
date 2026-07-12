@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import QuickNav from '@/Components/QuickNav.vue'
 import { ref, computed, watch } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 
 const props = defineProps({
@@ -23,7 +23,7 @@ const locationLabel = (loc) => LOCATION_LABELS[loc] ?? loc
 // 日付ナビゲーション
 const selectedDate = ref(props.date)
 const goToDate = () => {
-  Inertia.get(route('usage-records.index'), { date: selectedDate.value }, { preserveState: false })
+  router.get(route('usage-records.index'), { date: selectedDate.value }, { preserveState: false })
 }
 
 // 各行の記録を ref で管理

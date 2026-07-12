@@ -1,8 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import { ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({ billingDetail: Object })
 const fmt = (n) => Number(n).toLocaleString()
@@ -14,7 +14,7 @@ const form = ref({
 })
 
 const submit = () => {
-  Inertia.post(route('billing.error-claims.store'), form.value)
+  router.post(route('billing.error-claims.store'), form.value)
 }
 </script>
 

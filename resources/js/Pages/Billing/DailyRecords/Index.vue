@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { ref, computed, watch } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   grouped:   Array,
@@ -17,7 +17,7 @@ const selectedMonth = ref(props.yearMonth)
 const selectedChild = ref(props.childId ?? '')
 
 const applyFilter = () => {
-  Inertia.get(route('billing.daily-records.index'), {
+  router.get(route('billing.daily-records.index'), {
     month:    selectedMonth.value || undefined,
     child_id: selectedChild.value || undefined,
   }, { preserveState: true, replace: true })
@@ -66,7 +66,7 @@ const save = () => {
     }))
   if (changed.length === 0) return
   if (!confirm(`${changed.length}件の実績を更新します。\n更新後、この月の請求が計算済みの場合は「月次請求」から再計算を実行してください。`)) return
-  Inertia.post(route('billing.daily-records.bulk-update'), { records: changed })
+  router.post(route('billing.daily-records.bulk-update'), { records: changed })
 }
 </script>
 

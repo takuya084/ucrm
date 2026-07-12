@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive, ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   child:      Object,
@@ -41,7 +41,7 @@ const quoteComment = (c) => {
 }
 
 const store = () => {
-  Inertia.post(route('children.monitoring.store', props.child.id), form)
+  router.post(route('children.monitoring.store', props.child.id), form)
 }
 
 const aiLoading = ref(false)

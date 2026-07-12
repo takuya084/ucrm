@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   child:              Object,
@@ -38,7 +38,7 @@ const form = reactive({
 })
 
 const store = () => {
-  Inertia.post(route('children.schedules.store', props.child.id), form)
+  router.post(route('children.schedules.store', props.child.id), form)
 }
 
 const isRegistered = (day) => props.registeredDays.includes(day)

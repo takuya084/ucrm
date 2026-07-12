@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 import Form from './_Form.vue'
 
 defineProps({
@@ -25,7 +25,7 @@ const form = reactive({
 })
 
 const store = () => {
-  Inertia.post(route('external-facilities.store'), form)
+  router.post(route('external-facilities.store'), form)
 }
 </script>
 

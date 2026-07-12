@@ -1,8 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 
@@ -75,7 +75,7 @@ const exportBundle = () => {
 
 const markSubmitted = (exportId) => {
   if (!confirm('国保連に送信済としてマークしますか？')) return
-  Inertia.post(route('billing.exports.mark-submitted', exportId))
+  router.post(route('billing.exports.mark-submitted', exportId))
 }
 
 const KIND_LABEL = {
@@ -91,7 +91,7 @@ const STATUS_LABEL = {
 
 const confirmPeriod = () => {
   if (!confirm('この請求を確定しますか？確定後は自動再計算できなくなります。')) return
-  Inertia.patch(route('billing.confirm', props.period.id))
+  router.patch(route('billing.confirm', props.period.id))
 }
 
 // ── 国保連支払通知との突合 ─────────────────
@@ -107,7 +107,7 @@ const paymentDiff = computed(() => {
 })
 
 const savePaymentDecision = () => {
-  Inertia.patch(route('billing.payment-decision', props.period.id), paymentForm.value, { preserveScroll: true })
+  router.patch(route('billing.payment-decision', props.period.id), paymentForm.value, { preserveScroll: true })
 }
 
 const fmt = (n) => Number(n).toLocaleString()

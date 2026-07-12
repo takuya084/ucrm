@@ -1,5 +1,5 @@
 <script setup>
-import { Link } from '@inertiajs/inertia-vue3'
+import { Link } from '@inertiajs/vue3'
 
 const navItems = [
   { label: '出席管理',  routeName: 'usage-records.index', pattern: 'usage-records.*' },

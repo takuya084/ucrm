@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   schools: Array,
@@ -27,7 +27,7 @@ const submit = () => {
   fd.append('csv_file', csvFile.value)
   uploading.value = true
   importErrors.value = []
-  Inertia.post(route('children.bulk.store'), fd, {
+  router.post(route('children.bulk.store'), fd, {
     forceFormData: true,
     onSuccess: (page) => {
       importErrors.value = page.props.flash?.import_errors ?? []

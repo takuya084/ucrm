@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   year: Number,
@@ -18,16 +18,16 @@ const STATUS_LABELS = {
 const selectedYear = ref(props.year)
 
 const changeYear = () => {
-  Inertia.get(route('shifts.index'), { year: selectedYear.value }, { preserveState: true, replace: true })
+  router.get(route('shifts.index'), { year: selectedYear.value }, { preserveState: true, replace: true })
 }
 
 const createShift = (month) => {
-  Inertia.post(route('shifts.create'), { year: selectedYear.value, month })
+  router.post(route('shifts.create'), { year: selectedYear.value, month })
 }
 
 const destroyShift = (shift) => {
   if (confirm(`${selectedYear.value}年${shift.month}月のシフトを削除しますか？`)) {
-    Inertia.delete(route('shifts.destroy', shift.id))
+    router.delete(route('shifts.destroy', shift.id))
   }
 }
 </script>

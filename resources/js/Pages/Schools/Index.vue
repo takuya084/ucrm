@@ -1,8 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   schools: Array,
@@ -18,7 +18,7 @@ const TYPE_COLORS = {
 
 const destroy = (school) => {
   if (confirm(`「${school.name}」を削除しますか？\n在籍している児童がいる場合は削除できません。`)) {
-    Inertia.delete(route('schools.destroy', school.id))
+    router.delete(route('schools.destroy', school.id))
   }
 }
 </script>

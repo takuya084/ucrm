@@ -1,12 +1,12 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { usePage } from '@inertiajs/inertia-vue3'
+import { usePage } from '@inertiajs/vue3'
 
 const page = usePage()
 const visible = ref(false)
 
 watch(
-  () => page.props.value.flash,
+  () => page.props.flash,
   (flash) => {
     if (flash?.message) {
       visible.value = true

@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { ref, computed } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   rows:      Array,
@@ -37,17 +37,17 @@ const filtered = computed(() => {
 
 const calculate = () => {
   if (!confirm(`${selectedMonth.value} の上限管理を計算しますか？（確定済は再計算されません）`)) return
-  Inertia.post(route('billing.cap-management.calculate'), { year_month: selectedMonth.value })
+  router.post(route('billing.cap-management.calculate'), { year_month: selectedMonth.value })
 }
 
 const changeMonth = () => {
-  Inertia.get(route('billing.cap-management.index'), { month: selectedMonth.value }, { preserveState: true, replace: true })
+  router.get(route('billing.cap-management.index'), { month: selectedMonth.value }, { preserveState: true, replace: true })
 }
 
 const transition = (row, action, label) => {
   if (!row.management_id) return
   if (!confirm(`${row.child_name} を「${label}」にしますか？`)) return
-  Inertia.post(route('billing.cap-management.transition', row.management_id), { action })
+  router.post(route('billing.cap-management.transition', row.management_id), { action })
 }
 </script>
 

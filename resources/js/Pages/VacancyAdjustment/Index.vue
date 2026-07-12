@@ -1,8 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import { ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   date:           String,
@@ -14,7 +14,7 @@ const props = defineProps({
 
 const selectedDate = ref(props.date)
 const goToDate = () => {
-  Inertia.get(route('vacancy-adjustment.index'), { date: selectedDate.value }, { preserveState: false })
+  router.get(route('vacancy-adjustment.index'), { date: selectedDate.value }, { preserveState: false })
 }
 
 const DAY_LABELS = { mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土', sun: '日' }

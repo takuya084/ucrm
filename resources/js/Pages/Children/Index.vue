@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import Pagination from '@/Components/Pagination.vue'
 import { ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   children: Object,
@@ -15,7 +15,7 @@ const search = ref(props.filters?.search ?? '')
 const status = ref(props.filters?.status ?? '')
 
 const searchChildren = () => {
-  Inertia.get(route('children.index'), {
+  router.get(route('children.index'), {
     search: search.value,
     status: status.value,
   }, { preserveState: true, replace: true })

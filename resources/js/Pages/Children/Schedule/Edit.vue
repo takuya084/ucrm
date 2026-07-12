@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { reactive } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   child:    Object,
@@ -28,7 +28,7 @@ const form = reactive({
 })
 
 const update = () => {
-  Inertia.patch(
+  router.patch(
     route('children.schedules.update', { child: props.child.id, schedule: props.schedule.id }),
     form
   )
@@ -36,7 +36,7 @@ const update = () => {
 
 const destroy = () => {
   if (confirm('この曜日のスケジュールを削除しますか？')) {
-    Inertia.delete(
+    router.delete(
       route('children.schedules.destroy', { child: props.child.id, schedule: props.schedule.id })
     )
   }

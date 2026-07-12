@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import QuickNav from '@/Components/QuickNav.vue'
 import { ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   inquiries:      Object,
@@ -18,7 +18,7 @@ const filterCategory = ref(props.filters.category ?? '')
 const filterEscalated = ref(props.filters.escalated ?? false)
 
 const applyFilters = () => {
-  Inertia.get(route('inquiries.index'), {
+  router.get(route('inquiries.index'), {
     status:    filterStatus.value   || undefined,
     category:  filterCategory.value || undefined,
     escalated: filterEscalated.value || undefined,

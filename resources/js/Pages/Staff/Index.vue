@@ -1,8 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   staffMembers: Array,
@@ -26,7 +26,7 @@ const QUAL_COLORS = {
 
 const destroy = (staff) => {
   if (confirm(`「${staff.name}」を削除しますか？`)) {
-    Inertia.delete(route('staff.destroy', staff.id))
+    router.delete(route('staff.destroy', staff.id))
   }
 }
 </script>

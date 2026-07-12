@@ -1,10 +1,10 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/inertia-vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { reactive, ref } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   program: Object,
@@ -27,14 +27,14 @@ const form = reactive({
 })
 
 const update = () => {
-  Inertia.patch(route('programs.update', props.program.id), form)
+  router.patch(route('programs.update', props.program.id), form)
 }
 
 // 項目追加フォーム
 const newItem = reactive({ name: '', difficulty_order: 0 })
 const addItem = () => {
   if (!newItem.name.trim()) return
-  Inertia.post(route('program-items.store', props.program.id), { ...newItem }, {
+  router.post(route('program-items.store', props.program.id), { ...newItem }, {
     preserveScroll: true,
     onSuccess: () => { newItem.name = ''; newItem.difficulty_order = 0 },
   })
@@ -42,7 +42,7 @@ const addItem = () => {
 
 const deleteItem = (itemId) => {
   if (!confirm('この項目を削除しますか？')) return
-  Inertia.delete(route('program-items.destroy', itemId), { preserveScroll: true })
+  router.delete(route('program-items.destroy', itemId), { preserveScroll: true })
 }
 
 const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
