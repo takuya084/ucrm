@@ -30,9 +30,12 @@
       ※phpunit を SQLite in-memory 化、doctrine/dbal を Laravel 9 互換の ^3.6 に固定、
       無効化済みの自己登録を前提とした旧 RegistrationTest を現仕様に合わせ更新。
       CopaymentCapService・CSV出力のテストは P2 の方式見直しと併せて追加予定
-- [ ] P1-4: Laravel 11/12 + PHP 8.3 への移行（Sanctum 含む）
-      ※フロント（Inertia 0.6→1.x）全ページに影響する大規模作業のため専用ブランチで実施。
-      手順は docs/upgrade-plan.md に整理済み。composer audit で12件の勧告あり＝早期実施推奨
+- [x] P1-4: Laravel 11/12 + PHP 8.3 への移行（Sanctum 含む）
+      ※2026-07-12 完了（feature/framework-upgrade）。Laravel 9→10→11→12 を段階移行し
+      各段階で全テストパス。Sanctum 4 / Inertia 2（サーバ・クライアント）/ PHPUnit 11。
+      composer audit 12件 → 0件。composer platform.php を 8.2.12（XAMPP実機）に固定。
+      Carbon 3 の符号付き diff 対応3箇所、latestOfMany の ambiguous カラム修正1箇所。
+      主要画面スモークテスト（PageSmokeTest）を追加
 - [x] P1-5: 出欠記録の物理削除廃止（SoftDeletes + 請求確定済み月の編集ガード）
       ※出欠一括保存・実績一括更新・Webhook の3経路すべてに適用。要 `php artisan migrate`
       ※2026-06-12 連携実装の総点検で Webhook 経路のガード漏れを検出し修正

@@ -1,24 +1,23 @@
 # uCRM — 放課後等デイサービス・児童発達支援 業務支援システム
 
-Laravel 9 + Inertia (Vue 3) + MySQL。利用児童・出欠・送迎・個別支援計画・国保連請求を扱う。
+Laravel 12 + Inertia 2 (Vue 3) + MySQL。利用児童・出欠・送迎・個別支援計画・国保連請求を扱う。
 児童の障害情報・医療情報など**要配慮個人情報を扱うシステム**であることを常に前提にすること。
 
 ## 開発環境の注意（WSL + XAMPP）
 
 - コードは `/mnt/c/xampp/htdocs/laravel/laravel_uCRM`（Windows 側の XAMPP で稼働）
 - WSL 側 PHP は 8.4 で **pdo_mysql なし** → `php artisan migrate` 等の DB 操作は **Windows/XAMPP 側で実行**
-- composer は WSL 側では `--ignore-platform-req=php` が必要（ロック済み依存が PHP ≤8.3 前提のため）
+- composer の `platform.php` は **8.2.12（XAMPP実機）に固定済み** — WSL(8.4)で解決しても本番非互換の依存が入らない。外さないこと
 - テストは SQLite in-memory で動く: `php artisan test`（DB 不要・WSL で実行可）
-- `doctrine/dbal` は **^3.6 固定**。4.x は Laravel 9 と非互換（`->change()` で致命的エラー）
+- `latestOfMany` 系リレーションに select でカラム制限する場合は必ずテーブル名で修飾する（集計サブクエリと JOIN され ambiguous になる）
 - ファイルは CRLF 改行。perl/sed での一括置換は `\r?\n` を考慮すること
 
 ## 監査対応（2026-06 実施）
 
 - 監査レポート対応のチェックリスト: **`docs/audit-checklist.md`** — 項目を対応したら必ずチェックを更新する
-- 対応ブランチ: `feature/audit-fixes`（31/37 完了）
 - 残項目と前提資料:
-  - フレームワーク更新手順: `docs/upgrade-plan.md`（Laravel 9→11/12。脆弱性勧告12件あり早期実施推奨）
-  - 国保連CSV準拠対応: `docs/nhif-csv-todo.md`（**公式インタフェース仕様書の入手が必須**）
+  - フレームワーク更新（P1-4）は **2026-07-12 完了**（Laravel 12 / Inertia 2 / 脆弱性勧告 0件。`feature/framework-upgrade`）
+  - 国保連CSV準拠対応: `docs/nhif-csv-todo.md`（残タスク=取込送信システムでの実機検証等）
   - サービスコード・単位数は捏造禁止。こども家庭庁告示の単位数表から取込むこと
 
 ## デプロイ時の必須作業（このコミット群を本番反映する際）
@@ -46,5 +45,6 @@ Laravel 9 + Inertia (Vue 3) + MySQL。利用児童・出欠・送迎・個別支
 
 ## テスト
 
-- `php artisan test` — 全テスト（36件）。請求エンジンは `tests/Feature/Billing/` にあり、
+- `php artisan test` — 全テスト（67件）。請求エンジンは `tests/Feature/Billing/` にあり、
   請求ロジックを触ったら必ず実行・追加する
+- 主要画面の 200 確認は `tests/Feature/PageSmokeTest.php`。画面を追加したらここにパスを足す
