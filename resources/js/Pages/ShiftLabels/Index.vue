@@ -77,7 +77,7 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
 
     <div class="py-8">
       <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <FlashMessage />
 
           <!-- 既存ラベル一覧 -->
@@ -99,7 +99,7 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
                     <span :class="l.is_off ? 'text-gray-500' : 'text-gray-900'">{{ l.name }}</span>
                   </td>
                   <td class="py-2 px-2 text-center">
-                    <span v-if="l.is_off" class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded">休み系</span>
+                    <span v-if="l.is_off" class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md">休み系</span>
                   </td>
                   <td class="py-2 px-2 text-center">
                     <span v-if="l.is_off" class="text-gray-300">—</span>
@@ -109,11 +109,11 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
                   <td class="py-2 px-2 text-center text-gray-500">{{ l.display_order }}</td>
                   <td class="py-2 px-2 text-right whitespace-nowrap">
                     <button @click="startEdit(l)"
-                      class="text-xs px-2 py-1 border border-blue-200 text-blue-500 rounded hover:bg-blue-50 mr-1">
+                      class="text-xs px-2 py-1 border border-blue-200 text-blue-500 rounded-md hover:bg-blue-50 mr-1">
                       編集
                     </button>
                     <button v-if="!isProtected(l)" @click="destroy(l)"
-                      class="text-xs px-2 py-1 border border-red-200 text-red-400 rounded hover:bg-red-50">
+                      class="text-xs px-2 py-1 border border-red-200 text-red-400 rounded-md hover:bg-red-50">
                       削除
                     </button>
                   </td>
@@ -123,29 +123,29 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
                   <td class="py-2 px-2">
                     <input v-model="editForm.name" type="text" maxlength="30"
                       :disabled="isProtected(l)"
-                      class="w-full border border-gray-300 rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:text-gray-500" />
+                      class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm disabled:bg-gray-100 disabled:text-gray-500" />
                   </td>
                   <td class="py-2 px-2 text-center">
                     <input v-model="editForm.is_off" type="checkbox"
                       :disabled="isProtected(l)"
-                      class="rounded" />
+                      class="rounded-md" />
                   </td>
                   <td class="py-2 px-2 text-center">
                     <input v-model.number="editForm.work_hours" type="number" min="0" max="24" step="0.25"
                       :disabled="editForm.is_off"
-                      class="w-20 border border-gray-300 rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:text-gray-400" />
+                      class="w-20 border border-gray-300 rounded-md px-2 py-1 text-sm disabled:bg-gray-100 disabled:text-gray-400" />
                   </td>
                   <td class="py-2 px-2 text-center">
                     <input v-model.number="editForm.display_order" type="number" min="0"
-                      class="w-16 border border-gray-300 rounded px-2 py-1 text-sm" />
+                      class="w-16 border border-gray-300 rounded-md px-2 py-1 text-sm" />
                   </td>
                   <td class="py-2 px-2 text-right whitespace-nowrap">
                     <button @click="update(l)"
-                      class="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 mr-1">
+                      class="text-xs px-2 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 mr-1">
                       保存
                     </button>
                     <button @click="cancelEdit"
-                      class="text-xs px-2 py-1 border border-gray-300 text-gray-500 rounded hover:bg-gray-50">
+                      class="text-xs px-2 py-1 border border-gray-300 text-gray-500 rounded-md hover:bg-gray-50">
                       取消
                     </button>
                   </td>
@@ -164,26 +164,26 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
               <div class="flex-1 min-w-[160px]">
                 <label class="block text-xs text-gray-500 mb-1">ラベル名</label>
                 <input v-model="form.name" type="text" maxlength="30" placeholder="例: 早番"
-                  class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
               </div>
               <div class="w-28">
                 <label class="block text-xs text-gray-500 mb-1">勤務時間(h)</label>
                 <input v-model.number="form.work_hours" type="number" min="0" max="24" step="0.25"
                   :disabled="form.is_off"
                   placeholder="8"
-                  class="w-full border border-gray-300 rounded px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400" />
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400" />
               </div>
               <div class="w-20">
                 <label class="block text-xs text-gray-500 mb-1">表示順</label>
                 <input v-model.number="form.display_order" type="number" min="0"
-                  class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
               </div>
               <div class="flex items-center gap-1 pb-1">
-                <input v-model="form.is_off" type="checkbox" id="is_off" class="rounded" />
+                <input v-model="form.is_off" type="checkbox" id="is_off" class="rounded-md" />
                 <label for="is_off" class="text-xs text-gray-500">休み系</label>
               </div>
               <button type="submit"
-                class="px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap">
+                class="px-4 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600 whitespace-nowrap">
                 追加
               </button>
             </form>

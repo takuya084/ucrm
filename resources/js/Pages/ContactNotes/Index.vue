@@ -66,23 +66,23 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
         <FlashMessage />
 
         <!-- 日付ナビ -->
-        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center gap-3 flex-wrap">
-          <button @click="moveDay(-1)" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">← 前日</button>
+        <div class="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3 flex-wrap">
+          <button @click="moveDay(-1)" class="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50">← 前日</button>
           <input v-model="selectedDate" type="date" @change="changeDate"
-            class="border border-gray-300 rounded px-3 py-1.5 text-sm" />
-          <button @click="moveDay(1)" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">翌日 →</button>
+            class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
+          <button @click="moveDay(1)" class="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50">翌日 →</button>
           <Link :href="route('usage-records.index', { date: selectedDate })"
-            class="ml-auto text-sm text-indigo-600 hover:text-indigo-800">出席管理へ →</Link>
+            class="ml-auto text-sm text-primary-600 hover:text-primary-800">出席管理へ →</Link>
         </div>
 
         <!-- サマリー -->
         <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div class="bg-white rounded-lg shadow-sm p-3 text-center">
+          <div class="bg-white rounded-lg border border-gray-200 p-3 text-center">
             <div class="text-xl font-bold text-gray-700">{{ summary.total }}</div>
             <div class="text-xs text-gray-500">対象児童</div>
           </div>
-          <div class="bg-emerald-50 rounded-lg shadow-sm p-3 text-center">
-            <div class="text-xl font-bold text-emerald-700">{{ summary.published }}</div>
+          <div class="bg-green-50 rounded-lg shadow-sm p-3 text-center">
+            <div class="text-xl font-bold text-green-700">{{ summary.published }}</div>
             <div class="text-xs text-gray-500">公開済み</div>
           </div>
           <div class="bg-gray-50 rounded-lg shadow-sm p-3 text-center">
@@ -100,7 +100,7 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
         </div>
 
         <!-- 一覧 -->
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div v-if="rows.length === 0" class="py-12 text-center text-gray-400">
             この日の対象児童がいません
           </div>
@@ -109,7 +109,7 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
               <!-- 児童名 -->
               <div class="w-40">
                 <Link :href="route('children.show', row.child_id)"
-                  class="font-medium text-gray-900 hover:text-indigo-600 text-sm">{{ row.child_name }}</Link>
+                  class="font-medium text-gray-900 hover:text-primary-600 text-sm">{{ row.child_name }}</Link>
               </div>
 
               <!-- 状態バッジ -->
@@ -118,15 +118,15 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
                 <template v-else>
                   <span :class="['text-xs px-2 py-1 rounded-full border',
                     row.note.status === 'published'
-                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                      ? 'bg-green-50 text-green-600 border-green-200'
                       : 'bg-gray-50 text-gray-500 border-gray-200']">
-                    📖 {{ statusLabels[row.note.status] ?? row.note.status }}
+                    {{ statusLabels[row.note.status] ?? row.note.status }}
                   </span>
                   <span v-if="row.note.read_at" class="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
                     ✓ 既読 {{ fmtTime(row.note.read_at) }}
                   </span>
                   <span v-if="row.note.guardian_submitted_at" class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
-                    🏠 家庭記入あり
+                    家庭記入あり
                   </span>
                 </template>
               </div>
@@ -141,17 +141,17 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
                 <button
                   v-if="row.note && row.note.status === 'draft' && (row.note.guardian_message || row.note.meal_note || row.note.health_note)"
                   @click="publish(row)"
-                  class="text-xs px-3 py-1.5 bg-emerald-500 text-white rounded hover:bg-emerald-600"
+                  class="text-xs px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
                 >公開する</button>
                 <Link
                   v-if="row.note?.support_record_id"
                   :href="route('support-records.show', row.note.support_record_id)"
-                  class="text-xs px-3 py-1.5 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50"
+                  class="text-xs px-3 py-1.5 border border-primary-300 text-primary-600 rounded-md hover:bg-primary-50"
                 >記録を見る</Link>
                 <Link
                   v-else-if="row.usage_record_id"
                   :href="route('support-records.create', { usage_record_id: row.usage_record_id })"
-                  class="text-xs px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600"
+                  class="text-xs px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
                 >記録・連絡帳を書く</Link>
               </div>
             </div>
@@ -159,27 +159,27 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
         </div>
 
         <!-- 年間PDF出力（年末の保存運用。要配慮個人情報の一括出力のためリーダー以上のみ） -->
-        <div v-if="['admin', 'leader'].includes($page.props.auth.staff_role)" class="bg-white shadow-sm rounded-lg p-4">
-          <h3 class="text-sm font-semibold text-gray-700 mb-2">📄 年間PDF出力（記録の保存用）</h3>
+        <div v-if="['admin', 'leader'].includes($page.props.auth.staff_role)" class="bg-white border border-gray-200 rounded-lg p-4">
+          <h3 class="text-sm font-semibold text-gray-700 mb-2">年間PDF出力（記録の保存用）</h3>
           <div class="flex items-center gap-3 flex-wrap">
-            <select v-model="exportYear" class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+            <select v-model="exportYear" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
               <option v-for="y in exportYears" :key="y" :value="y">{{ y }}年</option>
             </select>
-            <select v-model="exportChildId" class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+            <select v-model="exportChildId" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
               <option :value="null">― 児童を選択 ―</option>
               <option v-for="c in children" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
             <a
               v-if="exportChildUrl"
               :href="exportChildUrl"
-              class="px-4 py-1.5 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600"
+              class="px-4 py-1.5 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600"
             >この児童の1年分をPDF出力</a>
-            <span v-else class="px-4 py-1.5 text-sm text-gray-300 border border-gray-200 rounded cursor-not-allowed">
+            <span v-else class="px-4 py-1.5 text-sm text-gray-300 border border-gray-200 rounded-md cursor-not-allowed">
               この児童の1年分をPDF出力
             </span>
             <a
               :href="exportZipUrl"
-              class="px-4 py-1.5 text-sm text-indigo-600 border border-indigo-300 rounded hover:bg-indigo-50"
+              class="px-4 py-1.5 text-sm text-primary-600 border border-primary-300 rounded-md hover:bg-primary-50"
             >全児童分を一括出力（ZIP）</a>
           </div>
           <p class="text-xs text-gray-400 mt-2">

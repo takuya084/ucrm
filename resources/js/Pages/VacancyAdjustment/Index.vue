@@ -33,14 +33,14 @@ const CONTACT_COLORS = {
 
 const STATUS_LABELS = {
   absent:        { label: '無断欠席', color: 'bg-red-100 text-red-700' },
-  absent_notice: { label: '欠席連絡済', color: 'bg-yellow-100 text-yellow-700' },
+  absent_notice: { label: '欠席連絡済', color: 'bg-amber-100 text-amber-700' },
   cancel:        { label: 'キャンセル', color: 'bg-gray-100 text-gray-600' },
   not_recorded:  { label: '未記録',    color: 'bg-orange-100 text-orange-700' },
 }
 
 const remainingColor = (days) => {
   if (days >= 10) return 'text-green-700 bg-green-50 border-green-200'
-  if (days >= 5)  return 'text-yellow-700 bg-yellow-50 border-yellow-200'
+  if (days >= 5)  return 'text-amber-700 bg-amber-50 border-amber-200'
   return 'text-orange-700 bg-orange-50 border-orange-200'
 }
 
@@ -61,15 +61,15 @@ const nextDay = () => {
       <div class="flex items-center gap-4 flex-wrap">
         <h2 class="font-semibold text-xl text-gray-800">空き枠調整</h2>
         <div class="flex items-center gap-2">
-          <button @click="prevDay" class="px-2 py-1 border rounded text-sm hover:bg-gray-100">◀</button>
+          <button @click="prevDay" class="px-2 py-1 border rounded-md text-sm hover:bg-gray-100">◀</button>
           <input
             v-model="selectedDate"
             type="date"
-            class="border border-gray-300 rounded px-2 py-1 text-sm"
+            class="border border-gray-300 rounded-md px-2 py-1 text-sm"
             @change="goToDate"
           />
-          <span class="text-sm font-medium text-indigo-600">（{{ dayName }}曜日）</span>
-          <button @click="nextDay" class="px-2 py-1 border rounded text-sm hover:bg-gray-100">▶</button>
+          <span class="text-sm font-medium text-primary-600">（{{ dayName }}曜日）</span>
+          <button @click="nextDay" class="px-2 py-1 border rounded-md text-sm hover:bg-gray-100">▶</button>
         </div>
       </div>
     </template>
@@ -79,11 +79,11 @@ const nextDay = () => {
 
         <!-- サマリーバー -->
         <div class="grid grid-cols-5 gap-3">
-          <div class="bg-white rounded-lg shadow-sm p-4 text-center">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
             <div class="text-2xl font-bold text-gray-700">{{ stats.capacity }}</div>
             <div class="text-xs text-gray-400 mt-1">定員</div>
           </div>
-          <div class="bg-white rounded-lg shadow-sm p-4 text-center">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
             <div class="text-2xl font-bold text-gray-700">{{ stats.scheduled }}</div>
             <div class="text-xs text-gray-400 mt-1">本日予定</div>
           </div>
@@ -97,23 +97,23 @@ const nextDay = () => {
           </div>
           <div :class="[
             'rounded-lg shadow-sm p-4 text-center',
-            stats.availableSlots > 0 ? 'bg-indigo-50' : 'bg-gray-50'
+            stats.availableSlots > 0 ? 'bg-primary-50' : 'bg-gray-50'
           ]">
-            <div :class="['text-2xl font-bold', stats.availableSlots > 0 ? 'text-indigo-700' : 'text-gray-400']">
+            <div :class="['text-2xl font-bold', stats.availableSlots > 0 ? 'text-primary-700' : 'text-gray-400']">
               {{ stats.availableSlots }}
             </div>
             <div class="text-xs text-gray-400 mt-1">空き枠</div>
           </div>
         </div>
 
-        <div v-if="stats.availableSlots === 0 && absentChildren.length === 0" class="bg-white rounded-lg shadow-sm p-8 text-center text-gray-400">
+        <div v-if="stats.availableSlots === 0 && absentChildren.length === 0" class="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400">
           本日は空き枠がなく、欠席者もいません
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           <!-- 欠席者リスト -->
-          <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div class="px-5 py-3 border-b flex items-center justify-between">
               <h3 class="text-sm font-semibold text-gray-700">
                 本日の欠席者
@@ -123,7 +123,7 @@ const nextDay = () => {
               </h3>
               <Link
                 :href="route('usage-records.index', { date })"
-                class="text-xs text-indigo-500 hover:underline"
+                class="text-xs text-primary-500 hover:underline"
               >出席管理を開く →</Link>
             </div>
 
@@ -136,14 +136,14 @@ const nextDay = () => {
                 <div class="flex items-start justify-between gap-2">
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
-                      <Link :href="route('children.show', child.id)" class="font-medium text-gray-900 hover:text-indigo-600 text-sm">
+                      <Link :href="route('children.show', child.id)" class="font-medium text-gray-900 hover:text-primary-600 text-sm">
                         {{ child.name }}
                       </Link>
                       <span class="text-xs text-gray-400">{{ child.grade }}</span>
                       <span :class="['text-xs px-2 py-0.5 rounded-full', STATUS_LABELS[child.status]?.color]">
                         {{ STATUS_LABELS[child.status]?.label }}
                       </span>
-                      <span v-if="child.pickup_required" class="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">送迎</span>
+                      <span v-if="child.pickup_required" class="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md">送迎</span>
                     </div>
                     <div v-if="child.absent_reason" class="text-xs text-gray-500 mt-0.5">理由：{{ child.absent_reason }}</div>
                   </div>
@@ -161,7 +161,7 @@ const nextDay = () => {
                     </svg>
                     {{ child.guardian.tel_primary }}
                   </a>
-                  <span :class="['px-1.5 py-0.5 rounded text-xs', CONTACT_COLORS[child.guardian.preferred_contact]]">
+                  <span :class="['px-1.5 py-0.5 rounded-md text-xs', CONTACT_COLORS[child.guardian.preferred_contact]]">
                     {{ CONTACT_LABELS[child.guardian.preferred_contact] }}希望
                   </span>
                 </div>
@@ -171,7 +171,7 @@ const nextDay = () => {
           </div>
 
           <!-- 連絡候補リスト -->
-          <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div class="px-5 py-3 border-b">
               <h3 class="text-sm font-semibold text-gray-700">
                 穴埋め連絡候補
@@ -195,11 +195,11 @@ const nextDay = () => {
 
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
-                      <Link :href="route('children.show', child.id)" class="font-medium text-gray-900 hover:text-indigo-600 text-sm">
+                      <Link :href="route('children.show', child.id)" class="font-medium text-gray-900 hover:text-primary-600 text-sm">
                         {{ child.name }}
                       </Link>
                       <span class="text-xs text-gray-400">{{ child.grade }}</span>
-                      <span v-if="child.pickup_required" class="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">送迎</span>
+                      <span v-if="child.pickup_required" class="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md">送迎</span>
                     </div>
 
                     <!-- 通常スケジュール -->
@@ -211,7 +211,7 @@ const nextDay = () => {
                         :class="[
                           'text-xs w-5 h-5 flex items-center justify-center rounded-full',
                           child.schedule_days.includes(d)
-                            ? 'bg-indigo-500 text-white font-medium'
+                            ? 'bg-primary-500 text-white font-medium'
                             : 'bg-gray-100 text-gray-300'
                         ]"
                       >{{ DAY_LABELS[d] }}</span>
@@ -230,7 +230,7 @@ const nextDay = () => {
                         </svg>
                         {{ child.guardian.tel_primary }}
                       </a>
-                      <span :class="['px-1.5 py-0.5 rounded', CONTACT_COLORS[child.guardian.preferred_contact]]">
+                      <span :class="['px-1.5 py-0.5 rounded-md', CONTACT_COLORS[child.guardian.preferred_contact]]">
                         {{ CONTACT_LABELS[child.guardian.preferred_contact] }}希望
                       </span>
                     </div>

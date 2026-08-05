@@ -74,7 +74,7 @@ const generateDraft = async () => {
   }
 }
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
 
@@ -90,7 +90,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
     <div class="py-8">
       <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm rounded-lg p-6">
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
 
           <!-- AI下書き生成 -->
@@ -99,26 +99,25 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               type="button"
               @click="generateDraft"
               :disabled="aiLoading"
-              class="flex items-center gap-2 px-4 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+              class="flex items-center gap-2 px-4 py-2 text-sm bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
             >
               <span v-if="aiLoading" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              <span v-else>✦</span>
               {{ aiLoading ? 'AI生成中...' : 'AIで下書き生成' }}
             </button>
             <span v-if="aiError" class="text-sm text-red-600">{{ aiError }}</span>
           </div>
 
           <!-- 前回記録 -->
-          <div v-if="lastRecord" class="mb-5 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+          <div v-if="lastRecord" class="mb-5 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm">
             <span class="font-medium text-blue-700">前回モニタリング：</span>
             <span class="text-blue-800">{{ lastRecord.monitoring_date }}（対象期間 {{ lastRecord.period_from }} 〜 {{ lastRecord.period_to }}）</span>
           </div>
 
           <!-- 期間の記録サマリー（支援記録・連絡帳の集計） -->
           <div v-if="insights && (insights.record_count > 0 || insights.note_count > 0)"
-            class="mb-6 border border-indigo-200 rounded-lg overflow-hidden">
-            <div class="px-4 py-2 bg-indigo-50 border-b border-indigo-200 text-sm font-medium text-indigo-700">
-              📊 期間の記録サマリー（{{ insights.period_from }} 〜 {{ insights.period_to }}
+            class="mb-6 border border-primary-200 rounded-lg overflow-hidden">
+            <div class="px-4 py-2 bg-primary-50 border-b border-primary-200 text-sm font-medium text-primary-700">
+              期間の記録サマリー（{{ insights.period_from }} 〜 {{ insights.period_to }}
               ／ 支援記録 {{ insights.record_count }}件・連絡帳 {{ insights.note_count }}件）
             </div>
             <div class="p-4 space-y-4 text-sm">
@@ -147,8 +146,8 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                 <div class="space-y-1">
                   <div v-for="(count, key) in insights.domain_counts" :key="key" class="flex items-center gap-2">
                     <span class="w-44 text-xs text-gray-600 shrink-0">{{ insights.domain_labels[key] }}</span>
-                    <div class="flex-1 bg-gray-100 rounded h-3 overflow-hidden">
-                      <div class="h-3 bg-emerald-400 rounded" :style="{ width: (count / maxDomainCount() * 100) + '%' }"></div>
+                    <div class="flex-1 bg-gray-100 rounded-md h-3 overflow-hidden">
+                      <div class="h-3 bg-green-400 rounded-md" :style="{ width: (count / maxDomainCount() * 100) + '%' }"></div>
                     </div>
                     <span class="w-8 text-xs text-gray-500 text-right">{{ count }}</span>
                   </div>
@@ -174,7 +173,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                     v-for="(c, i) in insights.guardian_comments" :key="i"
                     type="button"
                     @click="quoteComment(c)"
-                    class="w-full text-left text-xs p-2 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 transition-colors"
+                    class="w-full text-left text-xs p-2 bg-amber-50 border border-amber-200 rounded-md hover:bg-amber-100 transition-colors"
                   >
                     <span class="text-amber-600 font-medium">{{ c.date }}</span>
                     <span class="text-gray-700 ml-1">{{ c.comment }}</span>
@@ -238,10 +237,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             </div>
 
             <div class="flex justify-end gap-3 pt-4 border-t">
-              <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+              <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                 キャンセル
               </Link>
-              <button type="submit" class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600">
+              <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
                 記録を保存
               </button>
             </div>

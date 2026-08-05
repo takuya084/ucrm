@@ -21,8 +21,8 @@ const STATUS_LABEL = { draft: '下書き', submitted: '提出済', accepted: '�
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-800">過誤申立</h2>
         <div class="flex gap-2">
-          <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">請求管理へ</Link>
-          <a :href="route('billing.error-claims.export')" class="px-4 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition">CSV出力</a>
+          <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">請求管理へ</Link>
+          <a :href="route('billing.error-claims.export')" class="px-4 py-1.5 text-xs bg-green-500 text-white rounded-md hover:bg-green-600 transition">CSV出力</a>
         </div>
       </div>
     </template>
@@ -31,7 +31,7 @@ const STATUS_LABEL = { draft: '下書き', submitted: '提出済', accepted: '�
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <FlashMessage />
 
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div v-if="claims.data.length === 0" class="py-12 text-center text-gray-400 text-sm">
             過誤申立がありません
           </div>
@@ -64,7 +64,7 @@ const STATUS_LABEL = { draft: '下書き', submitted: '提出済', accepted: '�
 
           <div v-if="claims.last_page > 1" class="px-5 py-3 border-t flex gap-2 text-sm">
             <Link v-for="link in claims.links" :key="link.label" :href="link.url ?? '#'" v-html="link.label"
-              :class="['px-3 py-1 border rounded', link.active ? 'bg-indigo-500 text-white border-indigo-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50', !link.url ? 'opacity-40 pointer-events-none' : '']" />
+              :class="['px-3 py-1 border rounded-md', link.active ? 'bg-primary-500 text-white border-primary-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50', !link.url ? 'opacity-40 pointer-events-none' : '']" />
           </div>
         </div>
       </div>

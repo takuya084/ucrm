@@ -11,7 +11,7 @@ const props = defineProps({
 })
 
 const STATUS_LABELS = {
-  draft:     { label: '下書き', class: 'bg-yellow-100 text-yellow-700' },
+  draft:     { label: '下書き', class: 'bg-amber-100 text-amber-700' },
   confirmed: { label: '確定',   class: 'bg-green-100 text-green-700' },
 }
 
@@ -41,13 +41,13 @@ const destroyShift = (shift) => {
 
     <div class="py-8">
       <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <FlashMessage />
 
           <!-- ラベル設定リンク -->
           <div v-if="$page.props.auth.staff_role === 'admin'" class="flex justify-end mb-4">
             <Link :href="route('shift-labels.index')"
-              class="text-xs px-3 py-1 border rounded hover:bg-gray-50 text-gray-600">
+              class="text-xs px-3 py-1 border rounded-md hover:bg-gray-50 text-gray-600">
               ラベル設定
             </Link>
           </div>
@@ -55,10 +55,10 @@ const destroyShift = (shift) => {
           <!-- 年選択 -->
           <div class="flex items-center gap-3 mb-6">
             <button @click="selectedYear--; changeYear()"
-              class="px-2 py-1 border rounded text-gray-500 hover:bg-gray-50">&larr;</button>
+              class="px-2 py-1 border rounded-md text-gray-500 hover:bg-gray-50">&larr;</button>
             <span class="text-lg font-semibold">{{ selectedYear }}年</span>
             <button @click="selectedYear++; changeYear()"
-              class="px-2 py-1 border rounded text-gray-500 hover:bg-gray-50">&rarr;</button>
+              class="px-2 py-1 border rounded-md text-gray-500 hover:bg-gray-50">&rarr;</button>
           </div>
 
           <!-- 月一覧テーブル -->
@@ -76,7 +76,7 @@ const destroyShift = (shift) => {
                 <td class="py-3 px-3 font-medium">{{ m.month }}月</td>
                 <td class="py-3 px-3">
                   <span v-if="m.status"
-                    :class="['px-2 py-0.5 rounded text-xs font-medium', STATUS_LABELS[m.status]?.class]">
+                    :class="['px-2 py-0.5 rounded-md text-xs font-medium', STATUS_LABELS[m.status]?.class]">
                     {{ STATUS_LABELS[m.status]?.label }}
                   </span>
                   <span v-else class="text-gray-400 text-xs">未作成</span>
@@ -86,18 +86,18 @@ const destroyShift = (shift) => {
                   <div class="flex justify-end gap-2">
                     <template v-if="m.id">
                       <Link :href="route('shifts.edit', m.id)"
-                        class="text-xs px-3 py-1 border rounded hover:bg-gray-50">
+                        class="text-xs px-3 py-1 border rounded-md hover:bg-gray-50">
                         {{ ['admin','leader'].includes($page.props.auth.staff_role) ? '編集' : '閲覧' }}
                       </Link>
                       <button v-if="$page.props.auth.staff_role === 'admin'"
                         @click="destroyShift(m)"
-                        class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded hover:bg-red-50">
+                        class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded-md hover:bg-red-50">
                         削除
                       </button>
                     </template>
                     <button v-else-if="$page.props.auth.staff_role === 'admin'"
                       @click="createShift(m.month)"
-                      class="text-xs px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                      class="text-xs px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600">
                       ＋ 新規作成
                     </button>
                   </div>

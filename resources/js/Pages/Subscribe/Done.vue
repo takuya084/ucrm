@@ -24,7 +24,7 @@ const resend = () => {
     <div class="w-full max-w-md mx-auto text-center">
 
       <div class="mb-8">
-        <span class="text-xl font-extrabold tracking-tight"><span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">ハグ</span><span class="text-gray-900">くむ</span></span>
+        <span class="text-xl font-extrabold tracking-tight"><span class="text-primary-600">ハグ</span><span class="text-gray-900">くむ</span></span>
       </div>
 
       <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 sm:p-10">

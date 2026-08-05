@@ -51,7 +51,7 @@ const spark = computed(() => {
     <template #header>
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-800">経費管理</h2>
-        <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">請求管理へ</Link>
+        <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">請求管理へ</Link>
       </div>
     </template>
 
@@ -60,11 +60,11 @@ const spark = computed(() => {
         <FlashMessage />
 
         <!-- 月選択 -->
-        <div class="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-end gap-3">
+        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap items-end gap-3">
           <div>
             <label class="block text-xs text-gray-500 mb-1">対象年月</label>
             <input v-model="selectedMonth" type="month" @change="changeMonth"
-              class="border border-gray-300 rounded px-3 py-1.5 text-sm" />
+              class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
           </div>
           <div class="ml-auto text-right">
             <div class="text-[10px] text-gray-500">月次経費合計</div>
@@ -73,7 +73,7 @@ const spark = computed(() => {
         </div>
 
         <!-- カテゴリ別入力 -->
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">{{ yearMonth }} の経費</h3>
           </div>
@@ -90,11 +90,11 @@ const spark = computed(() => {
                 <td class="px-4 py-2">{{ r.label }}</td>
                 <td class="px-4 py-2">
                   <input v-model.number="r.amount" type="number" min="0" step="1"
-                    class="w-full text-right border border-gray-300 rounded px-2 py-1 text-sm" />
+                    class="w-full text-right border border-gray-300 rounded-md px-2 py-1 text-sm" />
                 </td>
                 <td class="px-4 py-2">
                   <input v-model="r.note" type="text" maxlength="200"
-                    class="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                    class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
                     placeholder="任意メモ" />
                 </td>
               </tr>
@@ -102,14 +102,14 @@ const spark = computed(() => {
           </table>
           <div class="px-5 py-3 bg-gray-50 border-t flex justify-end">
             <button @click="save"
-              class="px-4 py-1.5 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition">
+              class="px-4 py-1.5 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600 transition">
               保存
             </button>
           </div>
         </div>
 
         <!-- 6ヶ月推移 -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <h3 class="text-sm font-semibold text-gray-700 mb-3">経費6ヶ月推移</h3>
           <svg :width="spark.w" :height="spark.h">
             <polyline :points="spark.pts" fill="none" stroke="#f59e0b" stroke-width="1.5" />

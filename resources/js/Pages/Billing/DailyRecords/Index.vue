@@ -76,7 +76,7 @@ const save = () => {
     <template #header>
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-800">実績記録票</h2>
-        <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">請求管理へ</Link>
+        <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">請求管理へ</Link>
       </div>
     </template>
 
@@ -85,14 +85,14 @@ const save = () => {
         <FlashMessage />
 
         <!-- フィルター + 保存 -->
-        <div class="bg-white shadow-sm rounded-lg p-4 flex flex-wrap gap-3 items-end">
+        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap gap-3 items-end">
           <div>
             <label class="block text-xs text-gray-500 mb-1">年月</label>
-            <input v-model="selectedMonth" type="month" @change="applyFilter" class="border border-gray-300 rounded px-3 py-1.5 text-sm" />
+            <input v-model="selectedMonth" type="month" @change="applyFilter" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
           </div>
           <div>
             <label class="block text-xs text-gray-500 mb-1">児童</label>
-            <select v-model="selectedChild" @change="applyFilter" class="border border-gray-300 rounded px-2 py-1.5 text-sm">
+            <select v-model="selectedChild" @change="applyFilter" class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
               <option value="">すべて</option>
               <option v-for="c in children" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
@@ -104,7 +104,7 @@ const save = () => {
             <template v-else>
               <span v-if="dirtyCount > 0" class="text-xs text-amber-600 font-medium">{{ dirtyCount }}件 未保存</span>
               <button @click="save" :disabled="dirtyCount === 0"
-                class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-40 transition">
+                class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-40 transition">
                 変更を保存
               </button>
             </template>
@@ -112,7 +112,7 @@ const save = () => {
         </div>
 
         <!-- 児童別実績 -->
-        <div v-for="group in grouped" :key="group.child.id" class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div v-for="group in grouped" :key="group.child.id" class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">{{ group.child.name }}（{{ group.child.name_kana }}）</h3>
           </div>
@@ -141,12 +141,12 @@ const save = () => {
                   </td>
                   <td class="px-3 py-2 text-center text-xs">
                     <input v-if="!locked" v-model="editable[rec.id].check_in_time" type="time"
-                      class="border border-gray-300 rounded px-1.5 py-1 text-xs w-24" />
+                      class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-24" />
                     <span v-else>{{ rec.check_in_time ?? '-' }}</span>
                   </td>
                   <td class="px-3 py-2 text-center text-xs">
                     <input v-if="!locked" v-model="editable[rec.id].check_out_time" type="time"
-                      class="border border-gray-300 rounded px-1.5 py-1 text-xs w-24" />
+                      class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-24" />
                     <span v-else>{{ rec.check_out_time ?? '-' }}</span>
                   </td>
                   <td class="px-3 py-2 text-center text-xs">
@@ -155,7 +155,7 @@ const save = () => {
                   </td>
                   <td class="px-3 py-2 text-center text-xs">
                     <select v-if="!locked" v-model="editable[rec.id].service_type"
-                      class="border border-gray-300 rounded px-1 py-1 text-xs">
+                      class="border border-gray-300 rounded-md px-1 py-1 text-xs">
                       <option value="">自動</option>
                       <option value="houday">放デイ</option>
                       <option value="jidou">児発</option>
@@ -179,7 +179,7 @@ const save = () => {
           </div>
         </div>
 
-        <div v-if="grouped.length === 0" class="bg-white shadow-sm rounded-lg py-12 text-center text-gray-400 text-sm">
+        <div v-if="grouped.length === 0" class="bg-white border border-gray-200 rounded-lg py-12 text-center text-gray-400 text-sm">
           実績データがありません。先に「請求管理」で対象月の計算を実行すると、出欠記録から実績が作成されます。
         </div>
       </div>

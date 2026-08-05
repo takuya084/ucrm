@@ -41,17 +41,17 @@ const store = () => {
 
     <div class="py-8">
       <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
 
           <form @submit.prevent="store">
             <Form :form="form" :serviceTypeLabels="serviceTypeLabels" :satelliteTypeLabels="satelliteTypeLabels" />
 
             <div class="flex justify-end gap-3 pt-6 border-t mt-6">
-              <Link :href="route('external-facilities.index')" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+              <Link :href="route('external-facilities.index')" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                 キャンセル
               </Link>
-              <button type="submit" class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600">
+              <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
                 登録する
               </button>
             </div>

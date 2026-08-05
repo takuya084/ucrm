@@ -27,7 +27,7 @@ const applyFilters = () => {
 
 const STATUS_COLOR = {
   open:        'bg-red-100 text-red-700',
-  in_progress: 'bg-yellow-100 text-yellow-700',
+  in_progress: 'bg-amber-100 text-amber-700',
   closed:      'bg-gray-100 text-gray-500',
 }
 </script>
@@ -38,7 +38,7 @@ const STATUS_COLOR = {
     <template #header>
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-800">問い合わせ管理</h2>
-        <Link :href="route('inquiries.create')" class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">
+        <Link :href="route('inquiries.create')" class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">
           ＋ 新規登録
         </Link>
       </div>
@@ -50,17 +50,17 @@ const STATUS_COLOR = {
         <FlashMessage />
 
         <!-- フィルター -->
-        <div class="bg-white shadow-sm rounded-lg p-4 flex flex-wrap gap-3 items-end">
+        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap gap-3 items-end">
           <div>
             <label class="block text-xs text-gray-500 mb-1">ステータス</label>
-            <select v-model="filterStatus" @change="applyFilters" class="border border-gray-300 rounded px-2 py-1.5 text-sm">
+            <select v-model="filterStatus" @change="applyFilters" class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
               <option value="">すべて</option>
               <option v-for="(label, val) in statusLabels" :key="val" :value="val">{{ label }}</option>
             </select>
           </div>
           <div>
             <label class="block text-xs text-gray-500 mb-1">カテゴリ</label>
-            <select v-model="filterCategory" @change="applyFilters" class="border border-gray-300 rounded px-2 py-1.5 text-sm">
+            <select v-model="filterCategory" @change="applyFilters" class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
               <option value="">すべて</option>
               <option v-for="(label, val) in categoryLabels" :key="val" :value="val">{{ label }}</option>
             </select>
@@ -72,7 +72,7 @@ const STATUS_COLOR = {
         </div>
 
         <!-- 一覧 -->
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div v-if="inquiries.data.length === 0" class="py-12 text-center text-gray-400 text-sm">
             条件に一致する問い合わせがありません
           </div>
@@ -94,7 +94,7 @@ const STATUS_COLOR = {
                     <span v-if="inq.is_escalated" class="text-xs text-red-600 font-bold">⚠ エスカレ</span>
                   </div>
                   <div class="mt-1 flex items-center gap-2">
-                    <Link :href="route('inquiries.show', inq.id)" class="text-sm font-medium text-gray-900 hover:text-indigo-600 truncate">
+                    <Link :href="route('inquiries.show', inq.id)" class="text-sm font-medium text-gray-900 hover:text-primary-600 truncate">
                       {{ inq.subject || inq.content?.slice(0, 40) + '…' }}
                     </Link>
                   </div>
@@ -103,7 +103,7 @@ const STATUS_COLOR = {
                     <span v-if="inq.staff">（対応：{{ inq.staff.name }}）</span>
                   </div>
                 </div>
-                <Link :href="route('inquiries.show', inq.id)" class="text-xs text-indigo-600 hover:underline whitespace-nowrap">
+                <Link :href="route('inquiries.show', inq.id)" class="text-xs text-primary-600 hover:underline whitespace-nowrap">
                   詳細
                 </Link>
               </div>
@@ -117,7 +117,7 @@ const STATUS_COLOR = {
               :key="link.label"
               :href="link.url ?? '#'"
               v-html="link.label"
-              :class="['px-3 py-1 border rounded', link.active ? 'bg-indigo-500 text-white border-indigo-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50', !link.url ? 'opacity-40 pointer-events-none' : '']"
+              :class="['px-3 py-1 border rounded-md', link.active ? 'bg-primary-500 text-white border-primary-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50', !link.url ? 'opacity-40 pointer-events-none' : '']"
             />
           </div>
         </div>

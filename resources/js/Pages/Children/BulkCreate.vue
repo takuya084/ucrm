@@ -66,7 +66,7 @@ const submit = () => {
         </div>
 
         <!-- 使い方 -->
-        <div class="p-6 bg-white border border-gray-200 rounded-lg shadow-sm space-y-4">
+        <div class="p-6 bg-white border border-gray-200 rounded-lg space-y-4">
           <h3 class="text-lg font-semibold text-gray-900">使い方</h3>
           <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1">
             <li>下の「テンプレートCSVをダウンロード」から CSV をダウンロードします。</li>
@@ -77,7 +77,7 @@ const submit = () => {
 
           <a
             :href="route('children.bulk.template')"
-            class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
+            class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700"
           >
             テンプレートCSVをダウンロード
           </a>
@@ -120,7 +120,7 @@ const submit = () => {
         </div>
 
         <!-- アップロードフォーム -->
-        <div class="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="p-6 bg-white border border-gray-200 rounded-lg">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">CSVをアップロード</h3>
           <form @submit.prevent="submit">
             <input
@@ -134,7 +134,7 @@ const submit = () => {
               <button
                 type="submit"
                 :disabled="uploading"
-                class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600 disabled:opacity-50"
+                class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600 disabled:opacity-50"
               >
                 {{ uploading ? 'アップロード中…' : '一括登録' }}
               </button>

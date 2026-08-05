@@ -32,13 +32,13 @@ const destroy = (school) => {
 
     <div class="py-8">
       <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <FlashMessage />
 
           <div class="flex justify-end mb-6">
             <Link
               :href="route('schools.create')"
-              class="px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+              class="px-4 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600"
             >＋ 学校登録</Link>
           </div>
 
@@ -70,11 +70,11 @@ const destroy = (school) => {
                 <td class="py-3 text-right whitespace-nowrap">
                   <Link
                     :href="route('schools.edit', school.id)"
-                    class="text-xs px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-gray-600 mr-2"
+                    class="text-xs px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 mr-2"
                   >編集</Link>
                   <button
                     @click="destroy(school)"
-                    class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded hover:bg-red-50"
+                    class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded-md hover:bg-red-50"
                   >削除</button>
                 </td>
               </tr>

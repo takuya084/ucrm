@@ -31,7 +31,7 @@ const store = () => {
   router.post(route('children.certificates.store', props.child.id), form)
 }
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
 
@@ -49,11 +49,11 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
     <div class="py-8">
       <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
 
           <!-- 注意書き -->
-          <div class="mb-6 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+          <div class="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
             ステータスを「有効」にすると、既存の有効な受給者証は自動的に「期限切れ」になります。
           </div>
 
@@ -123,7 +123,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               </div>
               <div class="md:col-span-2">
                 <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input v-model="form.is_cap_management_target" type="checkbox" class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-300" />
+                  <input v-model="form.is_cap_management_target" type="checkbox" class="rounded-md border-gray-300 text-primary-500 focus:ring-primary-300" />
                   上限管理対象（複数事業所利用の場合にチェック）
                 </label>
               </div>
@@ -137,19 +137,19 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               </p>
               <div v-if="externalFacilities.length === 0" class="text-sm text-gray-400 py-2">
                 他社事業所が未登録です。
-                <Link :href="route('external-facilities.create')" class="text-indigo-500 hover:underline">登録する</Link>
+                <Link :href="route('external-facilities.create')" class="text-primary-500 hover:underline">登録する</Link>
               </div>
               <div v-else class="space-y-2">
                 <label
                   v-for="ef in externalFacilities"
                   :key="ef.id"
-                  class="flex items-center gap-3 p-2 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                  class="flex items-center gap-3 p-2 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer"
                 >
                   <input
                     type="checkbox"
                     :value="ef.id"
                     v-model="form.external_facility_ids"
-                    class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-300"
+                    class="rounded-md border-gray-300 text-primary-500 focus:ring-primary-300"
                   />
                   <span class="text-sm">
                     <span class="font-medium text-gray-800">{{ ef.name }}</span>
@@ -160,10 +160,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             </div>
 
             <div class="flex justify-end gap-3 pt-4 border-t">
-              <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+              <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                 キャンセル
               </Link>
-              <button type="submit" class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600">
+              <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
                 登録する
               </button>
             </div>

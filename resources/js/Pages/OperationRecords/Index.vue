@@ -129,7 +129,7 @@ const TABS = [
   { key: 'selfeval',  label: '自己評価公表' },
 ]
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
 </script>
 
@@ -149,14 +149,14 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
         <BreezeValidationErrors />
 
         <!-- タブ -->
-        <div class="bg-white shadow-sm rounded-lg px-2 flex gap-1 overflow-x-auto">
+        <div class="bg-white border border-gray-200 rounded-lg px-2 flex gap-1 overflow-x-auto">
           <button
             v-for="tab in TABS" :key="tab.key" type="button"
             @click="activeTab = tab.key"
             :class="[
               'px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors',
               activeTab === tab.key
-                ? 'border-indigo-500 text-indigo-700'
+                ? 'border-primary-500 text-primary-700'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             ]"
           >{{ tab.label }}</button>
@@ -168,8 +168,8 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <template v-for="(tLabel, tKey) in COMMITTEE_TYPE" :key="tKey">
               <div v-for="(cLabel, cKey) in COMMITTEE_CATEGORY" :key="cKey"
-                :class="['rounded-lg shadow-sm p-4 text-center', committeeStatus[tKey][cKey] > 0 ? 'bg-emerald-50' : 'bg-red-50']">
-                <div :class="['text-2xl font-bold', committeeStatus[tKey][cKey] > 0 ? 'text-emerald-700' : 'text-red-600']">
+                :class="['rounded-lg shadow-sm p-4 text-center', committeeStatus[tKey][cKey] > 0 ? 'bg-green-50' : 'bg-red-50']">
+                <div :class="['text-2xl font-bold', committeeStatus[tKey][cKey] > 0 ? 'text-green-700' : 'text-red-600']">
                   {{ committeeStatus[tKey][cKey] }}回
                 </div>
                 <div class="text-xs text-gray-500 mt-1">{{ tLabel }}{{ cLabel }}（{{ currentFiscalYear }}年度）</div>
@@ -177,16 +177,16 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
             </template>
           </div>
 
-          <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div class="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
               <h3 class="text-sm font-semibold text-gray-700">実施記録</h3>
               <button @click="showCommitteeForm = !showCommitteeForm"
-                class="text-xs px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+                class="text-xs px-3 py-1 bg-primary-500 text-white rounded-md hover:bg-primary-600">
                 {{ showCommitteeForm ? '閉じる' : '＋ 記録を追加' }}
               </button>
             </div>
 
-            <div v-if="showCommitteeForm" class="p-5 border-b bg-indigo-50/40 space-y-3">
+            <div v-if="showCommitteeForm" class="p-5 border-b bg-primary-50/40 space-y-3">
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
                   <label :class="labelClass">種別</label>
@@ -216,7 +216,7 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
                 <textarea v-model="committeeForm.minutes" rows="3" :class="inputClass" />
               </div>
               <div class="flex justify-end">
-                <button @click="storeCommittee" class="px-5 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">登録</button>
+                <button @click="storeCommittee" class="px-5 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">登録</button>
               </div>
             </div>
 
@@ -225,7 +225,7 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
               <li v-for="c in committees" :key="c.id" class="px-5 py-3 text-sm">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-gray-600 text-xs">{{ fmtDate(c.held_at) }}</span>
-                  <span class="px-2 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-700">{{ COMMITTEE_TYPE[c.type] }}</span>
+                  <span class="px-2 py-0.5 rounded-full text-xs bg-primary-100 text-primary-700">{{ COMMITTEE_TYPE[c.type] }}</span>
                   <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">{{ COMMITTEE_CATEGORY[c.category] }}</span>
                   <span v-if="c.attendees?.length" class="text-xs text-gray-400">出席 {{ c.attendees.length }}名</span>
                 </div>
@@ -237,19 +237,19 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
 
         <!-- ═══ 身体拘束記録 ═══ -->
         <template v-if="activeTab === 'restraint'">
-          <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div class="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
               <h3 class="text-sm font-semibold text-gray-700">
                 身体拘束の記録
                 <span class="ml-2 text-xs font-normal text-gray-400">緊急やむを得ない場合の態様・時間・理由の記録は義務です</span>
               </h3>
               <button @click="showRestraintForm = !showRestraintForm"
-                class="text-xs px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+                class="text-xs px-3 py-1 bg-primary-500 text-white rounded-md hover:bg-primary-600">
                 {{ showRestraintForm ? '閉じる' : '＋ 記録を追加' }}
               </button>
             </div>
 
-            <div v-if="showRestraintForm" class="p-5 border-b bg-indigo-50/40 space-y-3">
+            <div v-if="showRestraintForm" class="p-5 border-b bg-primary-50/40 space-y-3">
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
                   <label :class="labelClass">児童 <span class="text-red-500">*</span></label>
@@ -282,7 +282,7 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
                 </div>
               </div>
               <div class="flex justify-end">
-                <button @click="storeRestraint" class="px-5 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">登録</button>
+                <button @click="storeRestraint" class="px-5 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">登録</button>
               </div>
             </div>
 
@@ -310,7 +310,7 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
 
         <!-- ═══ BCP・安全計画 ═══ -->
         <template v-if="activeTab === 'bcp'">
-          <div v-for="(label, type) in BCP_TYPE" :key="type" class="bg-white shadow-sm rounded-lg p-5">
+          <div v-for="(label, type) in BCP_TYPE" :key="type" class="bg-white border border-gray-200 rounded-lg p-5">
             <div class="flex items-center gap-2 mb-3">
               <h3 class="text-sm font-semibold text-gray-700">{{ label }}</h3>
               <span v-if="!bcpForms[type].established_at" class="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">未策定（減算対象）</span>
@@ -331,11 +331,11 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
               </div>
             </div>
             <div class="flex justify-end mt-3">
-              <button @click="saveBcp(type)" class="px-5 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">保存</button>
+              <button @click="saveBcp(type)" class="px-5 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">保存</button>
             </div>
           </div>
 
-          <div class="bg-white shadow-sm rounded-lg p-5">
+          <div class="bg-white border border-gray-200 rounded-lg p-5">
             <div class="flex items-center gap-2 mb-3">
               <h3 class="text-sm font-semibold text-gray-700">安全計画（{{ currentFiscalYear }}年度）</h3>
               <span v-if="!safetyForm.established_at" class="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">未策定</span>
@@ -356,7 +356,7 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
               </div>
             </div>
             <div class="flex justify-end mt-3">
-              <button @click="saveSafety" class="px-5 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">保存</button>
+              <button @click="saveSafety" class="px-5 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">保存</button>
             </div>
             <div v-if="safetyPlans.length > 1" class="mt-4 pt-3 border-t text-xs text-gray-500">
               過年度: <span v-for="p in safetyPlans.filter(p => p.fiscal_year !== currentFiscalYear)" :key="p.id" class="mr-3">
@@ -368,7 +368,7 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
 
         <!-- ═══ 自己評価公表 ═══ -->
         <template v-if="activeTab === 'selfeval'">
-          <div class="bg-white shadow-sm rounded-lg p-5">
+          <div class="bg-white border border-gray-200 rounded-lg p-5">
             <div class="flex items-center gap-2 mb-3">
               <h3 class="text-sm font-semibold text-gray-700">自己評価結果の公表（{{ currentFiscalYear }}年度）</h3>
               <span v-if="!selfEvalForm.published_at" class="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">未公表（減算対象）</span>
@@ -396,7 +396,7 @@ const labelClass = 'block text-xs font-medium text-gray-600 mb-1'
               </div>
             </div>
             <div class="flex justify-end mt-3">
-              <button @click="saveSelfEval" class="px-5 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">保存</button>
+              <button @click="saveSelfEval" class="px-5 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">保存</button>
             </div>
             <div v-if="selfEvaluations.length > 1" class="mt-4 pt-3 border-t text-xs text-gray-500">
               過年度: <span v-for="e in selfEvaluations.filter(e => e.fiscal_year !== currentFiscalYear)" :key="e.id" class="mr-3">

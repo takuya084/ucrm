@@ -26,8 +26,8 @@ watch(showingNavigationDropdown, (open) => {
 
 <template>
   <div>
-    <div class="min-h-screen bg-gray-100">
-      <nav class="bg-white border-b border-gray-100">
+    <div class="min-h-screen bg-gray-50">
+      <nav class="bg-white border-b border-gray-200">
         <!-- Primary Navigation Menu -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between h-16">
@@ -35,7 +35,7 @@ watch(showingNavigationDropdown, (open) => {
               <!-- Title -->
               <div class="shrink-0 flex items-center">
                 <Link :href="route('dashboard')" class="text-lg font-extrabold tracking-tight whitespace-nowrap">
-                  <span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">ハグ</span><span class="text-gray-900">くむ</span>
+                  <span class="text-primary-600">ハグ</span><span class="text-gray-900">くむ</span>
                 </Link>
               </div>
 
@@ -58,7 +58,7 @@ watch(showingNavigationDropdown, (open) => {
                         :class="[
                           'inline-flex items-center gap-1 px-3 py-2 text-sm font-medium border-b-2 transition duration-150 ease-in-out focus:outline-none',
                           attendanceActive()
-                            ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
+                            ? 'border-primary-400 text-gray-900 focus:border-primary-700'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:text-gray-700 focus:border-gray-300'
                         ]"
                       >
@@ -91,7 +91,7 @@ watch(showingNavigationDropdown, (open) => {
                         :class="[
                           'inline-flex items-center gap-1 px-3 py-2 text-sm font-medium border-b-2 transition duration-150 ease-in-out focus:outline-none',
                           billingActive()
-                            ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
+                            ? 'border-primary-400 text-gray-900 focus:border-primary-700'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:text-gray-700 focus:border-gray-300'
                         ]"
                       >
@@ -103,7 +103,7 @@ watch(showingNavigationDropdown, (open) => {
                     </template>
                     <template #content>
                       <div class="px-4 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">月次業務</div>
-                      <BreezeDropdownLink :href="route('billing.previous-month')" class="text-indigo-600 font-medium">
+                      <BreezeDropdownLink :href="route('billing.previous-month')" class="text-primary-600 font-medium">
                         前月請求詳細（月初確認）
                       </BreezeDropdownLink>
                       <BreezeDropdownLink :href="route('billing.index')">
@@ -203,15 +203,15 @@ watch(showingNavigationDropdown, (open) => {
                 <span class="sr-only">メニュー</span>
                 <span class="block w-5 h-5 relative">
                   <span :class="[
-                    'absolute left-0 w-full h-0.5 bg-current rounded transition-all duration-300',
+                    'absolute left-0 w-full h-0.5 bg-current rounded-md transition-all duration-300',
                     showingNavigationDropdown ? 'top-[9px] rotate-45' : 'top-0.5'
                   ]" />
                   <span :class="[
-                    'absolute left-0 top-[9px] w-full h-0.5 bg-current rounded transition-all duration-300',
+                    'absolute left-0 top-[9px] w-full h-0.5 bg-current rounded-md transition-all duration-300',
                     showingNavigationDropdown ? 'opacity-0 scale-x-0' : 'opacity-100 scale-x-100'
                   ]" />
                   <span :class="[
-                    'absolute left-0 w-full h-0.5 bg-current rounded transition-all duration-300',
+                    'absolute left-0 w-full h-0.5 bg-current rounded-md transition-all duration-300',
                     showingNavigationDropdown ? 'top-[9px] -rotate-45' : 'top-[17px]'
                   ]" />
                 </span>
@@ -312,7 +312,7 @@ watch(showingNavigationDropdown, (open) => {
                       <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">月次業務</div>
                     </div>
                     <Link :href="route('billing.previous-month')" @click="showingNavigationDropdown = false"
-                      class="mobile-nav-item text-indigo-600 font-medium">
+                      class="mobile-nav-item text-primary-600 font-medium">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M15 19l-7-7 7-7"/></svg>
                       前月請求詳細（月初確認）
                     </Link>
@@ -424,7 +424,7 @@ watch(showingNavigationDropdown, (open) => {
       </nav>
 
       <!-- Page Heading -->
-      <header class="bg-white shadow" v-if="$slots.header">
+      <header class="bg-white border-b border-gray-200" v-if="$slots.header">
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <slot name="header" />
         </div>
@@ -458,7 +458,7 @@ watch(showingNavigationDropdown, (open) => {
   background-color: #e5e7eb;
 }
 .mobile-nav-active {
-  background-color: #eef2ff;
-  color: #4338ca;
+  background-color: #f0f7ff;
+  color: #0052a3;
 }
 </style>

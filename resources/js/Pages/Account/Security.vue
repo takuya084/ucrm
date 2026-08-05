@@ -50,7 +50,7 @@ const copyRecoveryCodes = () => {
         <FlashMessage />
         <BreezeValidationErrors />
 
-        <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6 space-y-4">
           <h3 class="text-base font-semibold text-gray-800 border-b pb-2">二要素認証（2FA）</h3>
 
           <!-- 未設定 -->
@@ -61,7 +61,7 @@ const copyRecoveryCodes = () => {
             </p>
             <button
               @click="enable"
-              class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded"
+              class="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-md"
             >
               二要素認証を有効にする
             </button>
@@ -75,10 +75,10 @@ const copyRecoveryCodes = () => {
             </ol>
 
             <div class="flex flex-col sm:flex-row gap-6 items-start">
-              <div class="p-3 bg-white border rounded" v-html="twoFactor.qrCodeSvg"></div>
+              <div class="p-3 bg-white border rounded-md" v-html="twoFactor.qrCodeSvg"></div>
               <div class="text-sm text-gray-600 space-y-2">
                 <p>QRコードを読み取れない場合は、次のセットアップキーを認証アプリに手入力してください。</p>
-                <p class="font-mono bg-gray-100 rounded px-2 py-1 break-all select-all">{{ twoFactor.secretKey }}</p>
+                <p class="font-mono bg-gray-100 rounded-md px-2 py-1 break-all select-all">{{ twoFactor.secretKey }}</p>
               </div>
             </div>
 
@@ -91,13 +91,13 @@ const copyRecoveryCodes = () => {
                   type="text"
                   inputmode="numeric"
                   autocomplete="one-time-code"
-                  class="border border-gray-300 rounded px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  class="border border-gray-300 rounded-md px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-primary-300"
                   autofocus
                 />
               </div>
               <button
                 :disabled="confirmForm.processing"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded disabled:opacity-25"
+                class="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-md disabled:opacity-25"
               >
                 確認して有効化
               </button>
@@ -114,7 +114,7 @@ const copyRecoveryCodes = () => {
           <!-- 有効 -->
           <div v-else class="space-y-4">
             <p class="text-sm">
-              <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5 font-medium">
+              <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-0.5 font-medium">
                 ✓ 有効
               </span>
               <span class="ml-2 text-gray-600">ログイン時に認証アプリのコードが必要です。</span>
@@ -126,14 +126,14 @@ const copyRecoveryCodes = () => {
                 スマートフォンを紛失した場合はこのコードでログインできます。
                 <span class="font-medium text-red-600">印刷するか安全な場所に保管してください</span>（各コードは1回のみ使用可）。
               </p>
-              <div class="bg-gray-100 rounded p-3 font-mono text-sm grid grid-cols-1 sm:grid-cols-2 gap-1 select-all">
+              <div class="bg-gray-100 rounded-md p-3 font-mono text-sm grid grid-cols-1 sm:grid-cols-2 gap-1 select-all">
                 <div v-for="code in twoFactor.recoveryCodes" :key="code">{{ code }}</div>
               </div>
               <div class="mt-2 flex gap-3">
-                <button @click="copyRecoveryCodes" class="text-sm text-indigo-600 underline hover:text-indigo-800">
+                <button @click="copyRecoveryCodes" class="text-sm text-primary-600 underline hover:text-primary-800">
                   コピー
                 </button>
-                <button @click="regenerate" class="text-sm text-indigo-600 underline hover:text-indigo-800">
+                <button @click="regenerate" class="text-sm text-primary-600 underline hover:text-primary-800">
                   再生成
                 </button>
               </div>
@@ -142,7 +142,7 @@ const copyRecoveryCodes = () => {
             <div class="border-t pt-4">
               <button
                 @click="disable"
-                class="bg-white border border-red-300 text-red-600 hover:bg-red-50 text-sm font-medium px-4 py-2 rounded"
+                class="bg-white border border-red-300 text-red-600 hover:bg-red-50 text-sm font-medium px-4 py-2 rounded-md"
               >
                 二要素認証を無効にする
               </button>

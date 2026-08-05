@@ -37,7 +37,7 @@ const store = () => {
   })
 }
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
 
@@ -53,10 +53,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
     <div class="py-8">
       <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm rounded-lg p-6">
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
 
-          <p class="mb-5 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+          <p class="mb-5 p-3 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700">
             アセスメントは個別支援計画作成プロセスの起点です。実施後に個別支援計画の作成・見直しを行ってください。
           </p>
 
@@ -114,10 +114,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             </section>
 
             <div class="flex justify-end gap-3 pt-4 border-t">
-              <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+              <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                 キャンセル
               </Link>
-              <button type="submit" class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600">
+              <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
                 アセスメントを保存
               </button>
             </div>

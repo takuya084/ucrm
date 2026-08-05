@@ -148,7 +148,7 @@ const summary = computed(() => ({
 
 const STATUS_OPTIONS = [
   { value: 'attended',      label: '出席',           color: 'text-green-700 bg-green-50 border-green-200' },
-  { value: 'absent_notice', label: '欠席（連絡あり）', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
+  { value: 'absent_notice', label: '欠席（連絡あり）', color: 'text-amber-700 bg-amber-50 border-amber-200' },
   { value: 'absent',        label: '無断欠席',         color: 'text-red-700 bg-red-50 border-red-200' },
   { value: 'cancel',        label: 'キャンセル',        color: 'text-gray-600 bg-gray-50 border-gray-200' },
 ]
@@ -176,7 +176,7 @@ const changeStatus = (row, newStatus) => {
 
 const rowBg = (status) => ({
   attended:      'bg-white',
-  absent_notice: 'bg-yellow-50',
+  absent_notice: 'bg-amber-50',
   absent:        'bg-red-50',
   cancel:        'bg-gray-50',
 })[status] ?? 'bg-white'
@@ -199,7 +199,7 @@ const rowBg = (status) => ({
           保存済み
         </span>
         <span v-else
-          class="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full">
+          class="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">
           固定スケジュール
         </span>
 
@@ -207,18 +207,18 @@ const rowBg = (status) => ({
         <div class="flex items-center gap-2">
           <button
             @click="selectedDate = new Date(new Date(selectedDate).getTime() - 86400000).toISOString().slice(0,10); goToDate()"
-            class="px-2 py-1 border rounded text-sm hover:bg-gray-100"
+            class="px-2 py-1 border rounded-md text-sm hover:bg-gray-100"
           >◀</button>
           <input
             v-model="selectedDate"
             type="date"
-            class="border border-gray-300 rounded px-2 py-1 text-sm"
+            class="border border-gray-300 rounded-md px-2 py-1 text-sm"
             @change="goToDate"
           />
-          <span class="text-sm font-medium text-indigo-600">（{{ dayName }}曜日）</span>
+          <span class="text-sm font-medium text-primary-600">（{{ dayName }}曜日）</span>
           <button
             @click="selectedDate = new Date(new Date(selectedDate).getTime() + 86400000).toISOString().slice(0,10); goToDate()"
-            class="px-2 py-1 border rounded text-sm hover:bg-gray-100"
+            class="px-2 py-1 border rounded-md text-sm hover:bg-gray-100"
           >▶</button>
         </div>
       </div>
@@ -231,7 +231,7 @@ const rowBg = (status) => ({
 
         <!-- 集計バー -->
         <div class="grid grid-cols-4 gap-3">
-          <div class="bg-white rounded-lg shadow-sm p-4 text-center">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
             <div class="text-2xl font-bold text-gray-800">{{ summary.total }}</div>
             <div class="text-xs text-gray-500 mt-1">本日予定</div>
           </div>
@@ -239,18 +239,18 @@ const rowBg = (status) => ({
             <div class="text-2xl font-bold text-green-700">{{ summary.attended }}</div>
             <div class="text-xs text-gray-500 mt-1">出席</div>
           </div>
-          <div class="bg-yellow-50 rounded-lg shadow-sm p-4 text-center">
-            <div class="text-2xl font-bold text-yellow-700">{{ summary.absent }}</div>
+          <div class="bg-amber-50 rounded-lg shadow-sm p-4 text-center">
+            <div class="text-2xl font-bold text-amber-700">{{ summary.absent }}</div>
             <div class="text-xs text-gray-500 mt-1">欠席</div>
           </div>
-          <div class="bg-indigo-50 rounded-lg shadow-sm p-4 text-center">
-            <div class="text-2xl font-bold text-indigo-700">{{ summary.withSupport }}</div>
+          <div class="bg-primary-50 rounded-lg shadow-sm p-4 text-center">
+            <div class="text-2xl font-bold text-primary-700">{{ summary.withSupport }}</div>
             <div class="text-xs text-gray-500 mt-1">支援記録済</div>
           </div>
         </div>
 
         <!-- 出席一覧 -->
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="p-4 border-b flex justify-between items-center">
             <h3 class="font-medium text-gray-700">{{ date.slice(0, 10) }} の出席記録</h3>
             <span v-if="saveStatus === 'saving'" class="text-xs text-gray-400">保存中...</span>
@@ -263,7 +263,7 @@ const rowBg = (status) => ({
           <div v-if="!hasRecords && records.length > 0"
             class="px-4 py-2 bg-blue-50 border-b text-xs text-blue-600 flex items-center justify-between gap-2">
             <span>固定スケジュールから読み込みました。ステータス変更・児童の追加削除は自動保存されます。</span>
-            <button @click="autoSave" class="px-4 py-1.5 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600 whitespace-nowrap">
+            <button @click="autoSave" class="px-4 py-1.5 bg-primary-500 text-white text-xs rounded-md hover:bg-primary-600 whitespace-nowrap">
               このメンバーで確定
             </button>
           </div>
@@ -284,12 +284,12 @@ const rowBg = (status) => ({
                 <!-- 児童名 -->
                 <div class="w-36">
                   <Link :href="route('children.show', row.child_id)"
-                    class="font-medium text-gray-900 hover:text-indigo-600 text-sm">
+                    class="font-medium text-gray-900 hover:text-primary-600 text-sm">
                     {{ row.child_name }}
                   </Link>
                   <div class="text-xs text-gray-400">{{ row.school_name ?? '学校未登録' }}</div>
                   <div v-if="row.allergy_note"
-                    class="mt-0.5 px-1.5 py-0.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded">
+                    class="mt-0.5 px-1.5 py-0.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md">
                     ⚠ {{ row.allergy_note }}
                   </div>
                 </div>
@@ -314,26 +314,26 @@ const rowBg = (status) => ({
                     v-if="row.contact_note_home_entry"
                     class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200"
                     title="保護者からの連絡帳記入があります"
-                  >🏠 家庭記入</span>
+                  >家庭記入</span>
                   <span
                     v-if="row.contact_note_status === 'published'"
-                    class="text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200"
+                    class="text-xs px-2 py-1 rounded-full bg-green-50 text-green-600 border border-green-200"
                     :title="row.contact_note_read ? '保護者が既読' : '公開済み（未読）'"
-                  >📖 {{ row.contact_note_read ? '既読' : '公開済' }}</span>
+                  >{{ row.contact_note_read ? '既読' : '公開済' }}</span>
                   <span
                     v-else-if="row.contact_note_status === 'draft'"
                     class="text-xs px-2 py-1 rounded-full bg-gray-50 text-gray-500 border border-gray-200"
                     title="連絡帳は下書きです（未公開）"
-                  >📖 下書き</span>
+                  >下書き</span>
                   <Link
                     v-if="row.has_support_record"
                     :href="route('support-records.show', row.support_record_id)"
-                    class="text-xs px-3 py-1.5 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50"
+                    class="text-xs px-3 py-1.5 border border-primary-300 text-primary-600 rounded-md hover:bg-primary-50"
                   >記録を見る</Link>
                   <Link
                     v-else-if="row.usage_record_id && row.status === 'attended'"
                     :href="route('support-records.create', { usage_record_id: row.usage_record_id })"
-                    class="text-xs px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600"
+                    class="text-xs px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
                   >支援記録を入力</Link>
 
                   <!-- 削除ボタン -->
@@ -358,7 +358,7 @@ const rowBg = (status) => ({
                   v-model="row.absent_reason"
                   type="text"
                   placeholder="欠席理由（例：体調不良）"
-                  class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs"
+                  class="flex-1 border border-gray-300 rounded-md px-2 py-1 text-xs"
                   @change="autoSave"
                 />
               </div>
@@ -367,16 +367,16 @@ const rowBg = (status) => ({
               <div v-if="row.status === 'attended'" class="mt-2 flex gap-3 items-center flex-wrap text-xs text-gray-600">
                 <label class="flex items-center gap-1">
                   来所
-                  <input v-model="row.check_in_time" type="time" class="border border-gray-300 rounded px-1.5 py-1 text-xs w-24" @change="autoSave" />
+                  <input v-model="row.check_in_time" type="time" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-24" @change="autoSave" />
                 </label>
                 <label class="flex items-center gap-1">
                   退所
-                  <input v-model="row.check_out_time" type="time" class="border border-gray-300 rounded px-1.5 py-1 text-xs w-24" @change="autoSave" />
+                  <input v-model="row.check_out_time" type="time" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-24" @change="autoSave" />
                 </label>
                 <label class="flex items-center gap-1 cursor-pointer">
                   <input v-model="row.is_school_day" type="checkbox" class="w-3 h-3" @change="autoSave" />学校日
                 </label>
-                <select v-model="row.service_type" class="border border-gray-300 rounded px-1.5 py-1 text-xs" @change="autoSave">
+                <select v-model="row.service_type" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs" @change="autoSave">
                   <option value="">種別自動</option>
                   <option value="houday">放デイ</option>
                   <option value="jidou">児発</option>
@@ -385,7 +385,7 @@ const rowBg = (status) => ({
                   v-model="row.memo"
                   type="text"
                   placeholder="メモ"
-                  class="flex-1 min-w-[10rem] border border-gray-300 rounded px-2 py-1 text-xs"
+                  class="flex-1 min-w-[10rem] border border-gray-300 rounded-md px-2 py-1 text-xs"
                   @change="autoSave"
                 />
               </div>
@@ -394,7 +394,7 @@ const rowBg = (status) => ({
               <div v-if="row.status === 'attended' && row.pickup_required" class="mt-2 space-y-1">
                 <!-- 送迎予約情報（houkago-plus連携時のみ） -->
                 <div v-if="row.yoyaku_pickup_time || row.yoyaku_dropoff_time"
-                  class="flex gap-4 text-xs text-blue-600 bg-blue-50 rounded px-2 py-1">
+                  class="flex gap-4 text-xs text-blue-600 bg-blue-50 rounded-md px-2 py-1">
                   <span v-if="row.yoyaku_pickup_time">
                     迎え {{ row.yoyaku_pickup_time }}
                     <span v-if="row.yoyaku_pickup_location">／{{ locationLabel(row.yoyaku_pickup_location) }}</span>
@@ -426,7 +426,7 @@ const rowBg = (status) => ({
                 v-if="availableToAdd.length > 0"
                 type="button"
                 @click="showAddPanel = true"
-                class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                class="text-sm text-primary-600 hover:text-primary-800 flex items-center gap-1"
               >
                 <span class="text-lg leading-none">＋</span> 児童を追加
               </button>
@@ -440,7 +440,7 @@ const rowBg = (status) => ({
             <div v-else class="flex items-center gap-3 flex-wrap">
               <select
                 v-model="selectedChildId"
-                class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                class="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
               >
                 <option value="">追加する児童を選択...</option>
                 <option v-for="c in availableToAdd" :key="c.id" :value="c.id">
@@ -451,12 +451,12 @@ const rowBg = (status) => ({
                 type="button"
                 @click="addChild"
                 :disabled="!selectedChildId"
-                class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-40"
+                class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-40"
               >追加</button>
               <button
                 type="button"
                 @click="showAddPanel = false; selectedChildId = ''"
-                class="px-4 py-2 text-sm text-gray-500 border border-gray-300 rounded hover:bg-gray-100"
+                class="px-4 py-2 text-sm text-gray-500 border border-gray-300 rounded-md hover:bg-gray-100"
               >キャンセル</button>
             </div>
           </div>

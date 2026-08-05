@@ -14,7 +14,7 @@ const selectedMonth = ref(props.currentMonth)
 
 const STATUS_COLOR = {
   draft:       'bg-gray-100 text-gray-600',
-  calculating: 'bg-yellow-100 text-yellow-700',
+  calculating: 'bg-amber-100 text-amber-700',
   confirmed:   'bg-blue-100 text-blue-700',
   submitted:   'bg-green-100 text-green-700',
   completed:   'bg-green-200 text-green-800',
@@ -53,49 +53,49 @@ const calculate = () => {
         <FlashMessage />
 
         <!-- 毎月の流れ -->
-        <div class="bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-3 text-sm text-indigo-900">
+        <div class="bg-primary-50 border border-primary-100 rounded-lg px-4 py-3 text-sm text-primary-900">
           <span class="font-semibold">毎月の流れ（1〜10日）：</span>
           ① 前月分の出欠・送迎の入力もれを確認 →
           ② 下で対象年月を選んで「計算実行」 →
           ③ 一覧の「詳細」を開き、内容確認・確定・CSV出力・国保連への伝送まで進める
-          <span class="block text-xs text-indigo-600 mt-1">※ 詳細画面に手順ガイドが表示されます。迷ったら「次にやること」に従ってください。</span>
+          <span class="block text-xs text-primary-600 mt-1">※ 詳細画面に手順ガイドが表示されます。迷ったら「次にやること」に従ってください。</span>
         </div>
 
         <!-- 操作パネル -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <h3 class="text-sm font-semibold text-gray-700 mb-3">月次請求計算</h3>
           <div class="flex flex-wrap items-end gap-3">
             <div>
               <label class="block text-xs text-gray-500 mb-1">対象年月</label>
-              <input v-model="selectedMonth" type="month" class="border border-gray-300 rounded px-3 py-1.5 text-sm" />
+              <input v-model="selectedMonth" type="month" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
             </div>
-            <button @click="calculate" class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition">
+            <button @click="calculate" class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600 transition">
               計算実行
             </button>
           </div>
 
           <!-- サブメニュー -->
           <div class="mt-4 pt-4 border-t flex flex-wrap gap-2">
-            <Link :href="route('billing.daily-records.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
+            <Link :href="route('billing.daily-records.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
               実績記録票
             </Link>
-            <Link :href="route('billing.cap-management.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
+            <Link :href="route('billing.cap-management.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
               上限管理
             </Link>
-            <Link :href="route('billing.invoices.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
+            <Link :href="route('billing.invoices.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
               利用者請求
             </Link>
-            <Link :href="route('billing.error-claims.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
+            <Link :href="route('billing.error-claims.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
               過誤申立
             </Link>
-            <Link :href="route('billing.returns.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
+            <Link :href="route('billing.returns.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
               返戻管理
             </Link>
           </div>
         </div>
 
         <!-- 請求期間一覧 -->
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">請求期間一覧</h3>
           </div>
@@ -122,7 +122,7 @@ const calculate = () => {
                 </td>
                 <td class="px-5 py-3 text-right">{{ period.billing_details_count }}名</td>
                 <td class="px-5 py-3 text-right">
-                  <Link :href="route('billing.show', period.id)" class="text-indigo-600 hover:underline text-xs">
+                  <Link :href="route('billing.show', period.id)" class="text-primary-600 hover:underline text-xs">
                     詳細
                   </Link>
                 </td>
@@ -137,7 +137,7 @@ const calculate = () => {
               :key="link.label"
               :href="link.url ?? '#'"
               v-html="link.label"
-              :class="['px-3 py-1 border rounded', link.active ? 'bg-indigo-500 text-white border-indigo-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50', !link.url ? 'opacity-40 pointer-events-none' : '']"
+              :class="['px-3 py-1 border rounded-md', link.active ? 'bg-primary-500 text-white border-primary-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50', !link.url ? 'opacity-40 pointer-events-none' : '']"
             />
           </div>
         </div>

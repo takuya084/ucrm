@@ -57,7 +57,7 @@ const transition = (row, action, label) => {
     <template #header>
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-800">上限管理</h2>
-        <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">請求管理へ</Link>
+        <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">請求管理へ</Link>
       </div>
     </template>
 
@@ -65,36 +65,36 @@ const transition = (row, action, label) => {
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <FlashMessage />
 
-        <div class="bg-white shadow-sm rounded-lg p-4 flex flex-wrap gap-3 items-end">
+        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap gap-3 items-end">
           <div>
             <label class="block text-xs text-gray-500 mb-1">年月</label>
-            <input v-model="selectedMonth" type="month" @change="changeMonth" class="border border-gray-300 rounded px-3 py-1.5 text-sm" />
+            <input v-model="selectedMonth" type="month" @change="changeMonth" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
           </div>
           <div>
             <label class="block text-xs text-gray-500 mb-1">状態</label>
-            <select v-model="filterStatus" class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+            <select v-model="filterStatus" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
               <option value="all">すべて</option>
               <option v-for="(label, key) in labels.status" :key="key" :value="key">{{ label }}</option>
             </select>
           </div>
-          <button @click="calculate" class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">
+          <button @click="calculate" class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">
             計算実行
           </button>
           <a :href="route('billing.cap-management.export', { year_month: selectedMonth })"
-            class="px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600">
+            class="px-4 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600">
             CSV出力
           </a>
           <a :href="route('billing.cap-management.pdf-bundle', { year_month: selectedMonth })"
-            class="px-4 py-2 text-sm bg-rose-500 text-white rounded hover:bg-rose-600">
+            class="px-4 py-2 text-sm bg-rose-500 text-white rounded-md hover:bg-rose-600">
             管理結果票PDF一括（ZIP）
           </a>
           <a :href="route('billing.cap-management.payment-list', { year_month: selectedMonth })"
-            class="px-4 py-2 text-sm bg-sky-500 text-white rounded hover:bg-sky-600">
+            class="px-4 py-2 text-sm bg-sky-500 text-white rounded-md hover:bg-sky-600">
             利用者負担額一覧表PDF
           </a>
         </div>
 
-        <div class="bg-white shadow-sm rounded-lg overflow-x-auto">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-x-auto">
           <div v-if="filtered.length === 0" class="py-12 text-center text-gray-400 text-sm">
             対象の利用者がいません
           </div>
@@ -137,15 +137,15 @@ const transition = (row, action, label) => {
                 <td class="px-3 py-2 text-xs text-gray-500 max-w-[140px] truncate" :title="row.remarks">{{ row.remarks ?? '—' }}</td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
                   <Link v-if="row.management_id" :href="route('billing.cap-management.show', row.management_id)"
-                    class="text-xs text-indigo-600 hover:underline mr-2">詳細</Link>
+                    class="text-xs text-primary-600 hover:underline mr-2">詳細</Link>
                   <a v-if="row.management_id" :href="route('billing.cap-management.pdf', row.management_id)"
                     class="text-xs text-rose-600 hover:underline mr-2">PDF</a>
                   <button v-if="row.status === 'created'" @click="transition(row, 'send', '送付済')"
-                    class="text-xs px-2 py-0.5 bg-amber-500 text-white rounded hover:bg-amber-600">送付</button>
+                    class="text-xs px-2 py-0.5 bg-amber-500 text-white rounded-md hover:bg-amber-600">送付</button>
                   <button v-else-if="row.status === 'sent'" @click="transition(row, 'receive', '受領済')"
-                    class="text-xs px-2 py-0.5 bg-purple-500 text-white rounded hover:bg-purple-600">受領</button>
+                    class="text-xs px-2 py-0.5 bg-primary-600 text-white rounded-md hover:bg-primary-700">受領</button>
                   <button v-else-if="row.status === 'received'" @click="transition(row, 'confirm', '確定済')"
-                    class="text-xs px-2 py-0.5 bg-green-500 text-white rounded hover:bg-green-600">確定</button>
+                    class="text-xs px-2 py-0.5 bg-green-500 text-white rounded-md hover:bg-green-600">確定</button>
                 </td>
               </tr>
             </tbody>

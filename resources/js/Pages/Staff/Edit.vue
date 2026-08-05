@@ -38,7 +38,7 @@ const update = () => {
   router.patch(route('staff.update', props.staff.id), form)
 }
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
 
@@ -54,7 +54,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
     <div class="py-8">
       <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
 
           <form @submit.prevent="update" class="space-y-5">
@@ -63,7 +63,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             <div>
               <label :class="labelClass">メールアドレス</label>
               <input :value="staff.user?.email" type="email" disabled
-                class="w-full border border-gray-100 bg-gray-50 rounded px-3 py-2 text-sm text-gray-500" />
+                class="w-full border border-gray-100 bg-gray-50 rounded-md px-3 py-2 text-sm text-gray-500" />
             </div>
 
             <!-- 氏名 -->
@@ -80,9 +80,9 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   v-for="(label, value) in roleLabels"
                   :key="value"
                   :class="[
-                    'px-3 py-2 border rounded cursor-pointer text-sm transition-colors',
+                    'px-3 py-2 border rounded-md cursor-pointer text-sm transition-colors',
                     form.role === value
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-medium'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 font-medium'
                       : 'border-gray-300 hover:bg-gray-50'
                   ]"
                 >
@@ -98,9 +98,9 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               <div class="flex gap-2 mt-1">
                 <label
                   v-for="(label, value) in EMPLOYMENT_TYPE_LABELS" :key="value"
-                  :class="['px-3 py-2 border rounded cursor-pointer text-sm transition-colors',
+                  :class="['px-3 py-2 border rounded-md cursor-pointer text-sm transition-colors',
                     form.employment_type === value
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-medium'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 font-medium'
                       : 'border-gray-300 hover:bg-gray-50']">
                   <input type="radio" v-model="form.employment_type" :value="value" class="sr-only" />
                   {{ label }}
@@ -140,7 +140,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               <label :class="labelClass">ステータス</label>
               <div class="flex gap-4 mt-1">
                 <label :class="[
-                  'px-3 py-2 border rounded cursor-pointer text-sm transition-colors',
+                  'px-3 py-2 border rounded-md cursor-pointer text-sm transition-colors',
                   form.is_active
                     ? 'border-green-500 bg-green-50 text-green-700 font-medium'
                     : 'border-gray-300 hover:bg-gray-50'
@@ -149,7 +149,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   有効
                 </label>
                 <label :class="[
-                  'px-3 py-2 border rounded cursor-pointer text-sm transition-colors',
+                  'px-3 py-2 border rounded-md cursor-pointer text-sm transition-colors',
                   !form.is_active
                     ? 'border-red-500 bg-red-50 text-red-700 font-medium'
                     : 'border-gray-300 hover:bg-gray-50'
@@ -168,9 +168,9 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   v-for="(info, code) in qualificationTypes"
                   :key="code"
                   :class="[
-                    'px-3 py-2 border rounded cursor-pointer text-sm transition-colors',
+                    'px-3 py-2 border rounded-md cursor-pointer text-sm transition-colors',
                     form.qualifications.includes(code)
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-medium'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 font-medium'
                       : 'border-gray-300 hover:bg-gray-50'
                   ]"
                 >
@@ -190,10 +190,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             </div>
 
             <div class="flex justify-end gap-3 pt-4 border-t">
-              <Link :href="route('staff.index')" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+              <Link :href="route('staff.index')" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                 キャンセル
               </Link>
-              <button type="submit" class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600">
+              <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
                 更新する
               </button>
             </div>
@@ -201,14 +201,14 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
         </div>
 
         <!-- 勤務パターン設定リンク -->
-        <div v-if="$page.props.auth.staff_role === 'admin'" class="mt-4 bg-white shadow-sm sm:rounded-lg p-6">
+        <div v-if="$page.props.auth.staff_role === 'admin'" class="mt-4 bg-white border border-gray-200 sm:rounded-lg p-6">
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-sm font-medium text-gray-700">勤務パターン設定</h3>
               <p class="text-xs text-gray-500 mt-1">曜日ごとの基本勤務パターンを設定します。シフト自動生成に使用されます。</p>
             </div>
             <Link :href="route('staff.work-patterns.edit', staff.id)"
-              class="px-4 py-2 text-sm border rounded hover:bg-gray-50">
+              class="px-4 py-2 text-sm border rounded-md hover:bg-gray-50">
               設定する →
             </Link>
           </div>

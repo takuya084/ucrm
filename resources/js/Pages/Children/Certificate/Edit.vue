@@ -44,14 +44,14 @@ const destroy = () => {
   }
 }
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
 const STATUS_LABELS = { active: '有効', expired: '期限切れ', pending: '申請中' }
 const statusColor = {
   active:  'bg-green-100 text-green-800',
   expired: 'bg-gray-100 text-gray-600',
-  pending: 'bg-yellow-100 text-yellow-800',
+  pending: 'bg-amber-100 text-amber-800',
 }
 </script>
 
@@ -72,7 +72,7 @@ const statusColor = {
 
     <div class="py-8">
       <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
 
           <form @submit.prevent="update" class="space-y-5">
@@ -141,7 +141,7 @@ const statusColor = {
               </div>
               <div class="md:col-span-2">
                 <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input v-model="form.is_cap_management_target" type="checkbox" class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-300" />
+                  <input v-model="form.is_cap_management_target" type="checkbox" class="rounded-md border-gray-300 text-primary-500 focus:ring-primary-300" />
                   上限管理対象（複数事業所利用の場合にチェック）
                 </label>
               </div>
@@ -155,19 +155,19 @@ const statusColor = {
               </p>
               <div v-if="externalFacilities.length === 0" class="text-sm text-gray-400 py-2">
                 他社事業所が未登録です。
-                <Link :href="route('external-facilities.create')" class="text-indigo-500 hover:underline">登録する</Link>
+                <Link :href="route('external-facilities.create')" class="text-primary-500 hover:underline">登録する</Link>
               </div>
               <div v-else class="space-y-2">
                 <label
                   v-for="ef in externalFacilities"
                   :key="ef.id"
-                  class="flex items-center gap-3 p-2 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                  class="flex items-center gap-3 p-2 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer"
                 >
                   <input
                     type="checkbox"
                     :value="ef.id"
                     v-model="form.external_facility_ids"
-                    class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-300"
+                    class="rounded-md border-gray-300 text-primary-500 focus:ring-primary-300"
                   />
                   <span class="text-sm">
                     <span class="font-medium text-gray-800">{{ ef.name }}</span>
@@ -181,13 +181,13 @@ const statusColor = {
               <button
                 type="button"
                 @click="destroy"
-                class="px-4 py-2 text-sm border border-red-300 text-red-500 rounded hover:bg-red-50"
+                class="px-4 py-2 text-sm border border-red-300 text-red-500 rounded-md hover:bg-red-50"
               >削除</button>
               <div class="flex gap-3">
-                <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+                <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                   キャンセル
                 </Link>
-                <button type="submit" class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600">
+                <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
                   更新する
                 </button>
               </div>

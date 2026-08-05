@@ -97,7 +97,7 @@ const hasDomains = props.plan.five_domains && Object.values(props.plan.five_doma
         <span
           :class="[
             'text-xs font-medium px-2 py-1 rounded-full',
-            plan.guardian_agreement ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+            plan.guardian_agreement ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
           ]"
         >
           {{ plan.guardian_agreement ? '同意済' : '同意待ち' }}
@@ -111,27 +111,27 @@ const hasDomains = props.plan.five_domains && Object.values(props.plan.five_doma
         <BreezeValidationErrors />
 
         <!-- 計画プロセス（原案 → 承認 → 同意・交付） -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div class="flex items-center gap-1">
               <template v-for="(step, i) in ['原案作成', '児発管承認', '同意・交付']" :key="i">
                 <div class="flex items-center gap-1.5">
                   <span :class="[
                     'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
-                    i <= stepIndex ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-400'
+                    i <= stepIndex ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-400'
                   ]">{{ i < stepIndex ? '✓' : i + 1 }}</span>
                   <span :class="['text-xs font-medium', i <= stepIndex ? 'text-gray-800' : 'text-gray-400']">{{ step }}</span>
                 </div>
-                <div v-if="i < 2" :class="['w-8 h-0.5 mx-1', i < stepIndex ? 'bg-indigo-400' : 'bg-gray-200']" />
+                <div v-if="i < 2" :class="['w-8 h-0.5 mx-1', i < stepIndex ? 'bg-primary-400' : 'bg-gray-200']" />
               </template>
             </div>
             <div v-if="['admin','leader'].includes($page.props.auth.staff_role)" class="flex gap-2">
               <button v-if="plan.status === 'draft'" @click="approve"
-                class="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">
+                class="px-4 py-1.5 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">
                 児発管として承認
               </button>
               <button v-if="plan.status !== 'draft'" @click="showConsentForm = !showConsentForm"
-                class="px-4 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+                class="px-4 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700">
                 {{ showConsentForm ? '閉じる' : '同意・交付を記録' }}
               </button>
             </div>
@@ -145,29 +145,29 @@ const hasDomains = props.plan.five_domains && Object.values(props.plan.five_doma
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">保護者</label>
-                <select v-model="consentForm.guardian_id" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                <select v-model="consentForm.guardian_id" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm">
                   <option value="">未指定</option>
                   <option v-for="g in guardians" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">同意日 <span class="text-red-500">*</span></label>
-                <input v-model="consentForm.consented_at" type="date" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+                <input v-model="consentForm.consented_at" type="date" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm" />
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">方法</label>
-                <select v-model="consentForm.method" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                <select v-model="consentForm.method" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm">
                   <option value="paper">書面（署名・押印）</option>
                   <option value="electronic">電子同意</option>
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">交付日（未交付なら空欄）</label>
-                <input v-model="consentForm.delivered_at" type="date" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+                <input v-model="consentForm.delivered_at" type="date" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm" />
               </div>
             </div>
             <div class="flex justify-end">
-              <button @click="storeConsent" class="px-5 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700">記録する</button>
+              <button @click="storeConsent" class="px-5 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700">記録する</button>
             </div>
           </div>
 
@@ -178,9 +178,9 @@ const hasDomains = props.plan.five_domains && Object.values(props.plan.five_doma
               <li v-for="c in plan.consents" :key="c.id" class="text-xs text-gray-600 flex items-center gap-2 flex-wrap">
                 <span class="font-medium text-gray-800">{{ c.guardian?.name ?? '保護者' }}</span>
                 <span>同意 {{ fmtDateTime(c.consented_at) }}</span>
-                <span class="px-1.5 py-0.5 rounded bg-gray-100">{{ c.method === 'electronic' ? '電子' : '書面' }}</span>
-                <span v-if="c.delivered_at" class="px-1.5 py-0.5 rounded bg-green-50 text-green-700">交付 {{ fmtDateTime(c.delivered_at) }}</span>
-                <span v-else class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">未交付</span>
+                <span class="px-1.5 py-0.5 rounded-md bg-gray-100">{{ c.method === 'electronic' ? '電子' : '書面' }}</span>
+                <span v-if="c.delivered_at" class="px-1.5 py-0.5 rounded-md bg-green-50 text-green-700">交付 {{ fmtDateTime(c.delivered_at) }}</span>
+                <span v-else class="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700">未交付</span>
               </li>
             </ul>
           </div>
@@ -189,19 +189,19 @@ const hasDomains = props.plan.five_domains && Object.values(props.plan.five_doma
         <div class="flex justify-end gap-2">
           <a
             :href="route('children.support-plans.pdf', [child.id, plan.id])"
-            class="px-4 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+            class="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
           >PDF出力</a>
           <template v-if="['admin','leader'].includes($page.props.auth.staff_role)">
             <Link
               :href="route('children.support-plans.edit', [child.id, plan.id])"
-              class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600"
+              class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600"
             >編集</Link>
-            <button @click="destroy" class="px-4 py-2 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50">削除</button>
+            <button @click="destroy" class="px-4 py-2 text-sm border border-red-300 text-red-600 rounded-md hover:bg-red-50">削除</button>
           </template>
         </div>
 
         <!-- メタ情報 -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div>
               <dt class="text-xs text-gray-500">作成日</dt>
@@ -222,7 +222,7 @@ const hasDomains = props.plan.five_domains && Object.values(props.plan.five_doma
             <div v-if="plan.previous_plan">
               <dt class="text-xs text-gray-500">前回計画</dt>
               <dd>
-                <Link :href="route('children.support-plans.show', [child.id, plan.previous_plan.id])" class="text-indigo-600 hover:underline">
+                <Link :href="route('children.support-plans.show', [child.id, plan.previous_plan.id])" class="text-primary-600 hover:underline">
                   {{ plan.previous_plan.plan_date }}
                 </Link>
               </dd>
@@ -239,54 +239,54 @@ const hasDomains = props.plan.five_domains && Object.values(props.plan.five_doma
         </div>
 
         <!-- 目標・方針 -->
-        <div class="bg-white shadow-sm rounded-lg p-5 space-y-4">
+        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
           <div v-if="plan.long_term_goal">
             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">長期目標</h3>
             <p class="text-sm text-gray-800 whitespace-pre-wrap">{{ plan.long_term_goal }}</p>
           </div>
           <div v-if="plan.short_term_goal">
-            <h3 class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">短期目標</h3>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-indigo-50 p-3 rounded">{{ plan.short_term_goal }}</p>
+            <h3 class="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-1">短期目標</h3>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-primary-50 p-3 rounded-md">{{ plan.short_term_goal }}</p>
           </div>
           <div v-if="plan.support_policy">
             <h3 class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">支援方針</h3>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-blue-50 p-3 rounded">{{ plan.support_policy }}</p>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-blue-50 p-3 rounded-md">{{ plan.support_policy }}</p>
           </div>
           <div v-if="plan.program_content">
             <h3 class="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">支援内容・プログラム</h3>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-green-50 p-3 rounded">{{ plan.program_content }}</p>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-green-50 p-3 rounded-md">{{ plan.program_content }}</p>
           </div>
         </div>
 
         <!-- 担当者会議の記録 -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">担当者会議の記録</h3>
             <button v-if="['admin','leader'].includes($page.props.auth.staff_role)"
               @click="showMeetingForm = !showMeetingForm"
-              class="text-xs px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+              class="text-xs px-3 py-1 bg-primary-500 text-white rounded-md hover:bg-primary-600">
               {{ showMeetingForm ? '閉じる' : '＋ 会議を記録' }}
             </button>
           </div>
 
-          <div v-if="showMeetingForm" class="mb-4 p-4 bg-indigo-50/40 rounded space-y-3">
+          <div v-if="showMeetingForm" class="mb-4 p-4 bg-primary-50/40 rounded-md space-y-3">
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">開催日 <span class="text-red-500">*</span></label>
-                <input v-model="meetingForm.held_at" type="date" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+                <input v-model="meetingForm.held_at" type="date" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm" />
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">出席者（読点・カンマ区切り）</label>
-                <input v-model="meetingForm.attendees" type="text" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                <input v-model="meetingForm.attendees" type="text" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
                   placeholder="例：山田（児発管）、佐藤（保育士）" />
               </div>
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-600 mb-1">議事概要・専門的見地からの意見</label>
-              <textarea v-model="meetingForm.minutes" rows="3" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+              <textarea v-model="meetingForm.minutes" rows="3" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm" />
             </div>
             <div class="flex justify-end">
-              <button @click="storeMeeting" class="px-5 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">登録</button>
+              <button @click="storeMeeting" class="px-5 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">登録</button>
             </div>
           </div>
 
@@ -294,7 +294,7 @@ const hasDomains = props.plan.five_domains && Object.values(props.plan.five_doma
             会議記録がありません。計画作成にあたる担当者会議の記録は指定基準で求められます。
           </div>
           <ul v-else class="space-y-2">
-            <li v-for="m in plan.meetings" :key="m.id" class="p-3 bg-gray-50 rounded text-sm">
+            <li v-for="m in plan.meetings" :key="m.id" class="p-3 bg-gray-50 rounded-md text-sm">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="font-medium text-gray-800">{{ m.held_at?.slice(0, 10) }}</span>
                 <span v-if="m.attendees?.length" class="text-xs text-gray-500">出席：{{ m.attendees.join('、') }}</span>
@@ -308,13 +308,13 @@ const hasDomains = props.plan.five_domains && Object.values(props.plan.five_doma
         </div>
 
         <!-- 5領域との関連 -->
-        <div v-if="hasDomains" class="bg-white shadow-sm rounded-lg p-5">
+        <div v-if="hasDomains" class="bg-white border border-gray-200 rounded-lg p-5">
           <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">5領域との関連</h3>
           <dl class="space-y-3">
             <template v-for="(label, key) in DOMAIN_LABELS" :key="key">
               <div v-if="plan.five_domains?.[key]">
                 <dt class="text-xs font-medium text-gray-600 mb-1">{{ label }}</dt>
-                <dd class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 p-2 rounded">{{ plan.five_domains[key] }}</dd>
+                <dd class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 p-2 rounded-md">{{ plan.five_domains[key] }}</dd>
               </div>
             </template>
           </dl>

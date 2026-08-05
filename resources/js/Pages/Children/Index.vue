@@ -23,7 +23,7 @@ const searchChildren = () => {
 
 const CONTRACT_STATUS = {
   active:    { label: '契約中',   class: 'bg-green-100 text-green-800' },
-  suspended: { label: '一時停止', class: 'bg-yellow-100 text-yellow-800' },
+  suspended: { label: '一時停止', class: 'bg-amber-100 text-amber-800' },
   ended:     { label: '契約終了', class: 'bg-gray-100 text-gray-600' },
 }
 
@@ -49,7 +49,7 @@ const certExpiryClass = (dateStr) => {
 
     <div class="py-8">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg">
+        <div class="bg-white border border-gray-200 sm:rounded-lg">
           <div class="p-6">
             <FlashMessage />
 
@@ -59,12 +59,12 @@ const certExpiryClass = (dateStr) => {
                 v-model="search"
                 type="text"
                 placeholder="名前・カナで検索"
-                class="border border-gray-300 rounded px-3 py-2 text-sm w-56"
+                class="border border-gray-300 rounded-md px-3 py-2 text-sm w-56"
                 @keyup.enter="searchChildren"
               />
               <select
                 v-model="status"
-                class="border border-gray-300 rounded px-3 py-2 text-sm"
+                class="border border-gray-300 rounded-md px-3 py-2 text-sm"
                 @change="searchChildren"
               >
                 <option value="">すべて</option>
@@ -74,22 +74,22 @@ const certExpiryClass = (dateStr) => {
               </select>
               <button
                 @click="searchChildren"
-                class="bg-indigo-500 text-white px-4 py-2 rounded text-sm hover:bg-indigo-600"
+                class="bg-primary-500 text-white px-4 py-2 rounded-md text-sm hover:bg-primary-600"
               >検索</button>
               <Link
                 v-if="$page.props.auth.staff_role === 'admin'"
                 :href="route('children.yoyaku-link')"
-                class="ml-auto text-sm text-indigo-600 hover:underline"
+                class="ml-auto text-sm text-primary-600 hover:underline"
               >p-yoyaku連携</Link>
               <Link
                 v-if="['admin','leader'].includes($page.props.auth.staff_role)"
                 :href="route('children.bulk')"
-                class="text-sm text-indigo-600 hover:underline"
+                class="text-sm text-primary-600 hover:underline"
               >CSV一括登録</Link>
               <Link
                 v-if="['admin','leader'].includes($page.props.auth.staff_role)"
                 :href="route('children.create')"
-                class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600"
+                class="bg-green-500 text-white px-4 py-2 rounded-md text-sm hover:bg-green-600"
               >＋ 新規登録</Link>
             </div>
 
@@ -116,7 +116,7 @@ const certExpiryClass = (dateStr) => {
                     class="border-b hover:bg-gray-50"
                   >
                     <td class="px-4 py-3 font-medium text-gray-900">
-                      <Link :href="route('children.show', child.id)" class="hover:underline text-indigo-600">
+                      <Link :href="route('children.show', child.id)" class="hover:underline text-primary-600">
                         {{ child.name }}
                       </Link>
                     </td>
@@ -127,12 +127,12 @@ const certExpiryClass = (dateStr) => {
                     <td class="px-4 py-3">
                       <span
                         v-if="child.active_recipient_certificate?.valid_to"
-                        :class="['px-2 py-0.5 rounded text-xs whitespace-nowrap', certExpiryClass(child.active_recipient_certificate.valid_to)]"
+                        :class="['px-2 py-0.5 rounded-md text-xs whitespace-nowrap', certExpiryClass(child.active_recipient_certificate.valid_to)]"
                         :title="daysUntil(child.active_recipient_certificate.valid_to) < 0
                           ? '期限切れ'
                           : `あと${daysUntil(child.active_recipient_certificate.valid_to)}日`"
                       >{{ child.active_recipient_certificate.valid_to.slice(0, 10) }}</span>
-                      <span v-else-if="child.contract_status === 'active'" class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">未登録</span>
+                      <span v-else-if="child.contract_status === 'active'" class="px-2 py-0.5 rounded-md text-xs bg-red-100 text-red-700">未登録</span>
                       <span v-else class="text-gray-300 text-xs">―</span>
                     </td>
                     <td class="px-4 py-3 text-right text-xs">
@@ -145,7 +145,7 @@ const certExpiryClass = (dateStr) => {
                       >{{ CONTRACT_STATUS[child.contract_status].label }}</span>
                     </td>
                     <td class="px-4 py-3">
-                      <Link v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('children.edit', child.id)" class="text-sm text-gray-500 hover:text-indigo-600">編集</Link>
+                      <Link v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('children.edit', child.id)" class="text-sm text-gray-500 hover:text-primary-600">編集</Link>
                     </td>
                   </tr>
                   <tr v-if="children.data.length === 0">

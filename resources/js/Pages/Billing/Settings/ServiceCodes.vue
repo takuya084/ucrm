@@ -86,18 +86,18 @@ const submitImport = () => {
         <FlashMessage />
         <BreezeValidationErrors />
 
-        <div class="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-700 flex items-center justify-between">
+        <div class="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-700 flex items-center justify-between">
           <div>
             事業所で算定する加算・減算にチェックを入れてください。チェックされた項目のみ請求計算で適用されます。
             <br />現在 <strong>{{ enabledCount }}</strong> 件が有効です。
           </div>
           <button @click="showImport = !showImport"
-            class="ml-4 px-3 py-1.5 text-xs border border-emerald-500 text-emerald-600 bg-white rounded hover:bg-emerald-50 whitespace-nowrap">
-            {{ showImport ? '閉じる' : '📥 マスターCSV取込' }}
+            class="ml-4 px-3 py-1.5 text-xs border border-green-500 text-green-600 bg-white rounded-md hover:bg-green-50 whitespace-nowrap">
+            {{ showImport ? '閉じる' : 'マスターCSV取込' }}
           </button>
         </div>
 
-        <div v-if="showImport" class="bg-white shadow-sm rounded-lg p-5 border border-emerald-200">
+        <div v-if="showImport" class="bg-white rounded-lg p-5 border border-green-200">
           <h3 class="text-sm font-semibold text-gray-700 mb-2">サービスコードマスターCSV取込</h3>
           <p class="text-xs text-gray-500 mb-3 leading-relaxed">
             ヘッダ行必須。2行目以降は以下9列（9列目は空可）:<br>
@@ -107,11 +107,11 @@ const submitImport = () => {
           <div class="flex items-center gap-3">
             <input type="file" accept=".csv,.txt" @change="onImportFile" class="text-sm" />
             <button @click="submitImport" :disabled="importing || !importFile"
-              class="px-4 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50">
+              class="px-4 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50">
               {{ importing ? '取込中...' : '取込実行' }}
             </button>
           </div>
-          <div v-if="importErrors.length" class="mt-3 bg-red-50 border border-red-200 rounded p-3 max-h-48 overflow-y-auto">
+          <div v-if="importErrors.length" class="mt-3 bg-red-50 border border-red-200 rounded-md p-3 max-h-48 overflow-y-auto">
             <div class="text-xs font-semibold text-red-700 mb-1">取込エラー ({{ importErrors.length }}件)</div>
             <ul class="text-xs text-red-700 space-y-0.5">
               <li v-for="(e, i) in importErrors" :key="i">• {{ e }}</li>
@@ -120,7 +120,7 @@ const submitImport = () => {
         </div>
 
         <div v-for="(categories, serviceType) in grouped" :key="serviceType"
-          class="bg-white shadow-sm sm:rounded-lg overflow-hidden">
+          class="bg-white border border-gray-200 sm:rounded-lg overflow-hidden">
 
           <div class="p-4 border-b bg-gray-50">
             <h3 class="font-semibold text-gray-800">
@@ -140,7 +140,7 @@ const submitImport = () => {
                 <input
                   v-model="item.is_enabled"
                   type="checkbox"
-                  class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-300"
+                  class="rounded-md border-gray-300 text-primary-500 focus:ring-primary-300"
                 />
                 <div class="flex-1 min-w-0">
                   <div class="text-sm text-gray-800">{{ item.service_name }}</div>
@@ -165,7 +165,7 @@ const submitImport = () => {
                 <input
                   v-model="item.is_enabled"
                   type="checkbox"
-                  class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-300"
+                  class="rounded-md border-gray-300 text-primary-500 focus:ring-primary-300"
                 />
                 <div class="flex-1 min-w-0">
                   <div class="text-sm text-gray-800">{{ item.service_name }}</div>
@@ -184,7 +184,7 @@ const submitImport = () => {
           <button
             @click="save"
             :disabled="!hasChanges"
-            class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600 disabled:opacity-40"
+            class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600 disabled:opacity-40"
           >
             設定を保存
           </button>
