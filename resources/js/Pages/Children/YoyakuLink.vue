@@ -87,7 +87,7 @@ const submitCsv = () => {
           </ul>
         </div>
 
-        <div v-if="linkResults.length" class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div v-if="linkResults.length" class="p-4 bg-white border border-gray-200 rounded-lg">
           <p class="font-semibold text-gray-900 mb-1">作成結果</p>
           <p class="text-xs text-amber-700 mb-3">
             パスワードはこの画面にのみ一度だけ表示されます。今のうちに保護者へお渡しする分をメモ・印刷してください。
@@ -120,7 +120,7 @@ const submitCsv = () => {
         </p>
 
         <!-- 新規作成: はぐくむ→p-yoyaku -->
-        <div class="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="p-6 bg-white border border-gray-200 rounded-lg">
           <h3 class="text-lg font-semibold text-gray-900 mb-1">p-yoyakuアカウントを新規作成</h3>
           <p class="text-sm text-gray-500 mb-4">
             はぐくむにすでに登録済みの児童から、p-yoyaku側にログインアカウントを作成して自動で紐付けます。
@@ -154,7 +154,7 @@ const submitCsv = () => {
             <button
               @click="submitCreate"
               :disabled="creating || !configured"
-              class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600 disabled:opacity-50"
+              class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600 disabled:opacity-50"
             >
               {{ creating ? '作成中…' : `選択した${selectedIds.length}件のアカウントを作成` }}
             </button>
@@ -162,7 +162,7 @@ const submitCsv = () => {
         </div>
 
         <!-- CSV紐付け: p-yoyaku→はぐくむ、または既存データ同士の突合 -->
-        <div class="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="p-6 bg-white border border-gray-200 rounded-lg">
           <h3 class="text-lg font-semibold text-gray-900 mb-1">既存のp-yoyakuアカウントにCSVで紐付け</h3>
           <p class="text-sm text-gray-500 mb-4">
             p-yoyaku側にすでに登録済みの利用者がいる場合（p-yoyakuが先行導入済み、または両方に別々に登録済みの場合）、
@@ -170,7 +170,7 @@ const submitCsv = () => {
           </p>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div class="p-3 bg-gray-50 border rounded">
+            <div class="p-3 bg-gray-50 border rounded-md">
               <p class="text-xs font-semibold text-gray-600 mb-2">はぐくむ側: 未連携の児童（child_id）</p>
               <div class="max-h-48 overflow-y-auto text-sm">
                 <div v-for="c in unlinkedChildren" :key="c.id" class="flex justify-between py-0.5">
@@ -180,7 +180,7 @@ const submitCsv = () => {
                 <p v-if="unlinkedChildren.length === 0" class="text-gray-400">未連携の児童はありません</p>
               </div>
             </div>
-            <div class="p-3 bg-gray-50 border rounded">
+            <div class="p-3 bg-gray-50 border rounded-md">
               <p class="text-xs font-semibold text-gray-600 mb-2">p-yoyaku側: 利用者一覧（yoyaku_user_id / メール）</p>
               <div class="max-h-48 overflow-y-auto text-sm">
                 <div v-for="u in yoyakuUsers" :key="u.id" class="flex justify-between py-0.5 gap-2">
@@ -209,7 +209,7 @@ const submitCsv = () => {
               <button
                 type="submit"
                 :disabled="uploading || !configured"
-                class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600 disabled:opacity-50"
+                class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600 disabled:opacity-50"
               >
                 {{ uploading ? 'アップロード中…' : 'CSVで紐付け' }}
               </button>

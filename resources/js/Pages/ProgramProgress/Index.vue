@@ -36,7 +36,7 @@ const localProgress = ref(JSON.parse(JSON.stringify(props.progress ?? {})))
 const STATUS_CYCLE = [null, 'practicing', 'mastered']
 const STATUS_CONFIG = {
   null:       { label: '―',    bg: 'bg-gray-100',   text: 'text-gray-300', border: 'border-gray-200',  icon: '' },
-  practicing: { label: '練習中', bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300', icon: '▶' },
+  practicing: { label: '練習中', bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300', icon: '▶' },
   mastered:   { label: '達成',  bg: 'bg-green-100',  text: 'text-green-700',  border: 'border-green-300',  icon: '✓' },
 }
 
@@ -111,16 +111,16 @@ const overallStats = computed(() => {
           :class="[
             'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border font-medium transition-colors',
             todayOnly
-              ? 'bg-indigo-500 text-white border-indigo-500'
+              ? 'bg-primary-500 text-white border-primary-500'
               : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
           ]"
         >
           <span>{{ todayOnly ? '今日の児童のみ' : '全児童' }}</span>
-          <span v-if="todayOnly" class="bg-white text-indigo-600 rounded-full text-xs px-1.5 font-bold">
+          <span v-if="todayOnly" class="bg-white text-primary-600 rounded-full text-xs px-1.5 font-bold">
             {{ todaySet.size }}
           </span>
         </button>
-        <span v-if="todayOnly && todaySet.size === 0" class="text-xs text-yellow-600">
+        <span v-if="todayOnly && todaySet.size === 0" class="text-xs text-amber-600">
           本日の出席記録がありません
         </span>
       </div>
@@ -140,16 +140,16 @@ const overallStats = computed(() => {
             :class="[
               'px-4 py-2 rounded-full text-sm font-medium border transition-colors',
               categoryFilter === cat
-                ? 'bg-indigo-500 text-white border-indigo-500'
+                ? 'bg-primary-500 text-white border-primary-500'
                 : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
             ]"
           >{{ CATEGORY_LABELS[cat] ?? cat }}</button>
         </div>
 
         <!-- プログラムが見つからない場合 -->
-        <div v-if="programs.length === 0" class="bg-white rounded-lg shadow-sm p-10 text-center text-gray-400">
+        <div v-if="programs.length === 0" class="bg-white rounded-lg border border-gray-200 p-10 text-center text-gray-400">
           <p>このカテゴリには詳細項目が登録されたプログラムがありません。</p>
-          <Link :href="route('programs.index')" class="mt-3 inline-block text-sm text-indigo-500 hover:underline">
+          <Link :href="route('programs.index')" class="mt-3 inline-block text-sm text-primary-500 hover:underline">
             プログラム管理で項目を追加 →
           </Link>
         </div>
@@ -163,16 +163,16 @@ const overallStats = computed(() => {
               :key="p.id"
               @click="goToProgram(p.id)"
               :class="[
-                'px-3 py-1.5 rounded border text-sm transition-colors',
+                'px-3 py-1.5 rounded-md border text-sm transition-colors',
                 selectedProgram?.id === p.id
-                  ? 'bg-indigo-50 border-indigo-400 text-indigo-700 font-medium'
+                  ? 'bg-primary-50 border-primary-400 text-primary-700 font-medium'
                   : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
               ]"
             >{{ p.name }}</button>
           </div>
 
           <!-- 選択プログラムの統計 -->
-          <div v-if="selectedProgram && overallStats" class="flex gap-4 items-center bg-white rounded-lg shadow-sm px-5 py-3">
+          <div v-if="selectedProgram && overallStats" class="flex gap-4 items-center bg-white rounded-lg border border-gray-200 px-5 py-3">
             <div class="text-sm font-semibold text-gray-700">{{ selectedProgram.name }}</div>
             <div class="flex gap-3 ml-4 text-sm">
               <span class="flex items-center gap-1.5">
@@ -180,7 +180,7 @@ const overallStats = computed(() => {
                 達成 {{ overallStats.mastered }}
               </span>
               <span class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span>
+                <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
                 練習中 {{ overallStats.practicing }}
               </span>
               <span class="flex items-center gap-1.5">
@@ -194,7 +194,7 @@ const overallStats = computed(() => {
           </div>
 
           <!-- 進度グリッド -->
-          <div v-if="selectedProgram" class="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div v-if="selectedProgram" class="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-sm border-collapse">
                 <thead>
@@ -213,7 +213,7 @@ const overallStats = computed(() => {
                       class="px-2 py-2 text-center min-w-[80px] border-r last:border-r-0"
                     >
                       <div class="text-xs font-medium text-gray-700">{{ item.name }}</div>
-                      <div class="text-xs text-indigo-400 mt-0.5">難易度 {{ item.difficulty_order }}</div>
+                      <div class="text-xs text-primary-400 mt-0.5">難易度 {{ item.difficulty_order }}</div>
                     </th>
                   </tr>
                 </thead>
@@ -227,7 +227,7 @@ const overallStats = computed(() => {
                     <td class="sticky left-0 z-10 bg-white px-4 py-2.5 border-r">
                       <Link
                         :href="route('children.show', child.id)"
-                        class="font-medium text-gray-900 hover:text-indigo-600 text-sm block leading-tight"
+                        class="font-medium text-gray-900 hover:text-primary-600 text-sm block leading-tight"
                       >{{ child.name }}</Link>
                       <span class="text-xs text-gray-400">{{ child.grade }}</span>
                     </td>
@@ -254,7 +254,7 @@ const overallStats = computed(() => {
                         type="button"
                         @click="cycleStatus(child.id, item.id)"
                         :class="[
-                          'w-full min-w-[68px] px-1 py-1.5 rounded border text-xs font-medium transition-all hover:opacity-80 active:scale-95',
+                          'w-full min-w-[68px] px-1 py-1.5 rounded-md border text-xs font-medium transition-all hover:opacity-80 active:scale-95',
                           STATUS_CONFIG[localProgress[child.id]?.[item.id] ?? null].bg,
                           STATUS_CONFIG[localProgress[child.id]?.[item.id] ?? null].text,
                           STATUS_CONFIG[localProgress[child.id]?.[item.id] ?? null].border,
@@ -283,7 +283,7 @@ const overallStats = computed(() => {
             <!-- 凡例 -->
             <div class="px-4 py-3 border-t bg-gray-50 flex gap-6 text-xs text-gray-500">
               <span v-for="(conf, key) in STATUS_CONFIG" :key="key" class="flex items-center gap-1.5">
-                <span :class="['w-5 h-5 rounded border flex items-center justify-center text-xs font-bold', conf.bg, conf.text, conf.border]">
+                <span :class="['w-5 h-5 rounded-md border flex items-center justify-center text-xs font-bold', conf.bg, conf.text, conf.border]">
                   {{ conf.icon || '―' }}
                 </span>
                 {{ conf.label }}

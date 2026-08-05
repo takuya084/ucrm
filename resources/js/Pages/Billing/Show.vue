@@ -16,11 +16,11 @@ const props = defineProps({
 const pct = (v) => v == null ? '—' : `${v}%`
 const pctColor = (v, good = 80, warn = 65) => {
   if (v == null) return 'text-gray-400'
-  return v >= good ? 'text-emerald-600' : v >= warn ? 'text-amber-600' : 'text-red-600'
+  return v >= good ? 'text-green-600' : v >= warn ? 'text-amber-600' : 'text-red-600'
 }
 const rateColorInverse = (v, good = 5, warn = 10) => {
   if (v == null) return 'text-gray-400'
-  return v <= good ? 'text-emerald-600' : v <= warn ? 'text-amber-600' : 'text-red-600'
+  return v <= good ? 'text-green-600' : v <= warn ? 'text-amber-600' : 'text-red-600'
 }
 
 // 6ヶ月スパークライン（SVG polyline）
@@ -113,7 +113,7 @@ const savePaymentDecision = () => {
 const fmt = (n) => Number(n).toLocaleString()
 
 const REVIEW_BADGE = {
-  ok:      { cls: 'bg-emerald-100 text-emerald-700', label: '✓ OK' },
+  ok:      { cls: 'bg-green-100 text-green-700', label: '✓ OK' },
   warning: { cls: 'bg-amber-100 text-amber-700',    label: '⚠ 要確認' },
   error:   { cls: 'bg-red-100 text-red-700',        label: '✕ 要修正' },
 }
@@ -158,21 +158,21 @@ const NEXT_ACTIONS = {
       <div class="flex items-center justify-between gap-4">
         <h2 class="font-semibold text-xl text-gray-800">{{ period.year_month }} 請求詳細</h2>
         <div class="flex items-center gap-2">
-          <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">
+          <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">
             戻る
           </Link>
           <button v-if="period.status === 'draft'" @click="confirmPeriod"
-            class="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+            class="px-4 py-1.5 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">
             確定する
           </button>
           <template v-if="['confirmed','submitted','completed'].includes(period.status)">
             <button @click="exportBundle"
-              class="px-4 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition font-medium">
+              class="px-4 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition font-medium">
               複式CSV一括出力（ZIP）
             </button>
             <div class="relative">
               <button @click="showOutputMenu = !showOutputMenu"
-                class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 transition inline-flex items-center gap-1">
+                class="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition inline-flex items-center gap-1">
                 別途出力
                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
               </button>
@@ -216,18 +216,18 @@ const NEXT_ACTIONS = {
         <FlashMessage />
 
         <!-- 請求業務ステップガイド -->
-        <div class="bg-white shadow-sm rounded-lg p-4">
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
           <ol class="flex flex-wrap items-center gap-y-2">
             <li v-for="(step, i) in flowSteps" :key="step.label" class="flex items-center">
               <span :class="[
                   'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap',
-                  step.done ? 'bg-emerald-50 text-emerald-700'
-                    : i === currentStep ? 'bg-indigo-600 text-white shadow'
+                  step.done ? 'bg-green-50 text-green-700'
+                    : i === currentStep ? 'bg-primary-600 text-white shadow'
                       : 'bg-gray-100 text-gray-400',
                 ]">
                 <span :class="[
                     'inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold',
-                    step.done ? 'bg-emerald-500 text-white' : i === currentStep ? 'bg-white text-indigo-600' : 'bg-gray-300 text-white',
+                    step.done ? 'bg-green-500 text-white' : i === currentStep ? 'bg-white text-primary-600' : 'bg-gray-300 text-white',
                   ]">
                   <template v-if="step.done">✓</template>
                   <template v-else>{{ i + 1 }}</template>
@@ -239,16 +239,16 @@ const NEXT_ACTIONS = {
               </svg>
             </li>
           </ol>
-          <p v-if="currentStep !== -1 && NEXT_ACTIONS[currentStep]" class="mt-3 text-sm text-indigo-800 bg-indigo-50 rounded px-3 py-2">
+          <p v-if="currentStep !== -1 && NEXT_ACTIONS[currentStep]" class="mt-3 text-sm text-primary-800 bg-primary-50 rounded-md px-3 py-2">
             <span class="font-semibold">次にやること：</span>{{ NEXT_ACTIONS[currentStep] }}
           </p>
-          <p v-else-if="currentStep === -1" class="mt-3 text-sm text-emerald-700 bg-emerald-50 rounded px-3 py-2">
+          <p v-else-if="currentStep === -1" class="mt-3 text-sm text-green-700 bg-green-50 rounded-md px-3 py-2">
             この月の請求業務はすべて完了しています。
           </p>
         </div>
 
         <!-- サマリ（基本情報＋確認状態ロールアップ） -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <!-- 左: 基本情報 -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
@@ -277,40 +277,40 @@ const NEXT_ACTIONS = {
                   <div class="text-xs text-gray-500">月初確認状態</div>
                   <button v-if="reviewRollup.errors + reviewRollup.warnings > 0"
                     @click="showProblemList = !showProblemList"
-                    class="text-xs text-indigo-600 hover:underline">
+                    class="text-xs text-primary-600 hover:underline">
                     {{ showProblemList ? '閉じる' : '該当児童を表示 →' }}
                   </button>
                 </div>
                 <div class="flex items-center gap-3">
                   <div class="flex-1 flex items-center gap-2">
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-100 text-emerald-700 text-sm font-semibold">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-sm font-semibold">
                       ✓ OK {{ reviewRollup.ok }}名
                     </span>
                     <span v-if="reviewRollup.warnings > 0"
-                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-100 text-amber-700 text-sm font-semibold">
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-100 text-amber-700 text-sm font-semibold">
                       ⚠ 要確認 {{ reviewRollup.warnings }}名
                     </span>
                     <span v-if="reviewRollup.errors > 0"
-                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-red-100 text-red-700 text-sm font-semibold">
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-100 text-red-700 text-sm font-semibold">
                       ✕ 要修正 {{ reviewRollup.errors }}名
                     </span>
                     <span v-if="reviewRollup.errors + reviewRollup.warnings === 0"
-                      class="text-xs text-emerald-600">問題は検出されていません。</span>
+                      class="text-xs text-green-600">問題は検出されていません。</span>
                   </div>
                 </div>
 
                 <!-- 問題児童リスト（展開時のみ） -->
-                <div v-if="showProblemList" class="mt-3 border rounded divide-y text-xs max-h-48 overflow-y-auto">
+                <div v-if="showProblemList" class="mt-3 border rounded-md divide-y text-xs max-h-48 overflow-y-auto">
                   <div v-for="d in [...reviewRollup.errorRows, ...reviewRollup.warningRows]" :key="d.id"
                     class="px-3 py-1.5 flex items-center justify-between hover:bg-gray-50">
                     <div class="flex items-center gap-2 min-w-0">
-                      <span :class="['px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0', REVIEW_BADGE[d.review_level].cls]">
+                      <span :class="['px-1.5 py-0.5 rounded-md text-[10px] font-semibold shrink-0', REVIEW_BADGE[d.review_level].cls]">
                         {{ REVIEW_BADGE[d.review_level].label }}
                       </span>
                       <span class="font-medium truncate">{{ d.child?.name }}</span>
                       <span class="text-gray-500 truncate">{{ (d.review_issues || []).map(i => i.message).join(' / ') }}</span>
                     </div>
-                    <Link :href="route('billing.details.show', d.id)" class="text-indigo-600 hover:underline shrink-0 ml-2">詳細</Link>
+                    <Link :href="route('billing.details.show', d.id)" class="text-primary-600 hover:underline shrink-0 ml-2">詳細</Link>
                   </div>
                 </div>
               </div>
@@ -319,7 +319,7 @@ const NEXT_ACTIONS = {
         </div>
 
         <!-- 国保連支払通知との突合（提出後に表示） -->
-        <div v-if="['submitted','completed'].includes(period.status)" class="bg-white shadow-sm rounded-lg p-5">
+        <div v-if="['submitted','completed'].includes(period.status)" class="bg-white border border-gray-200 rounded-lg p-5">
           <div class="flex items-center gap-3 mb-3 flex-wrap">
             <h3 class="text-sm font-semibold text-gray-700">国保連 支払決定通知との突合</h3>
             <span v-if="period.payment_decided_amount != null && paymentDiff === 0"
@@ -338,21 +338,21 @@ const NEXT_ACTIONS = {
             <div>
               <label class="block text-xs text-gray-500 mb-1">支払決定額（通知記載額）</label>
               <input v-model.number="paymentForm.payment_decided_amount" type="number" min="0"
-                class="border border-gray-300 rounded px-3 py-1.5 text-sm w-36 text-right" />
+                class="border border-gray-300 rounded-md px-3 py-1.5 text-sm w-36 text-right" />
             </div>
             <div>
               <label class="block text-xs text-gray-500 mb-1">支払決定日</label>
               <input v-model="paymentForm.payment_decided_at" type="date"
-                class="border border-gray-300 rounded px-3 py-1.5 text-sm" />
+                class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
             </div>
             <div class="flex-1 min-w-[14rem]">
               <label class="block text-xs text-gray-500 mb-1">差異メモ（差異がある場合は必須）</label>
               <input v-model="paymentForm.payment_difference_note" type="text"
-                class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+                class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
                 placeholder="例：○○さん分が受給者証番号誤りで返戻" />
             </div>
             <button @click="savePaymentDecision"
-              class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">
+              class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">
               記録する
             </button>
           </div>
@@ -366,7 +366,7 @@ const NEXT_ACTIONS = {
         </div>
 
         <!-- 事業所KPI -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-semibold text-gray-700">事業所KPI（{{ period.year_month }}）</h3>
             <span class="text-[10px] text-gray-400">定員 {{ kpi.capacity_per_day ?? '—' }}名 × 営業 {{ kpi.business_days ?? '—' }}日</span>
@@ -432,15 +432,15 @@ const NEXT_ACTIONS = {
               <div class="text-[10px] text-gray-500">経費</div>
               <div class="text-xl font-bold text-gray-700">{{ fmt(kpi.expenses ?? 0) }}円</div>
               <div class="text-[10px] text-gray-400 mt-1">
-                <Link :href="route('billing.expenses.index', { month: period.year_month })" class="text-indigo-500 hover:underline">
+                <Link :href="route('billing.expenses.index', { month: period.year_month })" class="text-primary-500 hover:underline">
                   編集 →
                 </Link>
               </div>
             </div>
             <div class="border rounded-lg p-3"
-              :class="kpi.net_profit < 0 ? 'bg-red-50 border-red-200' : kpi.net_profit > 0 ? 'bg-emerald-50 border-emerald-200' : ''">
+              :class="kpi.net_profit < 0 ? 'bg-red-50 border-red-200' : kpi.net_profit > 0 ? 'bg-green-50 border-green-200' : ''">
               <div class="text-[10px] text-gray-500">営業利益</div>
-              <div :class="['text-2xl font-bold', (kpi.net_profit ?? 0) < 0 ? 'text-red-600' : 'text-emerald-700']">
+              <div :class="['text-2xl font-bold', (kpi.net_profit ?? 0) < 0 ? 'text-red-600' : 'text-green-700']">
                 {{ fmt(kpi.net_profit ?? 0) }}円
               </div>
               <div class="text-[10px] text-gray-400 mt-1">利益率 {{ pct(kpi.profit_ratio) }}</div>
@@ -452,26 +452,26 @@ const NEXT_ACTIONS = {
             <div class="text-xs text-gray-500 mb-2">加算取得サマリ</div>
             <div class="flex flex-wrap gap-1.5">
               <span v-for="a in kpi.addition_summary" :key="a.service_name"
-                class="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] px-2 py-0.5 rounded">
+                class="inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-800 text-[11px] px-2 py-0.5 rounded-md">
                 {{ a.service_name }}
-                <span class="text-emerald-600 font-semibold">{{ a.total_count }}回</span>
-                <span class="text-emerald-500">/{{ a.child_count }}名</span>
+                <span class="text-green-600 font-semibold">{{ a.total_count }}回</span>
+                <span class="text-green-500">/{{ a.child_count }}名</span>
               </span>
             </div>
           </div>
         </div>
 
         <!-- 出力前整合性チェック結果（CSV/エクスポート系の検証） -->
-        <div v-if="warnings !== null" class="bg-white shadow-sm rounded-lg p-5 border-l-4 border-amber-400">
+        <div v-if="warnings !== null" class="bg-white border border-gray-200 rounded-lg p-5 border-l-4 border-amber-400">
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-sm font-semibold text-gray-700">出力前 整合性チェック結果</h3>
             <button @click="warnings = null" class="text-xs text-gray-400 hover:text-gray-600">閉じる</button>
           </div>
-          <div v-if="warnings.length === 0" class="text-sm text-emerald-600">問題は検出されませんでした。</div>
+          <div v-if="warnings.length === 0" class="text-sm text-green-600">問題は検出されませんでした。</div>
           <ul v-else class="space-y-1 text-sm">
             <li v-for="(w, i) in warnings" :key="i" class="flex items-start gap-2">
-              <span :class="w.level === 'error' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'"
-                class="px-2 py-0.5 rounded text-xs shrink-0">
+              <span :class="w.level === 'error' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'"
+                class="px-2 py-0.5 rounded-md text-xs shrink-0">
                 {{ w.level === 'error' ? 'エラー' : '警告' }}
               </span>
               <span>{{ w.message }}</span>
@@ -480,7 +480,7 @@ const NEXT_ACTIONS = {
         </div>
 
         <!-- 出力履歴 -->
-        <div v-if="exports.length > 0" class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div v-if="exports.length > 0" class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">出力履歴</h3>
           </div>
@@ -505,13 +505,13 @@ const NEXT_ACTIONS = {
                   <td class="px-4 py-3 text-xs">{{ fmtDate(ex.created_at) }}</td>
                   <td class="px-4 py-3 text-xs">{{ ex.created_by?.name || '-' }}</td>
                   <td class="px-4 py-3 text-xs">
-                    <span v-if="ex.is_submitted" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                    <span v-if="ex.is_submitted" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
                       送信済 {{ fmtDate(ex.submitted_at) }}
                     </span>
                     <span v-else class="text-gray-400">未送信</span>
                   </td>
                   <td class="px-4 py-3 text-right space-x-2 text-xs">
-                    <a :href="route('billing.exports.download', ex.id)" class="text-indigo-600 hover:underline">再DL</a>
+                    <a :href="route('billing.exports.download', ex.id)" class="text-primary-600 hover:underline">再DL</a>
                     <button v-if="!ex.is_submitted" @click="markSubmitted(ex.id)" class="text-blue-600 hover:underline">送信済マーク</button>
                   </td>
                 </tr>
@@ -521,7 +521,7 @@ const NEXT_ACTIONS = {
         </div>
 
         <!-- 児童別明細テーブル -->
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
             <h3 class="text-sm font-semibold text-gray-700">児童別請求明細</h3>
             <span class="text-[10px] text-gray-400">月初確認用サマリ付き</span>
@@ -551,7 +551,7 @@ const NEXT_ACTIONS = {
                     ]">
                   <td class="px-3 py-3 text-center">
                     <span
-                      :class="['text-[10px] font-semibold px-2 py-0.5 rounded whitespace-nowrap cursor-help', REVIEW_BADGE[detail.review_level || 'ok'].cls]"
+                      :class="['text-[10px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap cursor-help', REVIEW_BADGE[detail.review_level || 'ok'].cls]"
                       :title="(detail.review_issues || []).map(i => (i.level==='error'?'✕':'⚠')+' '+i.message).join('\n') || '問題なし'">
                       {{ REVIEW_BADGE[detail.review_level || 'ok'].label }}
                       <span v-if="detail.review_issues?.length" class="ml-1">({{ detail.review_issues.length }})</span>
@@ -559,7 +559,7 @@ const NEXT_ACTIONS = {
                   </td>
                   <td class="px-3 py-3 font-medium">{{ detail.child?.name }}</td>
                   <td class="px-3 py-3 text-xs">
-                    <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                    <span class="bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">
                       {{ detail.service_type === 'houday' ? '放デイ' : '児発' }}
                     </span>
                   </td>
@@ -595,7 +595,7 @@ const NEXT_ACTIONS = {
                   <td class="px-3 py-3 text-center text-xs">
                     <span
                       v-if="detail.addition_count > 0"
-                      class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded cursor-help"
+                      class="bg-green-100 text-green-700 px-2 py-0.5 rounded-md cursor-help"
                       :title="detail.addition_lines?.map(a => `${a.service_name}×${a.count}`).join('\n')">
                       {{ detail.addition_count }}種
                     </span>
@@ -603,16 +603,16 @@ const NEXT_ACTIONS = {
                   </td>
                   <td class="px-3 py-3 text-center text-xs">
                     <span v-if="detail.is_cap_management_target && detail.cap_management_status"
-                      :class="['px-2 py-0.5 rounded', CAP_STATUS_LABEL[detail.cap_management_status]?.cls || 'bg-gray-100 text-gray-600']">
+                      :class="['px-2 py-0.5 rounded-md', CAP_STATUS_LABEL[detail.cap_management_status]?.cls || 'bg-gray-100 text-gray-600']">
                       {{ CAP_STATUS_LABEL[detail.cap_management_status]?.label || detail.cap_management_status }}
                     </span>
-                    <span v-else-if="detail.is_cap_management_target" class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded">対象</span>
+                    <span v-else-if="detail.is_cap_management_target" class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md">対象</span>
                     <span v-else class="text-gray-300">—</span>
                   </td>
                   <td class="px-3 py-3 text-right">{{ fmt(detail.total_amount) }}円</td>
                   <td class="px-3 py-3 text-right font-semibold">{{ fmt(detail.copayment_cap_applied) }}円</td>
                   <td class="px-3 py-3 text-right space-x-2 whitespace-nowrap">
-                    <Link :href="route('billing.details.show', detail.id)" class="text-indigo-600 hover:underline text-xs">詳細</Link>
+                    <Link :href="route('billing.details.show', detail.id)" class="text-primary-600 hover:underline text-xs">詳細</Link>
                     <Link v-if="period.status === 'draft'" :href="route('billing.details.edit', detail.id)" class="text-gray-500 hover:underline text-xs">編集</Link>
                     <a :href="route('billing.details.performance-pdf', detail.id)" class="text-rose-600 hover:underline text-xs">実績票PDF</a>
                   </td>

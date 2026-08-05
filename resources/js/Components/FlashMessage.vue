@@ -28,7 +28,7 @@ watch(
   >
     <div
       v-if="visible && $page.props.flash?.status === 'success'"
-      class="bg-blue-300 text-white p-4"
+      class="bg-primary-50 border-b border-primary-200 text-primary-800 p-4 text-sm"
     >
       {{ $page.props.flash.message }}
     </div>
@@ -43,7 +43,7 @@ watch(
   >
     <div
       v-if="visible && $page.props.flash?.status === 'danger'"
-      class="bg-red-300 text-white p-4"
+      class="bg-red-50 border-b border-red-200 text-red-800 p-4 text-sm"
     >
       {{ $page.props.flash.message }}
     </div>

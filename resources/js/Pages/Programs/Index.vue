@@ -43,13 +43,13 @@ const grouped = (programs) => {
 
     <div class="py-8">
       <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <FlashMessage />
 
           <div class="flex justify-end mb-6">
             <Link
               :href="route('programs.create')"
-              class="px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+              class="px-4 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600"
             >＋ プログラム登録</Link>
           </div>
 
@@ -78,11 +78,11 @@ const grouped = (programs) => {
                 <div class="flex gap-2">
                   <Link
                     :href="route('programs.edit', p.id)"
-                    class="text-xs px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-gray-600"
+                    class="text-xs px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600"
                   >編集</Link>
                   <button
                     @click="destroy(p)"
-                    class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded hover:bg-red-50"
+                    class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded-md hover:bg-red-50"
                   >削除</button>
                 </div>
               </div>

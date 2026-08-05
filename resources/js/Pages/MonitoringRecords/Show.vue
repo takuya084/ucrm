@@ -35,19 +35,19 @@ const destroy = () => {
         <div class="flex justify-end gap-2">
           <a
             :href="route('children.monitoring.pdf', [child.id, record.id])"
-            class="px-4 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+            class="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
           >PDF出力</a>
           <template v-if="['admin','leader'].includes($page.props.auth.staff_role)">
             <Link
               :href="route('children.monitoring.edit', [child.id, record.id])"
-              class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600"
+              class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600"
             >編集</Link>
-            <button @click="destroy" class="px-4 py-2 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50">削除</button>
+            <button @click="destroy" class="px-4 py-2 text-sm border border-red-300 text-red-600 rounded-md hover:bg-red-50">削除</button>
           </template>
         </div>
 
         <!-- メタ情報 -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div>
               <dt class="text-xs text-gray-500">実施日</dt>
@@ -69,26 +69,26 @@ const destroy = () => {
         </div>
 
         <!-- 記録本文 -->
-        <div class="bg-white shadow-sm rounded-lg p-5 space-y-4">
+        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
           <div v-if="record.support_summary">
             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">支援の経過まとめ</h3>
             <p class="text-sm text-gray-800 whitespace-pre-wrap">{{ record.support_summary }}</p>
           </div>
           <div v-if="record.strengths">
             <h3 class="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">強み・できるようになったこと</h3>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-green-50 p-3 rounded">{{ record.strengths }}</p>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-green-50 p-3 rounded-md">{{ record.strengths }}</p>
           </div>
           <div v-if="record.challenges">
             <h3 class="text-xs font-semibold text-orange-500 uppercase tracking-wide mb-1">課題・継続支援が必要なこと</h3>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-orange-50 p-3 rounded">{{ record.challenges }}</p>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-orange-50 p-3 rounded-md">{{ record.challenges }}</p>
           </div>
           <div v-if="record.guardian_needs">
             <h3 class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">保護者のニーズ・希望</h3>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-blue-50 p-3 rounded">{{ record.guardian_needs }}</p>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-blue-50 p-3 rounded-md">{{ record.guardian_needs }}</p>
           </div>
           <div v-if="record.environmental_notes">
             <h3 class="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">環境・家庭状況</h3>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-purple-50 p-3 rounded">{{ record.environmental_notes }}</p>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-purple-50 p-3 rounded-md">{{ record.environmental_notes }}</p>
           </div>
         </div>
       </div>

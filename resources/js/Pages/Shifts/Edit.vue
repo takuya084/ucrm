@@ -21,7 +21,7 @@ const props = defineProps({
 })
 
 const STATUS_LABELS = {
-  draft:     { label: '下書き', class: 'bg-yellow-100 text-yellow-700' },
+  draft:     { label: '下書き', class: 'bg-amber-100 text-amber-700' },
   confirmed: { label: '確定',   class: 'bg-green-100 text-green-700' },
 }
 
@@ -214,22 +214,22 @@ const dailyCheck = computed(() => {
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <h2 class="font-semibold text-xl text-gray-800">{{ shift.year }}年{{ shift.month }}月 シフト表</h2>
-          <span :class="['px-2 py-0.5 rounded text-xs font-medium', STATUS_LABELS[shift.status]?.class]">
+          <span :class="['px-2 py-0.5 rounded-md text-xs font-medium', STATUS_LABELS[shift.status]?.class]">
             {{ STATUS_LABELS[shift.status]?.label }}
           </span>
         </div>
         <div class="flex gap-2 no-print">
           <button v-if="canEdit" @click="save"
-            class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">
+            class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">
             保存
           </button>
           <button v-if="$page.props.auth.staff_role === 'admin'"
             @click="toggleStatus"
-            class="px-4 py-2 text-sm border rounded hover:bg-gray-50">
+            class="px-4 py-2 text-sm border rounded-md hover:bg-gray-50">
             {{ shift.status === 'draft' ? '確定する' : '下書きに戻す' }}
           </button>
           <button @click="printShift"
-            class="px-4 py-2 text-sm border rounded hover:bg-gray-50">
+            class="px-4 py-2 text-sm border rounded-md hover:bg-gray-50">
             印刷
           </button>
         </div>
@@ -238,11 +238,11 @@ const dailyCheck = computed(() => {
 
     <div class="py-4">
       <div class="mx-auto sm:px-4 lg:px-6">
-        <div class="bg-white shadow-sm sm:rounded-lg p-4">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-4">
           <FlashMessage />
 
           <!-- 配置基準ルール -->
-          <details class="mb-3 text-sm border rounded">
+          <details class="mb-3 text-sm border rounded-md">
             <summary class="px-3 py-2 cursor-pointer text-gray-600 hover:bg-gray-50 select-none">
               配置基準チェックのルール
             </summary>
@@ -308,7 +308,7 @@ const dailyCheck = computed(() => {
                     <div class="whitespace-nowrap">{{ s.name }}</div>
                     <div v-if="staffTags[s.id]?.length" class="flex flex-wrap justify-center gap-0.5 mt-0.5">
                       <span v-for="(tag, ti) in staffTags[s.id]" :key="ti"
-                        :class="[tag.colorClass, 'px-1 py-0 rounded text-[9px] leading-tight font-normal']">
+                        :class="[tag.colorClass, 'px-1 py-0 rounded-md text-[9px] leading-tight font-normal']">
                         {{ tag.name }}
                       </span>
                     </div>

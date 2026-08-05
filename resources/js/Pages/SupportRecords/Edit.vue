@@ -133,7 +133,7 @@ const appendText = (field, text) => {
   form[field] = form[field] ? form[field] + '、' + text : text
 }
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
 
@@ -153,16 +153,16 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
     <div class="py-8">
       <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm rounded-lg p-6">
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
 
-          <div v-if="record.child?.care_note" class="mb-5 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
-            <span class="font-medium text-yellow-700">⚠ 配慮事項：</span>
-            <span class="text-yellow-800">{{ record.child.care_note }}</span>
+          <div v-if="record.child?.care_note" class="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm">
+            <span class="font-medium text-amber-700">⚠ 配慮事項：</span>
+            <span class="text-amber-800">{{ record.child.care_note }}</span>
           </div>
 
-          <div class="mb-5 p-2.5 bg-gray-100 border border-gray-200 rounded text-xs text-gray-600">
-            🔒 このフォームは<span class="font-bold">施設内記録</span>です。保護者に公開されるのは下部の「📖 連絡帳」欄のみです。
+          <div class="mb-5 p-2.5 bg-gray-100 border border-gray-200 rounded-md text-xs text-gray-600">
+            このフォームは<span class="font-bold">施設内記録</span>です。保護者に公開されるのは下部の「連絡帳」欄のみです。
           </div>
 
           <form @submit.prevent="update" class="space-y-6">
@@ -193,7 +193,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   v-for="p in BEHAVIOR_PRESETS" :key="p"
                   type="button"
                   @click="appendText('behavior_note', p)"
-                  class="text-xs px-2 py-1 border border-gray-200 rounded bg-gray-50 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                  class="text-xs px-2 py-1 border border-gray-200 rounded-md bg-gray-50 hover:bg-primary-50 hover:border-primary-300 hover:text-primary-600 transition-colors"
                 >{{ p }}</button>
               </div>
               <textarea v-model="form.behavior_note" :class="inputClass" rows="3"
@@ -208,7 +208,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   v-for="p in ACHIEVEMENT_PRESETS" :key="p"
                   type="button"
                   @click="appendText('achievement_note', p)"
-                  class="text-xs px-2 py-1 border border-gray-200 rounded bg-green-50 hover:bg-green-100 text-green-700 transition-colors"
+                  class="text-xs px-2 py-1 border border-gray-200 rounded-md bg-green-50 hover:bg-green-100 text-green-700 transition-colors"
                 >{{ p }}</button>
               </div>
               <textarea v-model="form.achievement_note" :class="inputClass" rows="2"
@@ -235,7 +235,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                       :class="[
                         'flex items-center gap-2 px-3 py-2 border rounded-lg text-sm transition-all',
                         form.program_ids.includes(p.id)
-                          ? 'border-indigo-400 bg-indigo-50'
+                          ? 'border-primary-400 bg-primary-50'
                           : 'border-gray-200 bg-white'
                       ]"
                     >
@@ -244,14 +244,14 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                         @click="toggleProgram(p.id, p.duration_minutes)"
                       >
                         <div :class="[
-                          'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0',
-                          form.program_ids.includes(p.id) ? 'border-indigo-500 bg-indigo-500' : 'border-gray-300'
+                          'w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0',
+                          form.program_ids.includes(p.id) ? 'border-primary-500 bg-primary-500' : 'border-gray-300'
                         ]">
                           <svg v-if="form.program_ids.includes(p.id)" class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
-                        <span :class="form.program_ids.includes(p.id) ? 'text-indigo-700 font-medium' : 'text-gray-700'">
+                        <span :class="form.program_ids.includes(p.id) ? 'text-primary-700 font-medium' : 'text-gray-700'">
                           {{ p.name }}
                         </span>
                       </div>
@@ -260,9 +260,9 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                         <input
                           v-model="form.program_durations[p.id]"
                           type="number" min="5" max="180" step="5"
-                          class="w-14 border border-indigo-300 rounded px-1 py-0.5 text-xs text-center"
+                          class="w-14 border border-primary-300 rounded-md px-1 py-0.5 text-xs text-center"
                         />
-                        <span class="text-xs text-indigo-500">分</span>
+                        <span class="text-xs text-primary-500">分</span>
                       </div>
 
                       <button
@@ -270,14 +270,14 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                         type="button"
                         @click.stop="toggleExpand(p.id)"
                         :class="[
-                          'ml-1 px-2 py-1 text-xs rounded border transition-colors flex items-center gap-1',
+                          'ml-1 px-2 py-1 text-xs rounded-md border transition-colors flex items-center gap-1',
                           expandedPrograms.has(p.id)
-                            ? 'border-indigo-300 bg-indigo-100 text-indigo-600'
+                            ? 'border-primary-300 bg-primary-100 text-primary-600'
                             : 'border-gray-200 text-gray-500 hover:bg-gray-50'
                         ]"
                       >
                         <span>詳細</span>
-                        <span v-if="(form.program_items[p.id]?.length ?? 0) > 0" class="bg-indigo-500 text-white rounded-full px-1">
+                        <span v-if="(form.program_items[p.id]?.length ?? 0) > 0" class="bg-primary-500 text-white rounded-full px-1">
                           {{ form.program_items[p.id].length }}
                         </span>
                         <svg :class="['w-3 h-3 transition-transform', expandedPrograms.has(p.id) ? 'rotate-180' : '']"
@@ -290,9 +290,9 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                     <!-- 詳細項目アコーディオン -->
                     <div
                       v-if="form.program_ids.includes(p.id) && p.items?.length && expandedPrograms.has(p.id)"
-                      class="ml-4 mt-1 p-3 bg-indigo-50 border border-indigo-200 rounded-lg"
+                      class="ml-4 mt-1 p-3 bg-primary-50 border border-primary-200 rounded-lg"
                     >
-                      <p class="text-xs text-indigo-500 mb-2">実施した内容を選択（難易度順）</p>
+                      <p class="text-xs text-primary-500 mb-2">実施した内容を選択（難易度順）</p>
                       <div class="flex flex-wrap gap-2">
                         <label
                           v-for="item in p.items"
@@ -300,8 +300,8 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                           :class="[
                             'flex items-center gap-1.5 px-2.5 py-1.5 border rounded-full text-xs cursor-pointer transition-all',
                             (form.program_items[p.id] ?? []).includes(item.id)
-                              ? 'border-indigo-500 bg-indigo-500 text-white'
-                              : 'border-indigo-200 text-indigo-700 bg-white hover:bg-indigo-100'
+                              ? 'border-primary-500 bg-primary-500 text-white'
+                              : 'border-primary-200 text-primary-700 bg-white hover:bg-primary-100'
                           ]"
                         >
                           <input
@@ -357,10 +357,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             />
 
             <div class="flex justify-end gap-3 pt-4 border-t">
-              <Link :href="route('support-records.show', record.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+              <Link :href="route('support-records.show', record.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                 キャンセル
               </Link>
-              <button type="submit" class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600">
+              <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
                 更新する
               </button>
             </div>

@@ -77,8 +77,12 @@
 - [x] P4-1: 要配慮個人情報の暗号化 — disability_note / allergy_note / care_note を
       EncryptedOrPlainText キャストで暗号化（平文フォールバック付き）。
       既存データは `php artisan app:encrypt-sensitive-data` で一括暗号化（本番で要実行）
-- [ ] P4-2: 職員アカウントの2FA — Laravel Fortify 等のパッケージ導入が必要。
-      P1-4 のフレームワーク更新後に実施推奨
+- [x] P4-2: 職員アカウントの2FA — 2026-07-12 完了（feature/two-factor-auth）。
+      Fortify を 2FA エンジンとしてのみ導入（自動ルートは無効化、画面は Breeze/Inertia 流儀で自前実装）。
+      TOTP（認証アプリ）+ リカバリコード8個。有効化はナビ「アカウントのセキュリティ（2FA）」から
+      QR 読み取り→コード確認の任意設定（password.confirm で再認証必須）。
+      有効化/無効化/リカバリコード再生成・使用は監査ログに記録。リプレイ防御あり。
+      TwoFactorAuthTest 9件で担保・実環境E2E確認済み。要 `php artisan migrate`
 - [x] P4-3: 出力ファイルの保持期限付き管理（billing:cleanup-exports を毎日03:30に実行、
       保持日数は BILLING_EXPORT_RETENTION_DAYS で設定。本番サーバーで cron の
       `schedule:run` が動いていることを要確認）

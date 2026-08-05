@@ -17,7 +17,7 @@ const fmt = (n) => Number(n).toLocaleString()
 const STATUS_COLOR = {
   unpaid:  'bg-red-100 text-red-700',
   paid:    'bg-green-100 text-green-700',
-  partial: 'bg-yellow-100 text-yellow-700',
+  partial: 'bg-amber-100 text-amber-700',
   overdue: 'bg-red-200 text-red-800',
 }
 const STATUS_LABEL = { unpaid: '未入金', paid: '入金済', partial: '一部入金', overdue: '滞納' }
@@ -66,7 +66,7 @@ const savePay = (inv) => {
     <template #header>
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-800">利用者請求</h2>
-        <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">請求管理へ</Link>
+        <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">請求管理へ</Link>
       </div>
     </template>
 
@@ -74,19 +74,19 @@ const savePay = (inv) => {
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <FlashMessage />
 
-        <div class="bg-white shadow-sm rounded-lg p-4 flex flex-wrap gap-3 items-end">
+        <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap gap-3 items-end">
           <div>
             <label class="block text-xs text-gray-500 mb-1">年月</label>
-            <input v-model="selectedMonth" type="month" @change="changeMonth" class="border border-gray-300 rounded px-3 py-1.5 text-sm" />
+            <input v-model="selectedMonth" type="month" @change="changeMonth" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
           </div>
-          <button @click="generate" class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition">
+          <button @click="generate" class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600 transition">
             請求書一括生成
           </button>
         </div>
 
         <!-- 回収サマリ -->
         <div v-if="invoices.length > 0" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="bg-white rounded-lg shadow-sm p-4 text-center">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
             <div class="text-xl font-bold text-gray-800">{{ fmt(summary.total ?? 0) }}円</div>
             <div class="text-xs text-gray-500 mt-1">請求合計（{{ summary.count ?? 0 }}件）</div>
           </div>
@@ -100,7 +100,7 @@ const savePay = (inv) => {
             </div>
             <div class="text-xs text-gray-500 mt-1">未回収</div>
           </div>
-          <div class="bg-white rounded-lg shadow-sm p-4 text-center">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
             <div :class="['text-xl font-bold', (summary.unpaid_count ?? 0) > 0 ? 'text-amber-600' : 'text-gray-800']">
               {{ summary.unpaid_count ?? 0 }}件
             </div>
@@ -108,7 +108,7 @@ const savePay = (inv) => {
           </div>
         </div>
 
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div v-if="invoices.length === 0" class="py-12 text-center text-gray-400 text-sm">
             請求書データがありません。対象月を選んで「請求書一括生成」を押すと、請求計算の結果から保護者宛の請求書が作成されます。
           </div>
@@ -150,9 +150,9 @@ const savePay = (inv) => {
                     <a
                       v-if="['paid','partial'].includes(inv.payment_status) && inv.paid_at"
                       :href="route('billing.invoices.receipt-pdf', inv.id)"
-                      class="text-emerald-600 hover:underline text-xs"
+                      class="text-green-600 hover:underline text-xs"
                     >領収書</a>
-                    <Link :href="route('billing.invoices.show', inv.id)" class="text-indigo-600 hover:underline text-xs">詳細</Link>
+                    <Link :href="route('billing.invoices.show', inv.id)" class="text-primary-600 hover:underline text-xs">詳細</Link>
                     <a :href="route('billing.invoices.pdf', inv.id)" class="text-green-600 hover:underline text-xs">請求書</a>
                   </td>
                 </tr>
@@ -162,11 +162,11 @@ const savePay = (inv) => {
                     <div class="flex flex-wrap items-end gap-3">
                       <div>
                         <label class="block text-[10px] text-gray-500 mb-1">入金日</label>
-                        <input v-model="payForm.paid_at" type="date" class="border border-gray-300 rounded px-2 py-1 text-xs" />
+                        <input v-model="payForm.paid_at" type="date" class="border border-gray-300 rounded-md px-2 py-1 text-xs" />
                       </div>
                       <div>
                         <label class="block text-[10px] text-gray-500 mb-1">方法</label>
-                        <select v-model="payForm.payment_method" class="border border-gray-300 rounded px-2 py-1 text-xs">
+                        <select v-model="payForm.payment_method" class="border border-gray-300 rounded-md px-2 py-1 text-xs">
                           <option value="bank_transfer">振込</option>
                           <option value="cash">現金</option>
                           <option value="other">その他</option>
@@ -174,10 +174,10 @@ const savePay = (inv) => {
                       </div>
                       <div>
                         <label class="block text-[10px] text-gray-500 mb-1">入金額（全額 {{ fmt(inv.total_amount) }}円）</label>
-                        <input v-model.number="payForm.paid_amount" type="number" min="0" class="border border-gray-300 rounded px-2 py-1 text-xs w-28 text-right" />
+                        <input v-model.number="payForm.paid_amount" type="number" min="0" class="border border-gray-300 rounded-md px-2 py-1 text-xs w-28 text-right" />
                       </div>
                       <button @click="savePay(inv)"
-                        class="px-4 py-1.5 text-xs bg-amber-600 text-white rounded hover:bg-amber-700">
+                        class="px-4 py-1.5 text-xs bg-amber-600 text-white rounded-md hover:bg-amber-700">
                         {{ payForm.paid_amount >= inv.total_amount ? '全額入金として記録' : '一部入金として記録' }}
                       </button>
                     </div>

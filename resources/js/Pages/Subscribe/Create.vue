@@ -28,7 +28,7 @@ const submit = () => {
     <div class="max-w-lg mx-auto px-6 py-16">
 
       <div class="text-center mb-10">
-        <span class="text-xl font-extrabold tracking-tight"><span class="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">ハグ</span><span class="text-gray-900">くむ</span></span>
+        <span class="text-xl font-extrabold tracking-tight"><span class="text-primary-600">ハグ</span><span class="text-gray-900">くむ</span></span>
         <h1 class="text-2xl font-extrabold text-gray-900 mt-4">事業所情報の登録</h1>
         <p class="text-sm text-gray-400 mt-2">決済が完了しました。事業所の基本情報を入力してください。</p>
       </div>
@@ -45,7 +45,7 @@ const submit = () => {
             事業所名 <span class="text-red-500">*</span>
           </label>
           <input v-model="form.facility_name" type="text" required
-            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             placeholder="例: 放デイすまいる">
           <p v-if="form.errors.facility_name" class="text-red-500 text-xs mt-1">{{ form.errors.facility_name }}</p>
         </div>
@@ -55,7 +55,7 @@ const submit = () => {
             管理者氏名 <span class="text-red-500">*</span>
           </label>
           <input v-model="form.admin_name" type="text" required
-            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             placeholder="例: 山田太郎">
           <p v-if="form.errors.admin_name" class="text-red-500 text-xs mt-1">{{ form.errors.admin_name }}</p>
         </div>
@@ -70,21 +70,21 @@ const submit = () => {
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">住所</label>
           <input v-model="form.address" type="text"
-            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             placeholder="例: 東京都渋谷区...">
         </div>
 
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">電話番号</label>
           <input v-model="form.tel" type="text"
-            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             placeholder="例: 03-1234-5678">
         </div>
 
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">1日の定員</label>
           <input v-model="form.capacity_per_day" type="number" min="1"
-            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
         </div>
 
         <button type="submit" :disabled="form.processing"

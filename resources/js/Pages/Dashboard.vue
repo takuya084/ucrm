@@ -53,7 +53,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             <span class="font-semibold text-gray-700">{{ billingMonth }}分の国保連請求</span>
             <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', billingGuide.cls]">{{ billingGuide.label }}</span>
             <span class="text-gray-600">{{ billingGuide.text }}</span>
-            <span class="ml-auto text-xs text-indigo-600">開く →</span>
+            <span class="ml-auto text-xs text-primary-600">開く →</span>
           </div>
           <p v-if="isBillingWindow && billingPeriod?.status !== 'completed'" class="text-xs text-amber-700 mt-1">
             毎月10日が国保連への請求締切です。
@@ -66,7 +66,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             本日の状況（{{ todayStats.date }}）
           </h3>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg shadow-sm p-5 text-center">
+            <div class="bg-white rounded-lg border border-gray-200 p-5 text-center">
               <div class="text-3xl font-bold text-gray-800">{{ activeChildren }}</div>
               <div class="text-xs text-gray-500 mt-1">契約中の児童</div>
             </div>
@@ -74,12 +74,12 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
               <div class="text-3xl font-bold text-green-700">{{ todayStats.attended }}</div>
               <div class="text-xs text-gray-500 mt-1">本日出席</div>
             </div>
-            <div class="bg-yellow-50 rounded-lg shadow-sm p-5 text-center">
-              <div class="text-3xl font-bold text-yellow-700">{{ todayStats.total - todayStats.attended }}</div>
+            <div class="bg-amber-50 rounded-lg shadow-sm p-5 text-center">
+              <div class="text-3xl font-bold text-amber-700">{{ todayStats.total - todayStats.attended }}</div>
               <div class="text-xs text-gray-500 mt-1">本日欠席</div>
             </div>
-            <div class="bg-indigo-50 rounded-lg shadow-sm p-5 text-center">
-              <div class="text-3xl font-bold text-indigo-700">{{ todayStats.withSupport }}</div>
+            <div class="bg-primary-50 rounded-lg shadow-sm p-5 text-center">
+              <div class="text-3xl font-bold text-primary-700">{{ todayStats.withSupport }}</div>
               <div class="text-xs text-gray-500 mt-1">支援記録済</div>
             </div>
           </div>
@@ -89,7 +89,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           <!-- 受給者証 期限アラート -->
-          <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div class="px-5 py-3 border-b flex items-center justify-between">
               <h3 class="text-sm font-semibold text-gray-700">
                 受給者証 期限アラート
@@ -104,7 +104,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             <ul v-else class="divide-y">
               <li v-for="cert in expiringCertificates" :key="cert.id" class="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <Link :href="route('children.show', cert.child_id)" class="text-sm font-medium text-gray-800 hover:text-indigo-600">
+                  <Link :href="route('children.show', cert.child_id)" class="text-sm font-medium text-gray-800 hover:text-primary-600">
                     {{ cert.child?.name }}
                   </Link>
                   <div class="text-xs text-gray-500">有効期限：{{ cert.valid_to }}</div>
@@ -114,7 +114,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     'text-xs font-medium px-2 py-1 rounded-full',
                     daysUntil(cert.valid_to) <= 7
                       ? 'bg-red-100 text-red-700'
-                      : 'bg-yellow-100 text-yellow-700'
+                      : 'bg-amber-100 text-amber-700'
                   ]"
                 >
                   あと {{ daysUntil(cert.valid_to) }}日
@@ -124,7 +124,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
           </div>
 
           <!-- モニタリング期限アラート -->
-          <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div class="px-5 py-3 border-b flex items-center justify-between">
               <h3 class="text-sm font-semibold text-gray-700">
                 モニタリング 実施アラート
@@ -139,7 +139,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             <ul v-else class="divide-y">
               <li v-for="mon in monitoringDue" :key="mon.id" class="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <Link :href="route('children.show', mon.child_id)" class="text-sm font-medium text-gray-800 hover:text-indigo-600">
+                  <Link :href="route('children.show', mon.child_id)" class="text-sm font-medium text-gray-800 hover:text-primary-600">
                     {{ mon.child?.name }}
                   </Link>
                   <div class="text-xs text-gray-500">次回予定：{{ mon.next_review_date }}</div>
@@ -151,7 +151,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                       ? 'bg-red-100 text-red-700'
                       : daysUntil(mon.next_review_date) <= 7
                         ? 'bg-orange-100 text-orange-700'
-                        : 'bg-yellow-100 text-yellow-700'
+                        : 'bg-amber-100 text-amber-700'
                   ]"
                 >
                   {{ daysUntil(mon.next_review_date) < 0 ? `${Math.abs(daysUntil(mon.next_review_date))}日超過` : `あと${daysUntil(mon.next_review_date)}日` }}
@@ -161,7 +161,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
           </div>
 
           <!-- 個別支援計画 同意待ち -->
-          <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div class="px-5 py-3 border-b">
               <h3 class="text-sm font-semibold text-gray-700">
                 個別支援計画 同意待ち
@@ -176,7 +176,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             <ul v-else class="divide-y">
               <li v-for="plan in pendingAgreements" :key="plan.id" class="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <Link :href="route('children.show', plan.child_id)" class="text-sm font-medium text-gray-800 hover:text-indigo-600">
+                  <Link :href="route('children.show', plan.child_id)" class="text-sm font-medium text-gray-800 hover:text-primary-600">
                     {{ plan.child?.name }}
                   </Link>
                   <div class="text-xs text-gray-500">{{ plan.valid_from }} 〜 {{ plan.valid_to }}</div>
@@ -187,7 +187,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
           </div>
 
           <!-- 未対応・対応中の問い合わせ -->
-          <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div class="px-5 py-3 border-b">
               <h3 class="text-sm font-semibold text-gray-700">
                 対応が必要な問い合わせ
@@ -202,7 +202,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             <ul v-else class="divide-y">
               <li v-for="inq in openInquiries" :key="inq.id" class="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <Link :href="route('children.show', inq.child_id)" class="text-sm font-medium text-gray-800 hover:text-indigo-600">
+                  <Link :href="route('children.show', inq.child_id)" class="text-sm font-medium text-gray-800 hover:text-primary-600">
                     {{ inq.child?.name }}
                   </Link>
                   <div class="text-xs text-gray-500">{{ inq.category }} — {{ inq.created_at?.slice(0, 10) }}</div>
@@ -211,8 +211,8 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                   :class="[
                     'text-xs px-2 py-1 rounded-full',
                     inq.status === 'open'
-                      ? 'bg-purple-50 text-purple-600'
-                      : 'bg-yellow-50 text-yellow-600'
+                      ? 'bg-red-50 text-red-600'
+                      : 'bg-amber-50 text-amber-600'
                   ]"
                 >{{ inq.status === 'open' ? '未対応' : '対応中' }}</span>
               </li>

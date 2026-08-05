@@ -31,7 +31,7 @@ const update = () => {
   router.patch(route('facility.update'), form)
 }
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
 
@@ -47,7 +47,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
         <FlashMessage />
         <BreezeValidationErrors />
 
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <form @submit.prevent="update" class="space-y-6">
 
             <!-- 基本情報 -->
@@ -161,12 +161,12 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
                 <!-- 連携状態インジケーター -->
                 <div v-if="form.yoyaku_business_id"
-                  class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                  class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
                   <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
                   houkago-plus 事業所ID {{ form.yoyaku_business_id }} と連携します
                 </div>
                 <div v-else
-                  class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-500">
+                  class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-500">
                   <span class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
                   未連携（固定スケジュールで動作）
                 </div>
@@ -176,7 +176,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             <div class="flex justify-end pt-4 border-t">
               <button
                 type="submit"
-                class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600"
+                class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600"
               >
                 保存する
               </button>

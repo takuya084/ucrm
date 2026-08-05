@@ -42,9 +42,11 @@ Laravel 12 + Inertia 2 (Vue 3) + MySQL。利用児童・出欠・送迎・個別
   AI 下書きは `ai_draft_consented_at`（保護者同意）必須
 - **加算・制度**: 報酬単価・加算要件は推測で実装しない。告示・留意事項通知・自治体ルールを確認し、
   不明な点は条件 JSON（time_category / monthly_limit / rate_based 等）の設定で吸収する
+- **2FA**: Fortify は 2FA エンジンのみ（`Fortify::ignoreRoutes()` 済み・ルートは routes/auth.php に自前定義）。
+  ログイン分岐は `LoginRequest::authenticateOrGetTwoFactorUser()`。Fortify の他機能を有効化しないこと
 
 ## テスト
 
-- `php artisan test` — 全テスト（67件）。請求エンジンは `tests/Feature/Billing/` にあり、
+- `php artisan test` — 全テスト（76件）。請求エンジンは `tests/Feature/Billing/` にあり、
   請求ロジックを触ったら必ず実行・追加する
 - 主要画面の 200 確認は `tests/Feature/PageSmokeTest.php`。画面を追加したらここにパスを足す

@@ -31,11 +31,11 @@ const updatePayment = () => {
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-800">{{ invoice.child?.name }} - 請求書詳細</h2>
         <div class="flex gap-2">
-          <Link :href="route('billing.invoices.index', { month: invoice.year_month })" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">戻る</Link>
+          <Link :href="route('billing.invoices.index', { month: invoice.year_month })" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">戻る</Link>
           <a v-if="['paid','partial'].includes(invoice.payment_status) && invoice.paid_at"
             :href="route('billing.invoices.receipt-pdf', invoice.id)"
-            class="px-4 py-1.5 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700 transition">領収書PDF</a>
-          <a :href="route('billing.invoices.pdf', invoice.id)" class="px-4 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition">請求書PDF</a>
+            class="px-4 py-1.5 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition">領収書PDF</a>
+          <a :href="route('billing.invoices.pdf', invoice.id)" class="px-4 py-1.5 text-xs bg-green-500 text-white rounded-md hover:bg-green-600 transition">請求書PDF</a>
         </div>
       </div>
     </template>
@@ -45,7 +45,7 @@ const updatePayment = () => {
         <FlashMessage />
 
         <!-- 請求書情報 -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <div><span class="text-xs text-gray-500 block">年月</span>{{ invoice.year_month }}</div>
             <div><span class="text-xs text-gray-500 block">児童名</span>{{ invoice.child?.name }}</div>
@@ -57,7 +57,7 @@ const updatePayment = () => {
         </div>
 
         <!-- サービスコード内訳 -->
-        <div v-if="invoice.billing_detail?.billing_detail_lines" class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div v-if="invoice.billing_detail?.billing_detail_lines" class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">サービス内訳</h3>
           </div>
@@ -80,37 +80,37 @@ const updatePayment = () => {
         </div>
 
         <!-- 入金管理 -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <h3 class="text-sm font-semibold text-gray-700 mb-3">入金管理</h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-500 mb-1">入金状態</label>
-              <select v-model="paymentForm.payment_status" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
+              <select v-model="paymentForm.payment_status" class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm">
                 <option v-for="(label, val) in STATUS_LABEL" :key="val" :value="val">{{ label }}</option>
               </select>
             </div>
             <div>
               <label class="block text-xs text-gray-500 mb-1">入金方法</label>
-              <select v-model="paymentForm.payment_method" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
+              <select v-model="paymentForm.payment_method" class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm">
                 <option value="">未選択</option>
                 <option v-for="(label, val) in METHOD_LABEL" :key="val" :value="val">{{ label }}</option>
               </select>
             </div>
             <div>
               <label class="block text-xs text-gray-500 mb-1">入金額</label>
-              <input v-model.number="paymentForm.paid_amount" type="number" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm" />
+              <input v-model.number="paymentForm.paid_amount" type="number" class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
             </div>
             <div>
               <label class="block text-xs text-gray-500 mb-1">入金日</label>
-              <input v-model="paymentForm.paid_at" type="date" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm" />
+              <input v-model="paymentForm.paid_at" type="date" class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
             </div>
             <div class="sm:col-span-2">
               <label class="block text-xs text-gray-500 mb-1">備考</label>
-              <textarea v-model="paymentForm.notes" rows="2" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"></textarea>
+              <textarea v-model="paymentForm.notes" rows="2" class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"></textarea>
             </div>
           </div>
           <div class="mt-4 flex justify-end">
-            <button @click="updatePayment" class="px-6 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition">
+            <button @click="updatePayment" class="px-6 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600 transition">
               更新
             </button>
           </div>

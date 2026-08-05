@@ -13,7 +13,7 @@ const props = defineProps({
   aiContext:          Object,  // AI下書き用の内部記録スナップショット { condition, behavior_note, achievement_note, program_names }
 })
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300'
 
 const toggleDomainTag = (key) => {
   const idx = props.form.five_domain_tags.indexOf(key)
@@ -56,23 +56,23 @@ const generateDraft = async () => {
 </script>
 
 <template>
-  <section class="border-2 border-emerald-300 rounded-lg overflow-hidden">
+  <section class="border-2 border-green-300 rounded-lg overflow-hidden">
     <!-- ゾーンヘッダ -->
-    <div class="flex items-center justify-between px-4 py-2 bg-emerald-50 border-b border-emerald-200">
+    <div class="flex items-center justify-between px-4 py-2 bg-green-50 border-b border-green-200">
       <div class="flex items-center gap-2">
-        <span class="text-emerald-600 font-bold text-sm">📖 連絡帳</span>
-        <span class="text-xs text-emerald-500">この欄は保護者に公開されます</span>
+        <span class="text-green-600 font-bold text-sm">連絡帳</span>
+        <span class="text-xs text-green-500">この欄は保護者に公開されます</span>
       </div>
       <span
         v-if="contactNote?.status === 'published'"
-        class="text-xs px-2 py-0.5 rounded-full bg-emerald-500 text-white font-medium"
+        class="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white font-medium"
       >公開済み</span>
     </div>
 
     <div class="p-4 space-y-4 bg-white">
       <!-- 家庭からの連絡（p-yoyaku で保護者が記入） -->
-      <div v-if="contactNote?.guardian_submitted_at" class="p-3 bg-amber-50 border border-amber-200 rounded">
-        <p class="text-xs font-bold text-amber-700 mb-1">🏠 家庭からの連絡</p>
+      <div v-if="contactNote?.guardian_submitted_at" class="p-3 bg-amber-50 border border-amber-200 rounded-md">
+        <p class="text-xs font-bold text-amber-700 mb-1">家庭からの連絡</p>
         <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-amber-800 mb-1">
           <span v-if="contactNote.home_temperature">体温：{{ contactNote.home_temperature }}℃</span>
           <span v-if="contactNote.home_sleep">睡眠：{{ contactNote.home_sleep }}</span>
@@ -90,7 +90,7 @@ const generateDraft = async () => {
             type="button"
             @click="generateDraft"
             :disabled="aiLoading"
-            class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-50"
+            class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50"
           >
             <span v-if="aiLoading" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             {{ aiLoading ? 'AI生成中...' : '記録からAI下書き' }}
@@ -129,8 +129,8 @@ const generateDraft = async () => {
             :class="[
               'px-3 py-1.5 rounded-full text-xs border transition-all',
               form.five_domain_tags.includes(key)
-                ? 'border-emerald-500 bg-emerald-500 text-white'
-                : 'border-gray-300 text-gray-600 bg-white hover:bg-emerald-50'
+                ? 'border-green-500 bg-green-500 text-white'
+                : 'border-gray-300 text-gray-600 bg-white hover:bg-green-50'
             ]"
           >{{ label }}</button>
         </div>
@@ -139,8 +139,8 @@ const generateDraft = async () => {
       <!-- 短期目標への手応え -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">短期目標への手応え</label>
-        <p v-if="shortTermGoal" class="text-xs text-gray-500 mb-2 p-2 bg-gray-50 rounded border border-gray-200">
-          🎯 {{ shortTermGoal }}
+        <p v-if="shortTermGoal" class="text-xs text-gray-500 mb-2 p-2 bg-gray-50 rounded-md border border-gray-200">
+          目標: {{ shortTermGoal }}
         </p>
         <p v-else class="text-xs text-gray-400 mb-2">有効な個別支援計画がありません（タグのみ記録されます）</p>
         <div class="flex gap-2">
@@ -149,9 +149,9 @@ const generateDraft = async () => {
             type="button"
             @click="setGoalProgress(key)"
             :class="[
-              'px-3 py-1.5 rounded text-xs border transition-all',
+              'px-3 py-1.5 rounded-md text-xs border transition-all',
               form.goal_progress === key
-                ? 'border-emerald-500 bg-emerald-100 text-emerald-700 font-bold'
+                ? 'border-green-500 bg-green-100 text-green-700 font-bold'
                 : 'border-gray-300 text-gray-600 bg-white hover:bg-gray-50'
             ]"
           >{{ label }}</button>
@@ -159,14 +159,14 @@ const generateDraft = async () => {
       </div>
 
       <!-- 公開 -->
-      <div v-if="contactNote?.status === 'published'" class="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+      <div v-if="contactNote?.status === 'published'" class="text-xs text-gray-500 p-2 bg-gray-50 rounded-md">
         公開済みの連絡帳です。保存すると更新内容が保護者側にも再配信されます（変更は監査ログに記録されます）。
       </div>
-      <label v-else class="flex items-center gap-3 cursor-pointer p-3 bg-emerald-50 border border-emerald-200 rounded">
-        <input v-model="form.publish_now" type="checkbox" class="w-4 h-4 accent-emerald-500" />
+      <label v-else class="flex items-center gap-3 cursor-pointer p-3 bg-green-50 border border-green-200 rounded-md">
+        <input v-model="form.publish_now" type="checkbox" class="w-4 h-4 accent-green-500" />
         <div>
-          <span class="text-sm font-medium text-emerald-700">保存と同時に保護者へ公開する</span>
-          <p class="text-xs text-emerald-500 mt-0.5">チェックしない場合は下書きとして保存され、連絡帳一覧からあとで公開できます</p>
+          <span class="text-sm font-medium text-green-700">保存と同時に保護者へ公開する</span>
+          <p class="text-xs text-green-500 mt-0.5">チェックしない場合は下書きとして保存され、連絡帳一覧からあとで公開できます</p>
         </div>
       </label>
     </div>

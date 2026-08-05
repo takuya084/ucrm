@@ -45,7 +45,7 @@ const save = () => {
 
     <div class="py-8">
       <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <FlashMessage />
           <BreezeValidationErrors class="mb-4" />
 
@@ -74,7 +74,7 @@ const save = () => {
                   </td>
                   <td class="py-2 px-2">
                     <select v-model="p.work_type"
-                      class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                      class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">
                       <option value="">―</option>
                       <option v-for="l in labels" :key="l.name" :value="l.name">{{ l.name }}</option>
                     </select>
@@ -83,7 +83,7 @@ const save = () => {
                     <select
                       v-if="!isOff(p.work_type)"
                       v-model="p.start_time"
-                      class="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                      class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
                     >
                       <option :value="null">--:--</option>
                       <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
@@ -99,7 +99,7 @@ const save = () => {
                 ← 職員一覧に戻る
               </Link>
               <button type="submit"
-                class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600">
+                class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
                 保存する
               </button>
             </div>

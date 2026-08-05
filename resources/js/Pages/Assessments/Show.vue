@@ -50,12 +50,12 @@ const SECTIONS = [
         <div v-if="['admin','leader'].includes($page.props.auth.staff_role)" class="flex justify-end gap-2">
           <Link
             :href="route('children.assessments.edit', [child.id, assessment.id])"
-            class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600"
+            class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600"
           >編集</Link>
-          <button @click="destroy" class="px-4 py-2 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50">削除</button>
+          <button @click="destroy" class="px-4 py-2 text-sm border border-red-300 text-red-600 rounded-md hover:bg-red-50">削除</button>
         </div>
 
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div>
               <dt class="text-xs text-gray-500">実施日</dt>
@@ -68,28 +68,28 @@ const SECTIONS = [
           </dl>
         </div>
 
-        <div class="bg-white shadow-sm rounded-lg p-5 space-y-4">
+        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
           <template v-for="s in SECTIONS" :key="s.key">
             <div v-if="assessment[s.key]">
               <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{{ s.label }}</h3>
-              <p class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded">{{ assessment[s.key] }}</p>
+              <p class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded-md">{{ assessment[s.key] }}</p>
             </div>
           </template>
         </div>
 
-        <div v-if="hasDomains" class="bg-white shadow-sm rounded-lg p-5">
+        <div v-if="hasDomains" class="bg-white border border-gray-200 rounded-lg p-5">
           <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">5領域別の発達状況</h3>
           <dl class="space-y-3">
             <template v-for="(label, key) in DOMAIN_LABELS" :key="key">
               <div v-if="assessment.five_domains?.[key]">
                 <dt class="text-xs font-medium text-gray-600 mb-1">{{ label }}</dt>
-                <dd class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 p-2 rounded">{{ assessment.five_domains[key] }}</dd>
+                <dd class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 p-2 rounded-md">{{ assessment.five_domains[key] }}</dd>
               </div>
             </template>
           </dl>
         </div>
 
-        <div v-if="assessment.notes" class="bg-white shadow-sm rounded-lg p-5">
+        <div v-if="assessment.notes" class="bg-white border border-gray-200 rounded-lg p-5">
           <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">その他特記事項</h3>
           <p class="text-sm text-gray-800 whitespace-pre-wrap">{{ assessment.notes }}</p>
         </div>

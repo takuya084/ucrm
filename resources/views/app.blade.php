@@ -14,7 +14,7 @@
         <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('hagukumu_apple-touch-icon.png') }}">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
 
         <!-- Scripts -->
         <!-- Stripe.js -->

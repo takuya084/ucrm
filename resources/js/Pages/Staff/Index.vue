@@ -40,13 +40,13 @@ const destroy = (staff) => {
 
     <div class="py-8">
       <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <FlashMessage />
 
           <div class="flex justify-end mb-6">
             <Link
               :href="route('staff.create')"
-              class="px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+              class="px-4 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600"
             >＋ 職員追加</Link>
           </div>
 
@@ -73,7 +73,7 @@ const destroy = (staff) => {
                 <td class="py-3 pr-4">
                   <div v-if="member.qualifications?.length" class="flex flex-wrap gap-1">
                     <span v-for="q in member.qualifications" :key="q.id"
-                      :class="['px-1.5 py-0.5 rounded text-[10px] border font-medium',
+                      :class="['px-1.5 py-0.5 rounded-md text-[10px] border font-medium',
                                QUAL_COLORS[qualificationTypes[q.qualification]?.color] ?? QUAL_COLORS.gray]">
                       {{ qualificationTypes[q.qualification]?.name ?? q.qualification }}
                     </span>
@@ -88,11 +88,11 @@ const destroy = (staff) => {
                 <td class="py-3 text-right whitespace-nowrap">
                   <Link
                     :href="route('staff.edit', member.id)"
-                    class="text-xs px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-gray-600 mr-2"
+                    class="text-xs px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 mr-2"
                   >編集</Link>
                   <button
                     @click="destroy(member)"
-                    class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded hover:bg-red-50"
+                    class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded-md hover:bg-red-50"
                   >削除</button>
                 </td>
               </tr>

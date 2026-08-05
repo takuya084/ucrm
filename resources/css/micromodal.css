@@ -40,7 +40,7 @@
   font-weight: 600;
   font-size: 1.25rem;
   line-height: 1.25;
-  color: #00449e;
+  color: #0052a3;
   box-sizing: border-box;
 }
 
@@ -92,7 +92,7 @@
 }
 
 .modal__btn-primary {
-  background-color: #00449e;
+  background-color: #0052a3;
   color: #fff;
 }
 

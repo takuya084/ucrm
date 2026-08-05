@@ -34,7 +34,7 @@ const destroy = (ef) => {
 
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <FlashMessage />
 
           <div class="flex justify-between items-center mb-6">
@@ -43,7 +43,7 @@ const destroy = (ef) => {
             </p>
             <Link
               :href="route('external-facilities.create')"
-              class="px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+              class="px-4 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600"
             >＋ 事業所登録</Link>
           </div>
 
@@ -77,11 +77,11 @@ const destroy = (ef) => {
                 <td class="py-3 text-right whitespace-nowrap">
                   <Link
                     :href="route('external-facilities.edit', ef.id)"
-                    class="text-xs px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-gray-600 mr-2"
+                    class="text-xs px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 mr-2"
                   >編集</Link>
                   <button
                     @click="destroy(ef)"
-                    class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded hover:bg-red-50"
+                    class="text-xs px-3 py-1 border border-red-200 text-red-400 rounded-md hover:bg-red-50"
                   >削除</button>
                 </td>
               </tr>

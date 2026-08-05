@@ -15,10 +15,10 @@ const fmt = (n) => Number(n).toLocaleString()
         <div class="flex items-center gap-2">
           <a v-if="['confirmed','submitted','completed'].includes(detail.billing_period?.status)"
             :href="route('billing.details.proxy-receipt-pdf', detail.id)"
-            class="px-3 py-1.5 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700">
+            class="px-3 py-1.5 text-xs bg-green-600 text-white rounded-md hover:bg-green-700">
             代理受領額通知書PDF
           </a>
-          <Link :href="route('billing.show', detail.billing_period_id)" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">戻る</Link>
+          <Link :href="route('billing.show', detail.billing_period_id)" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">戻る</Link>
         </div>
       </div>
     </template>
@@ -26,7 +26,7 @@ const fmt = (n) => Number(n).toLocaleString()
     <div class="py-8">
       <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <!-- 概要 -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
             <div><span class="text-xs text-gray-500 block">種別</span>{{ detail.service_type === 'houday' ? '放課後等デイサービス' : '児童発達支援' }}</div>
             <div><span class="text-xs text-gray-500 block">利用日数</span>{{ detail.total_days }}日</div>
@@ -40,7 +40,7 @@ const fmt = (n) => Number(n).toLocaleString()
         </div>
 
         <!-- 手動調整の記録 -->
-        <div v-if="detail.adjustment_note" class="bg-white shadow-sm rounded-lg p-5 border-l-4 border-amber-400">
+        <div v-if="detail.adjustment_note" class="bg-white border border-gray-200 rounded-lg p-5 border-l-4 border-amber-400">
           <h3 class="text-sm font-semibold text-gray-700 mb-1">手動調整あり</h3>
           <p class="text-sm text-gray-800 whitespace-pre-wrap">{{ detail.adjustment_note }}</p>
           <p class="text-xs text-gray-400 mt-2">
@@ -49,7 +49,7 @@ const fmt = (n) => Number(n).toLocaleString()
         </div>
 
         <!-- サービスコード別内訳 -->
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">サービスコード別内訳</h3>
           </div>
@@ -76,7 +76,7 @@ const fmt = (n) => Number(n).toLocaleString()
         </div>
 
         <!-- 日別サービス実績 -->
-        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">日別サービス実績</h3>
           </div>

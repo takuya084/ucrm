@@ -13,7 +13,7 @@ const props = defineProps({
 
 const STATUS_COLOR = {
   open:        'bg-red-100 text-red-700',
-  in_progress: 'bg-yellow-100 text-yellow-700',
+  in_progress: 'bg-amber-100 text-amber-700',
   closed:      'bg-gray-100 text-gray-600',
 }
 
@@ -45,17 +45,17 @@ const destroy = () => {
         <FlashMessage />
 
         <div class="flex justify-end gap-2">
-          <Link :href="route('inquiries.edit', inquiry.id)" class="px-4 py-2 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600">編集</Link>
-          <button @click="destroy" class="px-4 py-2 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50">削除</button>
+          <Link :href="route('inquiries.edit', inquiry.id)" class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">編集</Link>
+          <button @click="destroy" class="px-4 py-2 text-sm border border-red-300 text-red-600 rounded-md hover:bg-red-50">削除</button>
         </div>
 
         <!-- メタ情報 -->
-        <div class="bg-white shadow-sm rounded-lg p-5">
+        <div class="bg-white border border-gray-200 rounded-lg p-5">
           <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div>
               <dt class="text-xs text-gray-500">対象児童</dt>
               <dd class="font-medium">
-                <Link :href="route('children.show', inquiry.child_id)" class="text-indigo-600 hover:underline">
+                <Link :href="route('children.show', inquiry.child_id)" class="text-primary-600 hover:underline">
                   {{ inquiry.child?.name }}
                 </Link>
               </dd>
@@ -84,18 +84,18 @@ const destroy = () => {
         </div>
 
         <!-- 問い合わせ内容 -->
-        <div class="bg-white shadow-sm rounded-lg p-5 space-y-4">
+        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
           <div v-if="inquiry.subject">
             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">件名</h3>
             <p class="text-sm font-medium text-gray-800">{{ inquiry.subject }}</p>
           </div>
           <div>
             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">問い合わせ内容</h3>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded">{{ inquiry.content }}</p>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded-md">{{ inquiry.content }}</p>
           </div>
           <div v-if="inquiry.response">
             <h3 class="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">回答・対応内容</h3>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-green-50 p-3 rounded">{{ inquiry.response }}</p>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap bg-green-50 p-3 rounded-md">{{ inquiry.response }}</p>
           </div>
         </div>
       </div>

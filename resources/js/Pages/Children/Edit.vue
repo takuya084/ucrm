@@ -34,7 +34,7 @@ const update = () => {
   router.patch(route('children.update', props.child.id), form)
 }
 
-const inputClass = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300'
+const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
 
@@ -50,7 +50,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
     <div class="py-8">
       <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
+        <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
 
           <form @submit.prevent="update" class="space-y-6">
@@ -156,7 +156,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             <section>
               <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">AI下書き生成の利用同意</h3>
               <label class="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
-                <input type="checkbox" v-model="form.ai_draft_consent" class="mt-0.5 rounded border-gray-300" />
+                <input type="checkbox" v-model="form.ai_draft_consent" class="mt-0.5 rounded-md border-gray-300" />
                 <span>
                   個別支援計画・モニタリング記録のAI下書き生成（外部AIサービスへの支援記録送信）について、保護者の同意を取得済み
                   <span class="block text-xs text-gray-400 mt-1">※同意書等で保護者の同意を得てからチェックしてください。チェックを外すと同意記録は取り消されます。</span>
@@ -182,10 +182,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
             <!-- ボタン -->
             <div class="flex justify-end gap-3 pt-4 border-t">
-              <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+              <Link :href="route('children.show', child.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                 キャンセル
               </Link>
-              <button type="submit" class="px-6 py-2 text-sm text-white bg-indigo-500 rounded hover:bg-indigo-600">
+              <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
                 更新する
               </button>
             </div>
