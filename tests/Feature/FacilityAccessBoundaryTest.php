@@ -71,4 +71,34 @@ class FacilityAccessBoundaryTest extends TestCase
         $this->patchJson('/children/'.$child->id,['name'=>'Changed','contract_status'=>'active'])->assertForbidden();
         $this->assertSame('Other private child',$child->fresh()->name);
     }
+
+    public function test_current_staff_disablement_is_rechecked_on_the_next_request(): void
+    {
+        [$u,$staff]=$this->fixtures();
+        $this->actingAs($u)->get('/children')->assertOk();
+        $staff->update(['is_active'=>false]);
+        $this->getJson('/children')->assertForbidden();
+        $this->postJson('/support-records',['date'=>'2026-07-01'])->assertForbidden();
+        $this->assertDatabaseCount('support_records',0);
+    }
+
+    public function test_own_school_can_be_updated_and_cleared(): void
+    {
+        [$u,$staff,$a,$b,$own]=$this->fixtures();
+        $child=Child::create(['facility_id'=>$a->id,'name'=>'Fictional child','contract_status'=>'active']);
+        $this->actingAs($u)->patch('/children/'.$child->id,['name'=>'Fictional child','contract_status'=>'active','school_id'=>$own->id])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSame($own->id,$child->fresh()->school_id);
+        $this->patch('/children/'.$child->id,['name'=>'Fictional child','contract_status'=>'active','school_id'=>null])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertNull($child->fresh()->school_id);
+    }
+
+    public function test_inactive_staff_can_still_use_own_account_security(): void
+    {
+        [$u]=$this->fixtures(false);
+        $this->actingAs($u)->withSession(['auth.password_confirmed_at'=>time()])
+            ->get(route('account.security'))->assertOk();
+    }
 }
+
