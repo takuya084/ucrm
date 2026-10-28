@@ -112,6 +112,16 @@ class YoyakuEnvelopeRegressionTest extends TestCase
         $this->assertDatabaseCount('usage_records',0);
     }
 
+    public function test_invalid_nested_values_are_rejected_before_writing(): void
+    {
+        foreach ([['pickup_time'=>[]],['dropoff_time'=>'25:00'],['actual_pickup_at'=>'now'],
+            ['guardian_comment'=>['unexpected']]] as $invalid) {
+            $body=$this->envelope; $body['data']=array_replace($body['data'],$invalid);
+            $this->send($body)->assertStatus(400);
+        }
+        $this->assertDatabaseCount('usage_records',0);
+    }
+
     public function test_business_signature_and_child_mapping_cannot_cross_facilities(): void
     {
         $other=Facility::create(['name'=>'架空連携B','capacity_per_day'=>10,
