@@ -101,4 +101,3 @@ class FacilityAccessBoundaryTest extends TestCase
             ->get(route('account.security'))->assertOk();
     }
 }
-

@@ -11,7 +11,7 @@ class EnsureFacilityIsActive
     public function handle(Request $request, Closure $next)
     {
         // Account recovery/security remain available; this is a business-data gate.
-        if ($request->routeIs('profile.*', 'password.*', 'verification.*', 'two-factor.*', 'account.security')) {
+        if ($request->is('confirm-password') || $request->routeIs('profile.*', 'password.*', 'verification.*', 'two-factor.*', 'account.security')) {
             return $next($request);
         }
 
@@ -56,4 +56,3 @@ class EnsureFacilityIsActive
         return $next($request);
     }
 }
-

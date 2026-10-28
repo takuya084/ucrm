@@ -19,4 +19,3 @@ abstract class TestCase extends BaseTestCase
         \Stripe\ApiRequestor::setHttpClient(new \Tests\Support\DenyStripeHttpClient());
     }
 }
-
