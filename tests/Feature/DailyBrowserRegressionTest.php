@@ -28,10 +28,11 @@ class DailyBrowserRegressionTest extends TestCase
         $admin=$this->staff($facility,'admin','架空管理者');
         $child=Child::create(['facility_id'=>$facility->id,'name'=>'架空児童','contract_status'=>'active',
             'birthdate'=>'2016-02-29','contract_start_date'=>'2026-04-01','contract_end_date'=>'2027-03-31']);
-        $this->actingAs($admin)->get('/children/'.$child->id.'/edit',['X-Inertia'=>'true', 'X-Inertia-Version'=>\Inertia\Inertia::getVersion()])
-            ->assertOk()->assertJsonPath('props.child.birthdate','2016-02-29')
-            ->assertJsonPath('props.child.contract_start_date','2026-04-01')
-            ->assertJsonPath('props.child.contract_end_date','2027-03-31');
+        $page=$this->actingAs($admin)->get('/children/'.$child->id.'/edit')
+            ->assertOk()->viewData('page');
+        $this->assertSame('2016-02-29',$page['props']['child']['birthdate']);
+        $this->assertSame('2026-04-01',$page['props']['child']['contract_start_date']);
+        $this->assertSame('2027-03-31',$page['props']['child']['contract_end_date']);
         $this->assertSame('Asia/Tokyo',config('app.timezone'));
         $stored=\Illuminate\Support\Facades\DB::table('children')->where('id',$child->id)->first();
         $this->assertSame('2016-02-29',substr($stored->birthdate,0,10));
@@ -68,11 +69,12 @@ class DailyBrowserRegressionTest extends TestCase
         $admin=$this->staff($facility,'admin','A管理者');
         $this->staff($facility,'admin','B管理者');
         $this->staff($this->facility(),'admin','別事業所');
-        $this->actingAs($admin)->get('/staff',['X-Inertia'=>'true', 'X-Inertia-Version'=>\Inertia\Inertia::getVersion()])->assertOk()
-            ->assertJsonCount(4,'props.staffMembers')
-            ->assertJsonPath('props.staffMembers.0.name','A管理者')
-            ->assertJsonPath('props.staffMembers.1.name','B管理者')
-            ->assertJsonPath('props.staffMembers.2.role','leader')
-            ->assertJsonPath('props.staffMembers.3.role','staff');
+        $page=$this->actingAs($admin)->get('/staff')->assertOk()->viewData('page');
+        $rows=$page['props']['staffMembers'];
+        $this->assertCount(4,$rows);
+        $this->assertSame('A管理者',$rows[0]['name']);
+        $this->assertSame('B管理者',$rows[1]['name']);
+        $this->assertSame('leader',$rows[2]['role']);
+        $this->assertSame('staff',$rows[3]['role']);
     }
 }

@@ -252,4 +252,3 @@ class UsageRecordController extends Controller
         return $names[$day] ?? '';
     }
 }
-
