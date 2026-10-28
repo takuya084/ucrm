@@ -26,7 +26,7 @@ if ($command === 'reset') {
                 'birthdate'=>'2017-04-02','contract_start_date'=>'2026-04-01',
                 'contract_status'=>$status,'allergy_note'=>'架空の配慮情報']);
             if ($status==='active') {
-                foreach (['mon','tue','wed','thu','fri','sat','sun'] as $day) {
+                foreach (['mon','tue','wed','thu','fri','sat'] as $day) {
                     $child->schedules()->create(['day_of_week'=>$day,'start_date'=>'2026-01-01','status'=>'regular']);
                 }
             }
