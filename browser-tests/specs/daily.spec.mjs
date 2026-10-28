@@ -206,7 +206,7 @@ test('admin deactivation blocks an already logged-in staff member on next reques
     await login(page);
     const member=seeded.staff.find(s=>s.name==='架空職員a-staff');
     await visit(page,`/staff/${member.id}/edit`,'職員編集');
-    await page.getByLabel('無効',{exact:true}).check();
+    await page.locator('label').filter({hasText:/^\s*無効\s*$/}).click();
     await page.getByRole('button',{name:'更新する',exact:true}).click();
     await expect(page).toHaveURL(/\/staff$/);
     expect(snapshot().staff.find(s=>s.id===member.id).is_active).toBe(false);
@@ -219,7 +219,7 @@ test('attendance save and support record survive navigation and reload', async (
   await visit(page,'/usage-records?date=2026-07-01','出席管理');
   await expect(page.locator('main')).not.toContainText('架空児童b');
   const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/usage-records/bulk-store' && r.request().method()==='POST');
-  await page.getByRole('button',{name:'出席',exact:true}).click();
+  await page.getByRole('button',{name:'このメンバーで確定',exact:true}).click();
   expect((await saved).status()).toBe(200);
   await page.reload();
   await page.getByRole('link',{name:'支援記録を入力',exact:true}).click();
