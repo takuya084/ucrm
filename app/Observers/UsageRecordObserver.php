@@ -15,11 +15,12 @@ class UsageRecordObserver
 
     public static function withoutPush(callable $callback): mixed
     {
+        $previous=static::$suppressPush;
         static::$suppressPush = true;
         try {
             return $callback();
         } finally {
-            static::$suppressPush = false;
+            static::$suppressPush = $previous;
         }
     }
 
@@ -28,7 +29,7 @@ class UsageRecordObserver
         if (static::$suppressPush) {
             return;
         }
-        PushYoyakuBooking::dispatch($record->id);
+        PushYoyakuBooking::dispatch($record->id)->afterCommit();
     }
 
     public function deleted(UsageRecord $record): void
@@ -36,6 +37,6 @@ class UsageRecordObserver
         if (static::$suppressPush) {
             return;
         }
-        PushYoyakuBooking::dispatch($record->id, delete: true);
+        PushYoyakuBooking::dispatch($record->id, delete: true)->afterCommit();
     }
 }

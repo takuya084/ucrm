@@ -25,7 +25,7 @@ class BookingCancellationTest extends TestCase
     private function record(): UsageRecord
     {
         return UsageRecord::create(['facility_id'=>$this->facility->id,'child_id'=>$this->child->id,
-            'date'=>'2026-11-04','status'=>'present','pickup_done'=>true,'check_in_time'=>'15:00:00']);
+            'date'=>'2026-11-04','status'=>'attended','pickup_done'=>true,'check_in_time'=>'15:00:00']);
     }
     private function send(int $revision,string $event='booking.created')
     {
@@ -89,5 +89,20 @@ class BookingCancellationTest extends TestCase
         $this->assertDatabaseCount('usage_records',1);
         $this->send(1,'booking.deleted')->assertStatus(409);
         $this->assertTrue(UsageRecord::sole()->pickup_done);
+    }
+    public function test_saving_memo_after_received_cancellation_does_not_recreate_booking(): void
+    {
+        Http::fake(['*'=>Http::response(['ok'=>true,'applied'=>true])]);
+        $this->record();
+        $this->send(1,'booking.deleted')->assertOk();
+        $record=UsageRecord::sole(); $record->update(['memo'=>'Synthetic memo']);
+        (new PushYoyakuBooking($record->id))->handle(app(YoyakuApiService::class));
+        Http::assertSent(fn($r)=>$r['cancelled']===true);
+    }
+    public function test_unlinked_record_sends_nothing(): void
+    {
+        Http::fake(); $r=$this->record(); $this->child->update(['yoyaku_user_id'=>null]);
+        (new PushYoyakuBooking($r->id))->handle(app(YoyakuApiService::class));
+        Http::assertNothingSent();
     }
 }

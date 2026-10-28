@@ -1,1 +1,19 @@
-{"event":"booking.created","business_id":77,"sent_at":"2026-10-28T21:00:00+09:00","data":{"id":901,"user_id":501,"date":"2026-11-04","pickup_time":"15:00","pickup_location":"school","dropoff_time":"17:30","dropoff_location":"home","actual_pickup_at":null,"actual_dropoff_at":null,"external_ref":null}}
+{
+  "event": "booking.created",
+  "business_id": 77,
+  "sent_at": "2026-10-28T21:00:00+09:00",
+  "data": {
+    "id": 901,
+    "user_id": 501,
+    "date": "2026-11-04",
+    "pickup_time": "15:00",
+    "pickup_location": "school",
+    "dropoff_time": "17:30",
+    "dropoff_location": "home",
+    "actual_pickup_at": null,
+    "actual_dropoff_at": null,
+    "external_ref": null,
+    "booking_revision": 1,
+    "cancellation_token": null
+  }
+}

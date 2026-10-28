@@ -80,6 +80,28 @@ class YoyakuApiService
         );
     }
 
+    /** No fallback to legacy create: an unconfirmed cancellation must fail visibly. */
+    public function syncBooking(array $payload, int $facilityId): ?string
+    {
+        $token=Facility::whereKey($facilityId)->value('yoyaku_api_token');
+        if (!$token || !$this->baseUrl) throw new \RuntimeException('Booking synchronization failed');
+        try {
+            $response=Http::withToken($token)->acceptJson()->timeout($this->timeout)
+                ->put("{$this->baseUrl}/api/integration/bookings",$payload);
+            if (!$response->successful() || $response->json('ok')!==true
+                || !is_bool($response->json('applied'))) {
+                throw new \RuntimeException('Booking synchronization failed');
+            }
+            $token=$response->json('cancellation_token');
+            if ($token!==null && (!is_string($token) || !\Illuminate\Support\Str::isUuid($token))) {
+                throw new \RuntimeException('Booking synchronization failed');
+            }
+            return $token;
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('Booking synchronization failed');
+        }
+    }
+
     public function updateBooking(int $yoyakuId, array $payload, ?int $facilityId = null): ?array
     {
         $client = $this->client($facilityId);
