@@ -15,8 +15,10 @@ trait CreatesApplication
     {
         $app = require __DIR__.'/../bootstrap/app.php';
 
+        \Tests\Support\TestIsolation::bootstrap($app);
         $app->make(Kernel::class)->bootstrap();
 
         return $app;
     }
 }
+
