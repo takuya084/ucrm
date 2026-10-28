@@ -29,11 +29,15 @@ class YoyakuWebhookController extends Controller
     {
         $body      = $request->getContent();
         $data      = json_decode($body, true);
+        if (!is_array($data) || array_is_list($data)) {
+            return response()->json(['error' => 'invalid payload'], 400);
+        }
         $event     = $data['event']       ?? null;
-        $businessId= (int) ($data['business_id'] ?? 0);
+        $businessId= $this->positiveId($data['business_id'] ?? null);
         $payload   = $data['data']        ?? [];
 
-        if (!$event || !$businessId) {
+        if (!is_string($event) || !$businessId || !is_array($payload) || array_is_list($payload)
+            || !$this->positiveId($payload['user_id'] ?? null)) {
             return response()->json(['error' => 'invalid payload'], 400);
         }
 
@@ -57,17 +61,15 @@ class YoyakuWebhookController extends Controller
             return response()->json(['error' => 'invalid signature'], 401);
         }
 
-        // リプレイ防御: 署名対象の sent_at が古すぎる（または欠落した）ペイロードは拒否
-        try {
-            $sentAt = Carbon::parse($data['sent_at'] ?? '');
-        } catch (\Throwable) {
-            $sentAt = null;
+        // Only supported event types may change records. Unknown types are not bookings.
+        if (!in_array($event, ['booking.created', 'booking.updated', 'booking.deleted',
+            'contact_note.read', 'contact_note.guardian_entry'], true)) {
+            return response()->json(['error' => 'unsupported event'], 400);
         }
+
+        // Carbon::parse(null/'') means now; require an explicit absolute timestamp first.
+        $sentAt = $this->absoluteTimestamp($data['sent_at'] ?? null);
         if (!$sentAt || $sentAt->diffInSeconds(now(), true) > self::REPLAY_TOLERANCE_SECONDS) {
-            Log::warning('YoyakuWebhook: sent_at が無効または期限切れ', [
-                'facility_id' => $facility->id,
-                'sent_at'     => $data['sent_at'] ?? null,
-            ]);
             return response()->json(['error' => 'stale or missing sent_at'], 401);
         }
 
@@ -79,8 +81,28 @@ class YoyakuWebhookController extends Controller
         }
 
         $date = $payload['date'] ?? null;
-        if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || !strtotime($date)) {
+        if (!is_string($date) || !preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $date, $parts)
+            || !checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])) {
             return response()->json(['error' => 'date missing or invalid'], 400);
+        }
+
+        // Reject wrong scalar types before casts or database writes.
+        foreach (['pickup_time', 'dropoff_time'] as $key) {
+            $time = $payload[$key] ?? null;
+            if ($time !== null && (!is_string($time)
+                || !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/D', $time))) {
+                return response()->json(['error' => 'invalid time'], 400);
+            }
+        }
+        foreach (['actual_pickup_at', 'actual_dropoff_at'] as $key) {
+            if (isset($payload[$key]) && !$this->absoluteTimestamp($payload[$key])) {
+                return response()->json(['error' => 'invalid actual timestamp'], 400);
+            }
+        }
+        foreach (['home_temperature', 'home_sleep', 'home_medication', 'home_condition', 'guardian_comment'] as $key) {
+            if (isset($payload[$key]) && !is_string($payload[$key]) && !is_numeric($payload[$key])) {
+                return response()->json(['error' => 'invalid contact field'], 400);
+            }
         }
 
         // 連絡帳イベント（出欠と違い請求に影響しないため、請求ロックの対象外）
@@ -122,13 +144,13 @@ class YoyakuWebhookController extends Controller
         // created / updated（ソフトデリート済みの記録がある日はユニーク制約衝突を避けるため復活させる）
         // withoutPush: 受信内容を p-yoyaku へ送り返すエコーループを防ぐ
         UsageRecordObserver::withoutPush(function () use ($facility, $child, $date, $payload) {
-            $record = UsageRecord::withTrashed()->updateOrCreate(
+            $record = UsageRecord::withTrashed()->whereDate('date', $date)->updateOrCreate(
                 [
                     'facility_id' => $facility->id,
                     'child_id'    => $child->id,
-                    'date'        => $date,
                 ],
                 [
+                    'date'           => $date,
                     'pickup_done'    => !empty($payload['pickup_time']) || !empty($payload['actual_pickup_at']),
                     'dropoff_done'   => !empty($payload['dropoff_time']) || !empty($payload['actual_dropoff_at']),
                     'check_in_time'  => $payload['pickup_time']  ?? null,
@@ -141,6 +163,25 @@ class YoyakuWebhookController extends Controller
         });
 
         return response()->json(['ok' => true]);
+    }
+
+    private function positiveId(mixed $value): ?int
+    {
+        if ((!is_int($value) && !is_string($value)) || !ctype_digit((string) $value)) return null;
+        $id = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        return $id === false ? null : $id;
+    }
+
+    private function absoluteTimestamp(mixed $value): ?Carbon
+    {
+        if (!is_string($value) || !preg_match(
+            '/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(Z|[+-]\d{2}:\d{2})$/D',
+            $value, $parts
+        )) return null;
+        if (!checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])
+            || (int) $parts[4] > 23 || (int) $parts[5] > 59 || (int) $parts[6] > 59) return null;
+        if ($parts[7] !== 'Z' && ((int) substr($parts[7], 1, 2) > 23 || (int) substr($parts[7], 4, 2) > 59)) return null;
+        try { return Carbon::parse($value); } catch (\Throwable) { return null; }
     }
 
     /**
