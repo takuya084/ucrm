@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreChildRequest extends FormRequest
 {
@@ -19,7 +20,7 @@ class StoreChildRequest extends FormRequest
             'gender'              => ['nullable', 'in:male,female,other'],
             'birthdate'           => ['nullable', 'date'],
             'grade'               => ['nullable', 'string', 'max:20'],
-            'school_id'           => ['nullable', 'exists:schools,id'],
+            'school_id'           => ['nullable', Rule::exists('schools', 'id')->where('facility_id', $this->user()?->staff?->facility_id)],
             'disability_type'     => ['nullable', 'string', 'max:100'],
             'disability_note'     => ['nullable', 'string', 'max:1000'],
             'allergy_note'        => ['nullable', 'string', 'max:1000'],

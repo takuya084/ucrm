@@ -10,6 +10,11 @@ class EnsureFacilityIsActive
 {
     public function handle(Request $request, Closure $next)
     {
+        // Account recovery/security remain available; this is a business-data gate.
+        if ($request->is('confirm-password') || $request->routeIs('profile.*', 'password.*', 'verification.*', 'two-factor.*', 'account.security')) {
+            return $next($request);
+        }
+
         if (
             $request->is('/') ||
             $request->is('subscribe*') ||
@@ -31,7 +36,12 @@ class EnsureFacilityIsActive
             return $next($request);
         }
 
-        $facility = $user->staff->facility ?? null;
+        // Read current membership rather than a relation cached earlier in a session/worker.
+        $staff = $user->staff()->with('facility')->first();
+        $user->setRelation('staff', $staff);
+        abort_unless($staff && $staff->is_active && $staff->facility, 403,
+            '有効な職員として事業所に所属していません。管理者にお問い合わせください。');
+        $facility = $staff->facility;
 
         if ($facility && $facility->isFree()) {
             return $next($request);
