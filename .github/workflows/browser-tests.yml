@@ -1,0 +1,63 @@
+name: Browser acceptance
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ucrm-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      SAFE_BROWSER_CI: '1'
+      BCRYPT_ROUNDS: '4'
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      CACHE_STORE: array
+      CACHE_DRIVER: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: bcmath, curl, dom, fileinfo, gd, intl, mbstring, openssl, pdo_sqlite, sqlite3, tokenizer, xml, xmlwriter, zip
+          coverage: none
+          tools: composer:v2
+      - name: Install locked dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress --no-scripts
+          npm ci --ignore-scripts
+          npm ci --ignore-scripts --prefix browser-tests
+          node browser-tests/node_modules/@playwright/test/cli.js install --with-deps chromium
+      - name: Build actual Vue application
+        run: npm run build
+      - name: Run browser with synthetic data and isolated loopback only
+        run: |
+          set -euo pipefail
+          export BROWSER_FIXTURE_DIR="$(mktemp -d "$RUNNER_TEMP/ucrm-browser-XXXXXXXX")"
+          mkdir "$BROWSER_FIXTURE_DIR/sessions"
+          touch "$BROWSER_FIXTURE_DIR/database.sqlite"
+          runner_user="$(id -un)"
+          sudo --preserve-env unshare --net -- bash -c '
+            ip link set lo up
+            exec runuser -u "$1" --preserve-environment -- bash browser-tests/run-ci.sh
+          ' bash "$runner_user"
+      - name: Save aggregate result only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-summary
+          path: browser-tests/summary.json
+          retention-days: 7
+          if-no-files-found: ignore
