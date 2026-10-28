@@ -105,4 +105,34 @@ class BookingCancellationTest extends TestCase
         (new PushYoyakuBooking($r->id))->handle(app(YoyakuApiService::class));
         Http::assertNothingSent();
     }
+    public function test_in_flight_booking_cannot_restore_locally_deleted_attendance(): void
+    {
+        $record=$this->record(); $record->delete();
+        $this->send(10)->assertOk()->assertJson(['ignored'=>'local cancellation']);
+        $this->assertTrue($record->fresh()->trashed());
+        $record->restore();
+        $this->send(11)->assertOk();
+        $this->assertFalse($record->fresh()->trashed());
+    }
+    public function test_actual_sender_matches_shared_versioned_request_contract(): void
+    {
+        Http::fake(['*'=>Http::response(['ok'=>true,'applied'=>true,'cancellation_token'=>null])]);
+        $record=$this->record();
+        (new PushYoyakuBooking($record->id))->handle(app(YoyakuApiService::class));
+        $expected=json_decode(file_get_contents(base_path('tests/fixtures/integration/booking-sync.json')),true);
+        Http::assertSent(function ($r) use ($expected) {
+            $this->assertSame($expected,$r->data());
+            return $r->method()==='PUT';
+        });
+    }
+    public function test_unversioned_message_cannot_bypass_a_versioned_cancellation(): void
+    {
+        $this->send(2,'booking.deleted')->assertOk();
+        $body=['event'=>'booking.created','business_id'=>77,'sent_at'=>now()->toIso8601String(),
+            'data'=>['user_id'=>501,'date'=>'2026-11-04','pickup_time'=>'15:00']];
+        $json=json_encode($body,JSON_THROW_ON_ERROR);
+        $this->call('POST','/api/webhooks/yoyaku',server:['CONTENT_TYPE'=>'application/json',
+            'HTTP_X_YOYAKU_SIGNATURE'=>hash_hmac('sha256',$json,'synthetic-secret')],content:$json)->assertStatus(409);
+        $this->assertDatabaseCount('usage_records',0);
+    }
 }

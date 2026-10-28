@@ -182,7 +182,15 @@ class YoyakuWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // created / updated（ソフトデリート済みの記録がある日はユニーク制約衝突を避けるため復活させる）
+        $existing=UsageRecord::withTrashed()->where('facility_id',$facility->id)
+            ->where('child_id',$child->id)->whereDate('date',$date)->first();
+        if ($existing && ($existing->trashed() || in_array($existing->status,['cancel','absent','absent_notice'],true))) {
+            // An in-flight booking event must not undo a local cancellation before its
+            // outbound job executes. Attendance changes/restoration require a local action.
+            return response()->json(['ok'=>true,'ignored'=>'local cancellation']);
+        }
+
+        // created / updated: local cancelled/deleted attendance is protected above.
         // withoutPush: 受信内容を p-yoyaku へ送り返すエコーループを防ぐ
         UsageRecordObserver::withoutPush(function () use ($facility, $child, $date, $payload) {
             $record = UsageRecord::withTrashed()->whereDate('date', $date)->updateOrCreate(

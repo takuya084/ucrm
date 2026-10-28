@@ -47,17 +47,18 @@ class YoyakuEnvelopeRegressionTest extends TestCase
         Bus::assertNotDispatched(PushYoyakuBooking::class);
     }
 
-    public function test_existing_attendance_status_is_preserved_and_soft_deleted_row_is_restored(): void
+    public function test_existing_attendance_cancellation_is_preserved_and_soft_deleted_row_is_not_restored(): void
     {
         $record=UsageRecord::create(['facility_id'=>$this->child->facility_id,'child_id'=>$this->child->id,
             'date'=>'2026-11-04','status'=>'absent_notice']);
         $record->delete();
         Bus::fake();
-        $this->send($this->envelope)->assertOk();
+        $this->send($this->envelope)->assertOk()->assertJson(['ignored'=>'local cancellation']);
         $this->assertDatabaseCount('usage_records',1);
-        $this->assertSame($record->id,UsageRecord::sole()->id);
-        $this->assertSame('absent_notice',UsageRecord::sole()->status);
-        $this->assertFalse(UsageRecord::sole()->trashed());
+        $this->assertSame($record->id,UsageRecord::withTrashed()->sole()->id);
+        $this->assertSame('absent_notice',UsageRecord::withTrashed()->sole()->status);
+        $this->assertTrue(UsageRecord::withTrashed()->sole()->trashed());
+        $this->assertFalse(UsageRecord::withTrashed()->sole()->pickup_done);
         Bus::assertNotDispatched(PushYoyakuBooking::class);
     }
 

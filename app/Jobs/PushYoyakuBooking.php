@@ -56,12 +56,13 @@ class PushYoyakuBooking implements ShouldQueue
                 'expected_cancellation_token'=>$ur->yoyaku_cancellation_token ?? $received?->cancellation_token,
                 'pickup_time'=>!$cancelled && $ur->pickup_done ? $time($ur->check_in_time):null,
                 'dropoff_time'=>!$cancelled && $ur->dropoff_done ? $time($ur->check_out_time):null,
-            ]];
+            ],$ur->yoyaku_cancellation_token];
         });
         if ($snapshot) {
             $token=$api->syncBooking($snapshot[1],$snapshot[0]);
             UsageRecord::withTrashed()->whereKey($this->usageRecordId)
                 ->where('yoyaku_sync_revision',$snapshot[1]['revision'])
+                ->where('yoyaku_cancellation_token',$snapshot[2])
                 ->update(['yoyaku_cancellation_token'=>$token]);
         }
     }
