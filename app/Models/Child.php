@@ -38,10 +38,11 @@ class Child extends Model
     ];
 
     protected $casts = [
-        'birthdate'             => 'date',
+        // Calendar dates must not be converted to UTC timestamps in Inertia/JSON.
+        'birthdate'             => 'date:Y-m-d',
         'pickup_required'       => 'boolean',
-        'contract_start_date'   => 'date',
-        'contract_end_date'     => 'date',
+        'contract_start_date'   => 'date:Y-m-d',
+        'contract_end_date'     => 'date:Y-m-d',
         'ai_draft_consented_at' => 'datetime',
         // 要配慮個人情報は保存時に暗号化（既存平文は app:encrypt-sensitive-data で移行）
         'disability_note'       => \App\Casts\EncryptedOrPlainText::class,

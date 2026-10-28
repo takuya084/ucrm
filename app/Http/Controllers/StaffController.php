@@ -26,7 +26,7 @@ class StaffController extends Controller
     {
         $staffMembers = Staff::where('facility_id', $this->facilityId())
             ->with(['user:id,email', 'qualifications:id,staff_id,qualification'])
-            ->orderByRaw("FIELD(role, 'admin', 'leader', 'staff')")
+            ->orderByRaw("CASE role WHEN 'admin' THEN 1 WHEN 'leader' THEN 2 WHEN 'staff' THEN 3 ELSE 4 END")
             ->orderBy('name')
             ->get(['id', 'user_id', 'name', 'role', 'is_active', 'joined_at']);
 
