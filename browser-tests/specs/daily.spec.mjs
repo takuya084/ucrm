@@ -30,8 +30,10 @@ async function login(page, role='admin', tenant='a') {
   expect(response.status()).toBe(200);
   await page.locator('#email').fill(`${role}-${tenant}@example.test`);
   await page.locator('#password').fill(password);
+  const blocked = role === 'inactive'
+    ? page.waitForResponse(r=>new URL(r.url()).pathname==='/dashboard' && r.status()===403) : null;
   await page.getByRole('button', {name:'ログイン', exact:true}).click();
-  if (role === 'inactive') { await expect(page).toHaveURL(/\/dashboard$/); return; }
+  if (blocked) { await blocked; return; }
   await expect(page.getByRole('heading', {name:'ダッシュボード', exact:true})).toBeVisible();
 }
 async function visit(page, path, heading) {
@@ -46,8 +48,10 @@ function ownChild() { return seeded.children.find(c=>c.name==='架空児童a-act
 function foreignChild() { return seeded.children.find(c=>c.name==='架空児童b-active'); }
 function school(tenant) { return seeded.schools.find(s=>s.name===`架空学校${tenant}`); }
 async function csrfRequest(page, method, path, data) {
-  const token = await page.locator('meta[name="csrf-token"]').getAttribute('content');
-  return page.request.fetch(path, {method,data, headers:{Accept:'application/json','X-CSRF-TOKEN':token},maxRedirects:0});
+  // Login regenerates the session token; Inertia does not replace the head meta tag.
+  const cookie = (await page.context().cookies()).find(c=>c.name==='XSRF-TOKEN');
+  expect(cookie).toBeDefined();
+  return page.request.fetch(path, {method,data, headers:{Accept:'application/json','X-XSRF-TOKEN':decodeURIComponent(cookie.value)},maxRedirects:0});
 }
 
 test.beforeEach(async ({context,page}) => {
@@ -88,7 +92,8 @@ test('register child through form, persist dates, school and weekly schedule', a
   await field(page,'生年月日').fill('2018-05-06');
   await field(page,'契約開始日').fill('2026-07-01');
   await field(page,'学校','select').selectOption(String(school('a').id));
-  await page.locator('input[type="checkbox"][value="mon"]').check();
+  await page.locator('input[type="checkbox"][value="mon"]').locator('..').click();
+  await expect(page.locator('input[type="checkbox"][value="mon"]')).toBeChecked();
   await page.getByRole('button',{name:'登録する',exact:true}).click();
   await expect(page).toHaveURL(/\/children$/);
   await expect(page.getByRole('link',{name:'架空新規児童',exact:true})).toBeVisible();
