@@ -28,7 +28,7 @@ class DailyBrowserRegressionTest extends TestCase
         $admin=$this->staff($facility,'admin','架空管理者');
         $child=Child::create(['facility_id'=>$facility->id,'name'=>'架空児童','contract_status'=>'active',
             'birthdate'=>'2016-02-29','contract_start_date'=>'2026-04-01','contract_end_date'=>'2027-03-31']);
-        $this->actingAs($admin)->get('/children/'.$child->id.'/edit',['X-Inertia'=>'true'])
+        $this->actingAs($admin)->get('/children/'.$child->id.'/edit',['X-Inertia'=>'true', 'X-Inertia-Version'=>\Inertia\Inertia::getVersion()])
             ->assertOk()->assertJsonPath('props.child.birthdate','2016-02-29')
             ->assertJsonPath('props.child.contract_start_date','2026-04-01')
             ->assertJsonPath('props.child.contract_end_date','2027-03-31');
@@ -41,6 +41,25 @@ class DailyBrowserRegressionTest extends TestCase
         $this->assertNull($child->fresh()->toArray()['contract_end_date']);
     }
 
+    public function test_saved_attendance_is_reloaded_and_updated_without_duplicate_rows(): void
+    {
+        $facility=$this->facility();
+        $admin=$this->staff($facility,'admin','架空管理者');
+        $child=Child::create(['facility_id'=>$facility->id,'name'=>'架空児童','contract_status'=>'active']);
+        $payload=['date'=>'2026-07-01','records'=>[['child_id'=>$child->id,'status'=>'attended']]];
+        $id=$this->actingAs($admin)->postJson('/usage-records/bulk-store',$payload)
+            ->assertOk()->json('ids.'.$child->id);
+        $this->assertNotNull($id);
+        $this->get('/usage-records?date=2026-07-01',[
+            'X-Inertia'=>'true','X-Inertia-Version'=>\Inertia\Inertia::getVersion(),
+        ])->assertOk()->assertJsonPath('props.hasRecords',true)
+            ->assertJsonPath('props.rows.0.usage_record_id',$id);
+        $payload['records'][0]['status']='absent';
+        $this->postJson('/usage-records/bulk-store',$payload)->assertOk()->assertJsonPath('ids.'.$child->id,$id);
+        $this->assertDatabaseCount('usage_records',1);
+        $this->assertDatabaseHas('usage_records',['id'=>$id,'status'=>'absent']);
+    }
+
     public function test_staff_list_orders_roles_and_names_without_cross_facility_rows(): void
     {
         $facility=$this->facility();
@@ -49,7 +68,7 @@ class DailyBrowserRegressionTest extends TestCase
         $admin=$this->staff($facility,'admin','A管理者');
         $this->staff($facility,'admin','B管理者');
         $this->staff($this->facility(),'admin','別事業所');
-        $this->actingAs($admin)->get('/staff',['X-Inertia'=>'true'])->assertOk()
+        $this->actingAs($admin)->get('/staff',['X-Inertia'=>'true', 'X-Inertia-Version'=>\Inertia\Inertia::getVersion()])->assertOk()
             ->assertJsonCount(4,'props.staffMembers')
             ->assertJsonPath('props.staffMembers.0.name','A管理者')
             ->assertJsonPath('props.staffMembers.1.name','B管理者')

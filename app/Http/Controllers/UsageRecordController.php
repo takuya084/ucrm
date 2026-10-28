@@ -24,7 +24,7 @@ class UsageRecordController extends Controller
         $facilityId = $this->facilityId();
 
         // 1. その日すでに出席記録が保存されているか確認
-        $savedRecords = UsageRecord::where('date', $date)
+        $savedRecords = UsageRecord::whereDate('date', $date)
             ->where('facility_id', $facilityId)
             ->with(['child.school', 'supportRecord'])
             ->get();
@@ -121,7 +121,7 @@ class UsageRecordController extends Controller
 
             // 1. リストから削除（バツ印）された児童の既存レコードをソフトデリート
             //    （出欠記録は保存義務対象のため物理削除しない）
-            UsageRecord::where('date', $dateStr)
+            UsageRecord::whereDate('date', $dateStr)
                 ->where('facility_id', $facilityId)
                 ->whereNotIn('child_id', $sentChildIds)
                 ->get()
@@ -129,9 +129,10 @@ class UsageRecordController extends Controller
 
             // 2. 残りの児童を更新または作成（過去にソフトデリートした記録があれば復活させる）
             foreach ($request->records as $rec) {
-                $ur = UsageRecord::withTrashed()->updateOrCreate(
-                    ['child_id' => $rec['child_id'], 'date' => $dateStr],
+                $ur = UsageRecord::withTrashed()->whereDate('date', $dateStr)->updateOrCreate(
+                    ['child_id' => $rec['child_id'], 'facility_id' => $facilityId],
                     [
+                        'date'           => $dateStr,
                         'facility_id'    => $facilityId,
                         'staff_id'       => $staffId,
                         'status'         => $rec['status'],
@@ -251,3 +252,4 @@ class UsageRecordController extends Controller
         return $names[$day] ?? '';
     }
 }
+
