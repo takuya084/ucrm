@@ -12,7 +12,7 @@ class ImportYoyakuActuals extends Command
                             {--date= : Y-m-d 形式。省略時は前日}
                             {--facility= : 施設ID。省略時は全施設}';
 
-    protected $description = 'p-yoyaku から送迎実績を取り込み、DailyServiceRecord の送迎フラグを更新します';
+    protected $description = 'p-yoyaku から送迎実績を取り込み、既存の出欠記録の送迎フラグを更新します';
 
     public function handle(YoyakuSyncService $sync): int
     {
