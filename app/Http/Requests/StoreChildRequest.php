@@ -30,7 +30,7 @@ class StoreChildRequest extends FormRequest
             'contract_status'     => ['required', 'in:active,suspended,ended'],
             'memo'                => ['nullable', 'string', 'max:2000'],
             'ai_draft_consent'    => ['nullable', 'boolean'],
-            'yoyaku_user_id'      => ['nullable', 'integer', 'min:1'],
+            'yoyaku_user_id'      => ['nullable', 'integer', 'min:1', Rule::unique('children', 'yoyaku_user_id')->where('facility_id', $this->user()?->staff?->facility_id)->whereNull('deleted_at')],
             'schedule_days'       => ['nullable', 'array'],
             'schedule_days.*'     => ['in:mon,tue,wed,thu,fri,sat'],
         ];

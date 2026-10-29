@@ -158,9 +158,9 @@ class YoyakuApiService
      * p-yoyaku 側に利用者(児童)アカウントを作成（冪等: external_ref を渡すと upsert）。
      * 新規作成時のみレスポンスに平文パスワードが含まれる。
      */
-    public function createUser(array $payload, ?int $facilityId = null): ?array
+    public function createUser(array $payload, ?int $facilityId = null, ?string $expectedTokenHash = null): ?array
     {
-        $client = $this->client($facilityId);
+        $client = $this->client($facilityId, $expectedTokenHash);
         if (!$client) return null;
 
         return $this->safe(fn() =>

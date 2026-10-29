@@ -6,6 +6,7 @@ use App\Http\Requests\StoreChildRequest;
 use App\Http\Requests\UpdateChildRequest;
 use App\Models\Child;
 use App\Models\School;
+use App\Services\YoyakuLinkGuard;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -53,7 +54,12 @@ class ChildrenController extends Controller
     {
         $data = $request->safe()->except(['schedule_days', 'ai_draft_consent']);
         $data['ai_draft_consented_at'] = $request->boolean('ai_draft_consent') ? now() : null;
-        $child = Child::create(array_merge($data, ['facility_id' => $this->facilityId()]));
+        $child = DB::transaction(function () use ($data) {
+            $facilityId = $this->facilityId();
+            YoyakuLinkGuard::lockFacility($facilityId);
+            YoyakuLinkGuard::assertAvailable($facilityId, null, isset($data['yoyaku_user_id']) ? (int) $data['yoyaku_user_id'] : null);
+            return Child::create(array_merge($data, ['facility_id' => $facilityId]));
+        });
 
         // 利用曜日の一括登録
         $today = now()->toDateString();
@@ -278,7 +284,17 @@ class ChildrenController extends Controller
         $data['ai_draft_consented_at'] = $request->boolean('ai_draft_consent')
             ? ($child->ai_draft_consented_at ?? now())
             : null;
-        $child->update($data);
+        DB::transaction(function () use ($child, $data) {
+            $facilityId = $this->facilityId();
+            YoyakuLinkGuard::lockFacility($facilityId);
+            $current = Child::where('facility_id', $facilityId)->whereKey($child->id)->lockForUpdate()->firstOrFail();
+            if (array_key_exists('yoyaku_user_id', $data) && (string) $current->yoyaku_user_id !== (string) $child->yoyaku_user_id) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['yoyaku_user_id' => '紐付けが別の操作で変更されました。画面を更新してください。']);
+            }
+            $userId = array_key_exists('yoyaku_user_id', $data) ? $data['yoyaku_user_id'] : $current->yoyaku_user_id;
+            YoyakuLinkGuard::assertAvailable($facilityId, $current->id, $userId !== null ? (int) $userId : null);
+            $current->update($data);
+        });
 
         return to_route('children.show', $child)
             ->with(['message' => '情報を更新しました。', 'status' => 'success']);

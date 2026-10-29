@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Child;
 use App\Models\Facility;
 use App\Services\YoyakuApiService;
+use App\Services\YoyakuLinkGuard;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\{Rule, ValidationException};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -46,8 +49,10 @@ class ChildrenYoyakuLinkController extends Controller
 
         $request->validate([
             'child_ids'   => ['required', 'array', 'min:1'],
-            'child_ids.*' => ['integer'],
+            'child_ids.*' => ['integer', 'distinct', Rule::exists('children', 'id')->where('facility_id', $facility->id)->whereNull('deleted_at')],
         ]);
+
+        YoyakuLinkGuard::assertConfiguration($facility, $facility);
 
         $children = Child::where('facility_id', $facility->id)
             ->whereIn('id', $request->child_ids)
@@ -57,22 +62,35 @@ class ChildrenYoyakuLinkController extends Controller
 
         $results = [];
         foreach ($children as $child) {
-            $res = $api->createUser([
-                'name'         => $child->name,
-                'school_name'  => $child->school?->name,
-                'external_ref' => "ucrm:{$child->id}",
-            ], $facility->id);
-
-            if (!$res || empty($res['id'])) {
-                $results[] = [
-                    'child_id'   => $child->id,
-                    'child_name' => $child->name,
-                    'ok'         => false,
-                ];
+            try {
+                YoyakuLinkGuard::assertConfiguration(Facility::findOrFail($facility->id), $facility);
+                $res = $api->createUser([
+                    'name' => $child->name,
+                    'school_name' => $child->school?->name,
+                    'external_ref' => "ucrm:{$child->id}",
+                ], $facility->id, hash('sha256', (string) $facility->yoyaku_api_token));
+                Validator::make($res ?? [], ['id' => ['required', 'integer', 'min:1'],
+                    'business_id' => ['sometimes', 'integer', 'min:1'],
+                    'email' => ['sometimes', 'nullable', 'string'], 'password' => ['sometimes', 'nullable', 'string']])->validate();
+                if (isset($res['business_id']) && (string) $res['business_id'] !== (string) $facility->yoyaku_business_id) {
+                    throw ValidationException::withMessages(['yoyaku_user_id' => '作成結果の事業所が一致しません。']);
+                }
+                DB::transaction(function () use ($facility, $child, $res) {
+                    $currentFacility = YoyakuLinkGuard::lockFacility($facility->id);
+                    YoyakuLinkGuard::assertConfiguration($currentFacility, $facility);
+                    $current = Child::where('facility_id', $facility->id)->whereKey($child->id)->lockForUpdate()->first();
+                    if (!$current || $current->yoyaku_user_id !== null) {
+                        throw ValidationException::withMessages(['yoyaku_user_id' => '児童の紐付けが変更されています。']);
+                    }
+                    YoyakuLinkGuard::assertAvailable($facility->id, $current->id, (int) $res['id']);
+                    $current->update(['yoyaku_user_id' => (int) $res['id']]);
+                });
+            } catch (ValidationException | \RuntimeException $e) {
+                // An external account may already exist. Do not expose its credentials
+                // or overwrite a conflicting local link; keep the per-child failure.
+                $results[] = ['child_id' => $child->id, 'child_name' => $child->name, 'ok' => false];
                 continue;
             }
-
-            $child->update(['yoyaku_user_id' => $res['id']]);
 
             $results[] = [
                 'child_id'   => $child->id,
@@ -88,7 +106,7 @@ class ChildrenYoyakuLinkController extends Controller
         $ngCount = count($results) - $okCount;
         $message = "{$okCount}件のアカウントを作成しました。";
         if ($ngCount > 0) {
-            $message .= "（{$ngCount}件は p-yoyaku 側との通信に失敗し未作成です。時間を置いて再度お試しください）";
+            $message .= "（{$ngCount}件は通信・応答または紐付けの確認で停止しました。連携先にアカウントが作成済みの可能性もあるため、設定を確認してください）";
         }
 
         return to_route('children.yoyaku-link')->with([
@@ -119,32 +137,61 @@ class ChildrenYoyakuLinkController extends Controller
             return back()->with(['message' => 'CSVにデータ行がありません。', 'status' => 'danger']);
         }
 
+        $originalChildren = Child::where('facility_id', $facility->id)
+            ->whereIn('id', array_column($rows, 'child_id'))->get(['id', 'yoyaku_user_id'])->keyBy('id');
+        YoyakuLinkGuard::assertConfiguration($facility, $facility);
         $yoyakuUsers = $api->listUsers((int) $facility->yoyaku_business_id, $facility->id);
         if ($yoyakuUsers === null) {
             return back()->with(['message' => 'p-yoyaku側との通信に失敗しました。時間を置いて再度お試しください。', 'status' => 'danger']);
         }
-        $validYoyakuIds = collect($yoyakuUsers)->pluck('id')->map(fn ($v) => (int) $v)->all();
-        $emailToId = collect($yoyakuUsers)->pluck('id', 'email')->all();
+        if (!array_is_list($yoyakuUsers)) {
+            throw ValidationException::withMessages(['csv_file' => '利用者一覧の応答が不正です。']);
+        }
+        $validYoyakuIds = [];
+        $emailToId = [];
+        foreach ($yoyakuUsers as $user) {
+            if (!is_array($user) || Validator::make($user, ['id' => ['required', 'integer', 'min:1'], 'email' => ['nullable', 'string']])->fails()) {
+                throw ValidationException::withMessages(['csv_file' => '利用者一覧の応答が不正です。']);
+            }
+            $id = (int) $user['id'];
+            $email = strtolower(trim($user['email'] ?? ''));
+            if (isset($validYoyakuIds[$id]) || ($email !== '' && isset($emailToId[$email]))) {
+                throw ValidationException::withMessages(['csv_file' => '利用者一覧のIDまたはメールが重複しています。']);
+            }
+            $validYoyakuIds[$id] = true;
+            if ($email !== '') $emailToId[$email] = $id;
+        }
 
         $errors = [];
         $updates = [];
+        $seenChildren = [];
+        $seenUsers = [];
 
         foreach ($rows as $i => $row) {
             $lineNo = $i + 2;
             $childId       = trim($row['child_id'] ?? '');
             $yoyakuUserId  = trim($row['yoyaku_user_id'] ?? '');
-            $yoyakuEmail   = trim($row['yoyaku_email'] ?? '');
+            $yoyakuEmail   = strtolower(trim($row['yoyaku_email'] ?? ''));
 
-            if ($childId === '' || !ctype_digit($childId)) {
+            if ($childId === '' || !ctype_digit($childId) || (int) $childId < 1) {
                 $errors[] = "{$lineNo}行目: child_id が不正です。";
                 continue;
             }
 
             $resolvedYoyakuId = null;
-            if ($yoyakuUserId !== '' && ctype_digit($yoyakuUserId)) {
+            if ($yoyakuUserId !== '' && (!ctype_digit($yoyakuUserId) || (int) $yoyakuUserId < 1)) {
+                $errors[] = "{$lineNo}行目: yoyaku_user_id が不正です。";
+                continue;
+            }
+            if ($yoyakuUserId !== '') {
                 $resolvedYoyakuId = (int) $yoyakuUserId;
             } elseif ($yoyakuEmail !== '' && isset($emailToId[$yoyakuEmail])) {
                 $resolvedYoyakuId = (int) $emailToId[$yoyakuEmail];
+            }
+
+            if ($yoyakuEmail !== '' && (!isset($emailToId[$yoyakuEmail]) || $emailToId[$yoyakuEmail] !== $resolvedYoyakuId)) {
+                $errors[] = "{$lineNo}行目: IDとメールの指定が一致しません。";
+                continue;
             }
 
             if (!$resolvedYoyakuId) {
@@ -152,19 +199,25 @@ class ChildrenYoyakuLinkController extends Controller
                 continue;
             }
 
-            if (!in_array($resolvedYoyakuId, $validYoyakuIds, true)) {
+            if (!isset($validYoyakuIds[$resolvedYoyakuId])) {
                 $errors[] = "{$lineNo}行目: p-yoyaku側にID「{$resolvedYoyakuId}」の利用者が見つかりません。";
                 continue;
             }
 
             // テナント分離: この施設に属する児童のみ対象
-            $child = Child::where('facility_id', $facility->id)->find((int) $childId);
+            $child = $originalChildren->get((int) $childId);
             if (!$child) {
                 $errors[] = "{$lineNo}行目: 児童ID「{$childId}」がこの事業所に見つかりません。";
                 continue;
             }
 
-            $updates[] = ['child' => $child, 'yoyaku_user_id' => $resolvedYoyakuId];
+            if (isset($seenChildren[$child->id]) || isset($seenUsers[$resolvedYoyakuId])) {
+                $errors[] = "{$lineNo}行目: CSV内で児童または予約アカウントが重複しています。";
+                continue;
+            }
+            $seenChildren[$child->id] = true;
+            $seenUsers[$resolvedYoyakuId] = true;
+            $updates[] = ['child_id' => $child->id, 'previous' => $child->yoyaku_user_id, 'yoyaku_user_id' => $resolvedYoyakuId];
         }
 
         if (!empty($errors)) {
@@ -175,11 +228,28 @@ class ChildrenYoyakuLinkController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($updates) {
-            foreach ($updates as $u) {
-                $u['child']->update(['yoyaku_user_id' => $u['yoyaku_user_id']]);
-            }
-        });
+        try {
+            DB::transaction(function () use ($updates, $facility) {
+                $currentFacility = YoyakuLinkGuard::lockFacility($facility->id);
+                YoyakuLinkGuard::assertConfiguration($currentFacility, $facility);
+                // Validate the entire batch before changing any child.
+                $children = [];
+                foreach ($updates as $u) {
+                    $child = Child::where('facility_id', $facility->id)->whereKey($u['child_id'])->lockForUpdate()->first();
+                    if (!$child || (string) $child->yoyaku_user_id !== (string) $u['previous']) {
+                        throw ValidationException::withMessages(['csv_file' => '児童の紐付けが別の操作で変更されています。再確認してください。']);
+                    }
+                    YoyakuLinkGuard::assertAvailable($facility->id, $child->id, $u['yoyaku_user_id']);
+                    $children[$child->id] = $child;
+                }
+                foreach ($updates as $u) {
+                    $children[$u['child_id']]->update(['yoyaku_user_id' => $u['yoyaku_user_id']]);
+                }
+            });
+        } catch (ValidationException $e) {
+            return back()->with(['message' => 'エラーが見つかったため、紐付けは行われませんでした。',
+                'status' => 'danger', 'import_errors' => $e->validator->errors()->all()]);
+        }
 
         return to_route('children.yoyaku-link')
             ->with(['message' => count($updates) . '件の紐付けを更新しました。', 'status' => 'success']);
@@ -223,27 +293,28 @@ class ChildrenYoyakuLinkController extends Controller
         }
         $raw = preg_replace('/^\xEF\xBB\xBF/', '', $raw);
 
-        $lines = preg_split('/\r\n|\r|\n/', $raw);
-        $lines = array_filter($lines, fn ($line) => trim($line) !== '');
-        $lines = array_values($lines);
-
-        if (count($lines) < 2) {
-            return [];
-        }
-
-        $header = str_getcsv(array_shift($lines));
-        $header = array_map(fn ($h) => trim($h), $header);
-
-        $rows = [];
-        foreach ($lines as $line) {
-            $cols = str_getcsv($line);
-            $row = [];
-            foreach ($header as $idx => $key) {
-                $row[$key] = $cols[$idx] ?? null;
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, $raw);
+        rewind($stream);
+        try {
+            $header = fgetcsv($stream);
+            if ($header === false) return [];
+            $header = array_map(fn ($h) => trim($h ?? ''), $header);
+            if (count($header) !== count(array_unique($header)) || !in_array('child_id', $header, true)
+                || (!in_array('yoyaku_user_id', $header, true) && !in_array('yoyaku_email', $header, true))) {
+                throw ValidationException::withMessages(['csv_file' => 'CSVの見出しが不足または重複しています。']);
             }
-            $rows[] = $row;
+            $rows = [];
+            while (($cols = fgetcsv($stream)) !== false) {
+                if ($cols === [null]) continue;
+                if (count($cols) !== count($header)) {
+                    throw ValidationException::withMessages(['csv_file' => 'CSVの列数が見出しと一致しません。']);
+                }
+                $rows[] = array_combine($header, $cols);
+            }
+            return $rows;
+        } finally {
+            fclose($stream);
         }
-
-        return $rows;
     }
 }

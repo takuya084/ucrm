@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Facility;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Validation\Rule;
 
 class FacilityController extends Controller
 {
@@ -35,7 +36,7 @@ class FacilityController extends Controller
             'tel'                => ['nullable', 'string', 'max:20'],
             'fax'                => ['nullable', 'string', 'max:20'],
             'capacity_per_day'   => ['nullable', 'integer', 'min:1', 'max:100'],
-            'yoyaku_business_id'    => ['nullable', 'integer', 'min:1'],
+            'yoyaku_business_id'    => ['nullable', 'integer', 'min:1', Rule::unique('facilities', 'yoyaku_business_id')->ignore($facility->id)],
             'yoyaku_api_token'      => ['nullable', 'string', 'max:255'],
             'yoyaku_webhook_secret' => ['nullable', 'string', 'max:64'],
             'facility_code'      => ['nullable', 'string', 'max:10'],
