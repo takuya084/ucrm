@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\ContactNote;
 use App\Models\Facility;
 use App\Services\YoyakuApiService;
+use App\Services\YoyakuOutboundTarget;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -25,7 +26,15 @@ class PushContactNote implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(public int $contactNoteId) {}
+    public ?array $target = null;
+
+    public function __construct(public int $contactNoteId)
+    {
+        $note = ContactNote::find($contactNoteId);
+        if ($note) {
+            $this->target = YoyakuOutboundTarget::capture((int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'));
+        }
+    }
 
     public function handle(YoyakuApiService $api): void
     {
@@ -33,14 +42,27 @@ class PushContactNote implements ShouldQueue
             ->find($this->contactNoteId);
         if (!$note || !$note->isPublished()) return;
 
-        $facility = Facility::find($note->facility_id);
-        if (!$facility || !$facility->yoyaku_business_id) return;
+        if (!YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'))) return;
+        $facility = Facility::findOrFail($note->facility_id);
 
-        if (!$note->child?->yoyaku_user_id) {
-            Log::info('PushContactNote: child not linked to yoyaku_user_id', [
-                'contact_note_id' => $note->id,
-            ]);
-            return;
+        // A valid recipient must never receive another child's related content.
+        $support = $note->supportRecord;
+        if ($note->support_record_id && (!$support || (int) $support->child_id !== (int) $note->child_id
+            || $support->date->format('Y-m-d') !== $note->date->format('Y-m-d'))) {
+            throw new \RuntimeException('Contact note support record does not match its recipient');
+        }
+        if ($support?->usage_record_id) {
+            $usage = $support->usageRecord;
+            if (!$usage || (int) $usage->facility_id !== (int) $note->facility_id
+                || (int) $usage->child_id !== (int) $note->child_id
+                || $usage->date->format('Y-m-d') !== $note->date->format('Y-m-d')) {
+                throw new \RuntimeException('Contact note attendance does not match its recipient');
+            }
+        }
+        if (($note->published_by && (!$note->publishedByStaff
+                || (int) $note->publishedByStaff->facility_id !== (int) $note->facility_id))
+            || ($support && $support->programs->contains(fn ($program) => (int) $program->facility_id !== (int) $note->facility_id))) {
+            throw new \RuntimeException('Contact note related content belongs to another facility');
         }
 
         // 実施プログラム（活動名と時間のみ。詳細メモは内部情報のため送らない）
@@ -62,12 +84,14 @@ class PushContactNote implements ShouldQueue
             'guardian_message' => $note->guardian_message,
             'staff_name'       => $note->publishedByStaff?->name,
             'published_at'     => $note->published_at?->toIso8601String(),
-        ], $facility->id);
+        ], $facility->id, $this->target['token_hash']);
 
         if ($result !== null) {
             // 同期時刻の記録のみ（個人情報の変更ではないため監査ログは発火させない）
-            $note->yoyaku_synced_at = now();
-            $note->saveQuietly();
+            YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'));
+            // Do not mark an edited, unpublished, moved or deleted note as synchronized.
+            ContactNote::whereKey($note->id)->where($note->getRawOriginal())
+                ->update(['yoyaku_synced_at' => now()]);
         } else {
             Log::warning('PushContactNote: 配信失敗', ['contact_note_id' => $note->id]);
             $this->release(60);
