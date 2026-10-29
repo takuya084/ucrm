@@ -23,13 +23,13 @@ class YoyakuApiService
      */
     private function client(?int $facilityId = null): ?PendingRequest
     {
-        $token = null;
-        if ($facilityId) {
-            $token = Facility::where('id', $facilityId)->value('yoyaku_api_token');
+        // Every request must identify its facility and use only that facility's
+        // credentials. A global token could silently address another business.
+        if ($facilityId === null || $facilityId <= 0 || empty($this->baseUrl)) {
+            return null;
         }
-        $token = $token ?: config('services.houkago_plus.api_token');
-
-        if (empty($token) || empty($this->baseUrl)) {
+        $token = Facility::whereKey($facilityId)->value('yoyaku_api_token');
+        if (!is_string($token) || trim($token) === '') {
             return null;
         }
         return Http::withToken($token)->acceptJson()->timeout($this->timeout);
@@ -83,11 +83,10 @@ class YoyakuApiService
     /** No fallback to legacy create: an unconfirmed cancellation must fail visibly. */
     public function syncBooking(array $payload, int $facilityId): ?string
     {
-        $token=Facility::whereKey($facilityId)->value('yoyaku_api_token');
-        if (!$token || !$this->baseUrl) throw new \RuntimeException('Booking synchronization failed');
+        $client = $this->client($facilityId);
+        if (!$client) throw new \RuntimeException('Booking synchronization failed');
         try {
-            $response=Http::withToken($token)->acceptJson()->timeout($this->timeout)
-                ->put("{$this->baseUrl}/api/integration/bookings",$payload);
+            $response=$client->put("{$this->baseUrl}/api/integration/bookings",$payload);
             if (!$response->successful() || $response->json('ok')!==true
                 || !is_bool($response->json('applied'))) {
                 throw new \RuntimeException('Booking synchronization failed');
