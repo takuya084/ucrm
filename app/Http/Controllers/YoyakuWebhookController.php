@@ -110,6 +110,44 @@ class YoyakuWebhookController extends Controller
             return $this->handleContactNoteEvent($event, $facility, $child, $date, $payload);
         }
 
+        if (isset($payload['cancellation_token']) && (!is_string($payload['cancellation_token'])
+            || !\Illuminate\Support\Str::isUuid($payload['cancellation_token']))) {
+            return response()->json(['error'=>'invalid cancellation token'],400);
+        }
+        if (array_key_exists('booking_revision',$payload)
+            && (!$this->positiveId($payload['booking_revision']) || $payload['booking_revision']>9007199254740991)) {
+            return response()->json(['error'=>'invalid booking revision'],400);
+        }
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($event,$facility,$child,$date,$payload) {
+            // Stable parent lock covers both missing records and cancellation tombstones.
+            Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+            $key=['facility_id'=>$facility->id,'yoyaku_user_id'=>(int)$payload['user_id'],'date'=>$date];
+            $table=\Illuminate\Support\Facades\DB::table('yoyaku_booking_states');
+            $state=(clone $table)->where($key)->first();
+            $revision=isset($payload['booking_revision'])?(int)$payload['booking_revision']:null;
+            $canonical=$payload;
+            unset($canonical['booking_revision']);
+            ksort($canonical);
+            $hash=hash('sha256',json_encode([$event,$canonical],JSON_THROW_ON_ERROR));
+            if ($state) {
+                if ($revision===null) return response()->json(['error'=>'versioned notification required'],409);
+                if ($revision<(int)$state->revision) return response()->json(['ignored'=>'stale booking revision']);
+                if ($revision===(int)$state->revision) {
+                    return hash_equals($state->payload_hash,$hash)
+                        ? response()->json(['ok'=>true,'duplicate'=>true])
+                        : response()->json(['error'=>'booking revision conflict'],409);
+                }
+            }
+            $response=$this->applyBooking($event,$facility,$child,$date,$payload);
+            if (($response->getData(true)['ok']??false) && ($revision!==null || $event==='booking.deleted')) {
+                $table->updateOrInsert($key,['revision'=>$revision??0,'payload_hash'=>$hash,'cancelled'=>$event==='booking.deleted','cancellation_token'=>$payload['cancellation_token']??null]);
+            }
+            return $response;
+        });
+    }
+
+    private function applyBooking(string $event, Facility $facility, Child $child, string $date, array $payload)
+    {
         // 請求確定済みの月の出欠は変更不可（請求の根拠データ保護）。
         // 恒久的な状態のため 200 で応答し、p-yoyaku 側の無限リトライを避ける
         $yearMonth = substr($date, 0, 7);
@@ -133,15 +171,26 @@ class YoyakuWebhookController extends Controller
                 ->whereDate('date', $date)
                 ->first();
             if ($record) {
+                $record->yoyaku_cancellation_token=$payload['cancellation_token']??null;
                 UsageRecordObserver::withoutPush(fn () => $record->update([
                     'pickup_done'  => false,
                     'dropoff_done' => false,
+                    'check_in_time' => null,
+                    'check_out_time' => null,
                 ]));
             }
             return response()->json(['ok' => true]);
         }
 
-        // created / updated（ソフトデリート済みの記録がある日はユニーク制約衝突を避けるため復活させる）
+        $existing=UsageRecord::withTrashed()->where('facility_id',$facility->id)
+            ->where('child_id',$child->id)->whereDate('date',$date)->first();
+        if ($existing && ($existing->trashed() || in_array($existing->status,['cancel','absent','absent_notice'],true))) {
+            // An in-flight booking event must not undo a local cancellation before its
+            // outbound job executes. Attendance changes/restoration require a local action.
+            return response()->json(['ok'=>true,'ignored'=>'local cancellation']);
+        }
+
+        // created / updated: local cancelled/deleted attendance is protected above.
         // withoutPush: 受信内容を p-yoyaku へ送り返すエコーループを防ぐ
         UsageRecordObserver::withoutPush(function () use ($facility, $child, $date, $payload) {
             $record = UsageRecord::withTrashed()->whereDate('date', $date)->updateOrCreate(
@@ -157,6 +206,8 @@ class YoyakuWebhookController extends Controller
                     'check_out_time' => $payload['dropoff_time'] ?? null,
                 ],
             );
+            $record->yoyaku_cancellation_token=$payload['cancellation_token']??null;
+            $record->save();
             if ($record->trashed()) {
                 $record->restore();
             }
