@@ -41,7 +41,14 @@ class YoyakuWebhookController extends Controller
             return response()->json(['error' => 'invalid payload'], 400);
         }
 
-        $facility = Facility::where('yoyaku_business_id', $businessId)->first();
+        // An external business must resolve to exactly one local facility.
+        // Never let insertion order decide whose records a webhook may change.
+        $facilities = Facility::where('yoyaku_business_id', $businessId)->limit(2)->get();
+        if ($facilities->count() > 1) {
+            Log::warning('YoyakuWebhook: ambiguous facility mapping', ['business_id' => $businessId]);
+            return response()->json(['error' => 'ambiguous facility mapping'], 409);
+        }
+        $facility = $facilities->first();
         if (!$facility) {
             Log::info('YoyakuWebhook: facility not found', ['business_id' => $businessId]);
             return response()->json(['ignored' => true]);
@@ -73,9 +80,14 @@ class YoyakuWebhookController extends Controller
             return response()->json(['error' => 'stale or missing sent_at'], 401);
         }
 
-        $child = Child::where('facility_id', $facility->id)
+        $children = Child::where('facility_id', $facility->id)
             ->where('yoyaku_user_id', $payload['user_id'] ?? 0)
-            ->first();
+            ->limit(2)->get();
+        if ($children->count() > 1) {
+            Log::warning('YoyakuWebhook: ambiguous child mapping', ['facility_id' => $facility->id]);
+            return response()->json(['error' => 'ambiguous child mapping'], 409);
+        }
+        $child = $children->first();
         if (!$child) {
             return response()->json(['ignored' => 'child not linked']);
         }
