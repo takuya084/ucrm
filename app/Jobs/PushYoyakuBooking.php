@@ -6,12 +6,12 @@ use App\Models\Child;
 use App\Models\Facility;
 use App\Models\UsageRecord;
 use App\Services\YoyakuApiService;
+use App\Services\YoyakuOutboundTarget;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 /**
  * UsageRecord を p-yoyaku の予約として push する。
@@ -23,7 +23,15 @@ class PushYoyakuBooking implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(public int $usageRecordId, public bool $delete = false) {}
+    public ?array $target = null;
+
+    public function __construct(public int $usageRecordId, public bool $delete = false)
+    {
+        $record = UsageRecord::withTrashed()->find($usageRecordId);
+        if ($record) {
+            $this->target = YoyakuOutboundTarget::capture((int) $record->facility_id, (int) $record->child_id, $record->date->format('Y-m-d'));
+        }
+    }
 
     public function handle(YoyakuApiService $api): void
     {
@@ -33,11 +41,12 @@ class PushYoyakuBooking implements ShouldQueue
         $snapshot=\Illuminate\Support\Facades\DB::transaction(function () {
             $ur=UsageRecord::withTrashed()->whereKey($this->usageRecordId)->lockForUpdate()->first();
             if (!$ur) return null;
+            if (!YoyakuOutboundTarget::assertCurrent($this->target, (int) $ur->facility_id, (int) $ur->child_id, $ur->date->format('Y-m-d'))) return null;
             $facility=Facility::find($ur->facility_id);
             $child=Child::where('facility_id',$ur->facility_id)->find($ur->child_id);
             if (!$facility?->yoyaku_business_id || !$child?->yoyaku_user_id) return null;
             $received=\Illuminate\Support\Facades\DB::table('yoyaku_booking_states')->where([
-                'facility_id'=>$facility->id,'yoyaku_user_id'=>(int)$child->yoyaku_user_id,'date'=>$ur->date->format('Y-m-d'),
+                'facility_id'=>$facility->id,'yoyaku_user_id'=>$this->target['user_id'],'date'=>$ur->date->format('Y-m-d'),
             ])->first();
             $cancelled=($received?->cancelled && !$ur->pickup_done && !$ur->dropoff_done) || $ur->trashed() || in_array($ur->status,['absent','absent_notice','cancel'],true);
             $revision=(int)$ur->yoyaku_sync_revision+1;
@@ -51,7 +60,7 @@ class PushYoyakuBooking implements ShouldQueue
             };
             return [$facility->id,[
                 'external_ref'=>"ucrm:{$ur->id}", 'revision'=>$revision,
-                'user_id'=>(int)$child->yoyaku_user_id,'date'=>$ur->date->format('Y-m-d'),
+                'user_id'=>$this->target['user_id'],'date'=>$ur->date->format('Y-m-d'),
                 'cancelled'=>$cancelled,
                 'expected_cancellation_token'=>$ur->yoyaku_cancellation_token ?? $received?->cancellation_token,
                 'pickup_time'=>!$cancelled && $ur->pickup_done ? $time($ur->check_in_time):null,
@@ -59,8 +68,12 @@ class PushYoyakuBooking implements ShouldQueue
             ],$ur->yoyaku_cancellation_token];
         });
         if ($snapshot) {
-            $token=$api->syncBooking($snapshot[1],$snapshot[0]);
+            $token=$api->syncBooking($snapshot[1],$snapshot[0],$this->target['token_hash']);
+            YoyakuOutboundTarget::assertCurrent($this->target, $this->target['facility_id'], $this->target['child_id'], $this->target['date']);
             UsageRecord::withTrashed()->whereKey($this->usageRecordId)
+                ->where('facility_id', $this->target['facility_id'])
+                ->where('child_id', $this->target['child_id'])
+                ->whereDate('date', $this->target['date'])
                 ->where('yoyaku_sync_revision',$snapshot[1]['revision'])
                 ->where('yoyaku_cancellation_token',$snapshot[2])
                 ->update(['yoyaku_cancellation_token'=>$token]);

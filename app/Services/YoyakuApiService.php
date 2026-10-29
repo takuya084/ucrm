@@ -21,7 +21,7 @@ class YoyakuApiService
     /**
      * 当該施設に紐付くトークンで Http クライアントを構築
      */
-    private function client(?int $facilityId = null): ?PendingRequest
+    private function client(?int $facilityId = null, ?string $expectedTokenHash = null): ?PendingRequest
     {
         // Every request must identify its facility and use only that facility's
         // credentials. A global token could silently address another business.
@@ -29,6 +29,9 @@ class YoyakuApiService
             return null;
         }
         $token = Facility::whereKey($facilityId)->value('yoyaku_api_token');
+        if ($expectedTokenHash !== null && !hash_equals($expectedTokenHash, hash('sha256', (string) $token))) {
+            throw new \RuntimeException('Outbound integration credentials changed');
+        }
         if (!is_string($token) || trim($token) === '') {
             return null;
         }
@@ -81,9 +84,9 @@ class YoyakuApiService
     }
 
     /** No fallback to legacy create: an unconfirmed cancellation must fail visibly. */
-    public function syncBooking(array $payload, int $facilityId): ?string
+    public function syncBooking(array $payload, int $facilityId, ?string $expectedTokenHash = null): ?string
     {
-        $client = $this->client($facilityId);
+        $client = $this->client($facilityId, $expectedTokenHash);
         if (!$client) throw new \RuntimeException('Booking synchronization failed');
         try {
             $response=$client->put("{$this->baseUrl}/api/integration/bookings",$payload);
@@ -126,9 +129,9 @@ class YoyakuApiService
      * 連絡帳を p-yoyaku へ配信（冪等: external_ref で upsert）。
      * 保護者に公開する内容のみを送ること（内部の見立ては送らない）。
      */
-    public function upsertContactNote(array $payload, ?int $facilityId = null): ?array
+    public function upsertContactNote(array $payload, ?int $facilityId = null, ?string $expectedTokenHash = null): ?array
     {
-        $client = $this->client($facilityId);
+        $client = $this->client($facilityId, $expectedTokenHash);
         if (!$client) return null;
 
         return $this->safe(fn() =>
