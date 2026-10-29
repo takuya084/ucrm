@@ -75,7 +75,7 @@ class PushContactNote implements ShouldQueue
 
         $result = $api->upsertContactNote([
             'external_ref'     => "ucrm:{$note->id}",
-            'user_id'          => (int) $note->child->yoyaku_user_id,
+            'user_id'          => $this->target['user_id'],
             'date'             => $note->date->format('Y-m-d'),
             'condition'        => $note->supportRecord?->condition,
             'activities'       => $activities,

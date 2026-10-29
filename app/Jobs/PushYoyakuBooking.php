@@ -46,7 +46,7 @@ class PushYoyakuBooking implements ShouldQueue
             $child=Child::where('facility_id',$ur->facility_id)->find($ur->child_id);
             if (!$facility?->yoyaku_business_id || !$child?->yoyaku_user_id) return null;
             $received=\Illuminate\Support\Facades\DB::table('yoyaku_booking_states')->where([
-                'facility_id'=>$facility->id,'yoyaku_user_id'=>(int)$child->yoyaku_user_id,'date'=>$ur->date->format('Y-m-d'),
+                'facility_id'=>$facility->id,'yoyaku_user_id'=>$this->target['user_id'],'date'=>$ur->date->format('Y-m-d'),
             ])->first();
             $cancelled=($received?->cancelled && !$ur->pickup_done && !$ur->dropoff_done) || $ur->trashed() || in_array($ur->status,['absent','absent_notice','cancel'],true);
             $revision=(int)$ur->yoyaku_sync_revision+1;
@@ -60,7 +60,7 @@ class PushYoyakuBooking implements ShouldQueue
             };
             return [$facility->id,[
                 'external_ref'=>"ucrm:{$ur->id}", 'revision'=>$revision,
-                'user_id'=>(int)$child->yoyaku_user_id,'date'=>$ur->date->format('Y-m-d'),
+                'user_id'=>$this->target['user_id'],'date'=>$ur->date->format('Y-m-d'),
                 'cancelled'=>$cancelled,
                 'expected_cancellation_token'=>$ur->yoyaku_cancellation_token ?? $received?->cancellation_token,
                 'pickup_time'=>!$cancelled && $ur->pickup_done ? $time($ur->check_in_time):null,
