@@ -122,6 +122,8 @@ class IntegrationMappingTest extends TestCase
         // Duplicate children within one facility must block every event type.
         Child::create(['facility_id'=>$a->id,'name'=>'Synthetic duplicate',
             'contract_status'=>'active','yoyaku_user_id'=>501]);
+        // Fixture creation may enqueue outbound work; observe only received events.
+        Bus::fake();
         foreach (['booking.created','booking.updated','booking.deleted',
             'contact_note.read','contact_note.guardian_entry'] as $event) {
             $this->notify($event,['guardian_comment'=>'Must not overwrite'])->assertStatus(409);
