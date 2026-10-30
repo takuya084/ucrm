@@ -32,6 +32,12 @@ if ($command === 'reset') {
             }
         }
     }
+} elseif ($command === 'contact-notes') {
+    foreach (['a','b'] as $tenant) {
+        $child=Child::where('name','架空児童'.$tenant.'-active')->firstOrFail();
+        \App\Models\ContactNote::create(['facility_id'=>$child->facility_id,'child_id'=>$child->id,'date'=>'2026-07-01',
+            'status'=>'published','published_at'=>now(),'guardian_message'=>'架空の公開連絡帳','guardian_comment'=>'架空の家庭返信']);
+    }
 } elseif ($command !== 'snapshot') {
     throw new RuntimeException('fixture_command_refused');
 }
@@ -44,4 +50,5 @@ echo json_encode([
     'schedules'=>\App\Models\ChildSchedule::orderBy('id')->get(['child_id','day_of_week']),
     'usage'=>UsageRecord::withTrashed()->orderBy('id')->get(['id','child_id','facility_id','status','date','deleted_at']),
     'support'=>SupportRecord::orderBy('id')->get(['id','child_id','usage_record_id','staff_id','behavior_note']),
+    'notes'=>\App\Models\ContactNote::orderBy('id')->get(['id','facility_id','child_id','status','withdrawn_at','published_at','guardian_message','guardian_comment']),
 ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)."\n";

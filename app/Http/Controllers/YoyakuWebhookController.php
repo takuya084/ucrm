@@ -281,6 +281,8 @@ class YoyakuWebhookController extends Controller
             return response()->json(['error'=>'contact reference target changed'],409);
         }
 
+        if ($note?->withdrawn_at && !$note->isPublished()) return response()->json(['ignored'=>'contact withdrawn']);
+
         if ($event === 'contact_note.read') {
             if (!$note || $note->trashed() || !$note->isPublished()) {
                 return response()->json(['ignored' => 'note not published']);

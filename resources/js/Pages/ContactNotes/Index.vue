@@ -50,6 +50,10 @@ const publish = (row) => {
   if (!confirm(`${row.child_name} さんの連絡帳を保護者に公開します。よろしいですか？`)) return
   router.post(route('contact-notes.publish', row.note.id), {}, { preserveScroll: true })
 }
+const unpublish = (row) => {
+  if (!confirm(`${row.child_name} さんの連絡帳の公開を取り下げます。本文と家庭からの連絡は記録に残ります。よろしいですか？`)) return
+  router.post(route('contact-notes.unpublish', row.note.id), {}, { preserveScroll: true })
+}
 
 const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
 </script>
@@ -128,6 +132,9 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
                   <span v-if="row.note.guardian_submitted_at" class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
                     家庭記入あり
                   </span>
+                  <span v-if="row.note.withdrawn_at" class="text-xs text-amber-700">
+                    {{ row.note.yoyaku_synced_at ? '公開取り下げ済み' : '取り下げを連携中' }}
+                  </span>
                 </template>
               </div>
 
@@ -138,6 +145,11 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
 
               <!-- 操作 -->
               <div class="ml-auto flex items-center gap-2">
+                <button
+                  v-if="row.note?.status === 'published' || (row.note?.withdrawn_at && !row.note.yoyaku_synced_at)"
+                  @click="unpublish(row)"
+                  class="text-xs px-3 py-1.5 border border-amber-500 text-amber-800 rounded-md hover:bg-amber-50"
+                >{{ row.note.status === 'published' ? '公開を取り下げる' : '取り下げを再送' }}</button>
                 <button
                   v-if="row.note && row.note.status === 'draft' && (row.note.guardian_message || row.note.meal_note || row.note.health_note)"
                   @click="publish(row)"

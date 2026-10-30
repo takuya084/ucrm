@@ -159,6 +159,10 @@ const generateDraft = async () => {
       </div>
 
       <!-- 公開 -->
+      <p v-if="contactNote?.withdrawn_at" class="text-xs text-amber-700 p-2 bg-amber-50 rounded-md">
+        {{ contactNote.yoyaku_synced_at ? '保護者への公開を取り下げました。' : '公開の取り下げを連携中です。完了まで保護者側に表示される場合があります。' }}
+        本文と家庭からの連絡は記録に残ります。
+      </p>
       <div v-if="contactNote?.status === 'published'" class="text-xs text-gray-500 p-2 bg-gray-50 rounded-md">
         公開済みの連絡帳です。保存すると更新内容が保護者側にも再配信されます（変更は監査ログに記録されます）。
       </div>

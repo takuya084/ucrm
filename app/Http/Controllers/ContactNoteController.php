@@ -144,28 +144,35 @@ class ContactNoteController extends Controller
      */
     public function publish(ContactNote $contactNote)
     {
-        abort_if($contactNote->facility_id !== $this->facilityId(), 403);
-
-        if (!$contactNote->hasFacilityContent()) {
-            return back()->with([
-                'message' => '連絡帳に記入がないため公開できません。',
-                'status'  => 'error',
-            ]);
-        }
-
-        if (!$contactNote->isPublished()) {
-            $contactNote->update([
-                'status'       => ContactNote::STATUS_PUBLISHED,
-                'published_at' => now(),
-                'published_by' => auth()->user()->staff?->id,
-            ]);
-        }
-
-        PushContactNote::dispatch($contactNote->id)->afterCommit();
-
-        return back()->with([
-            'message' => '連絡帳を公開しました。',
-            'status'  => 'success',
-        ]);
+        abort_if($contactNote->facility_id !== $this->facilityId(),403);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($contactNote) {
+            $note=ContactNote::where('facility_id',$this->facilityId())->whereKey($contactNote->id)->lockForUpdate()->firstOrFail();
+            if (!$note->hasFacilityContent()) return back()->with(['message'=>'連絡帳に記入がないため公開できません。','status'=>'error']);
+            if (!$note->isPublished()) {
+                $note->forceFill(['status'=>ContactNote::STATUS_PUBLISHED,'published_at'=>now(),
+                    'published_by'=>auth()->user()->staff?->id,'withdrawn_at'=>null,'yoyaku_synced_at'=>null])->save();
+            }
+            PushContactNote::dispatch($note->id)->afterCommit();
+            return back()->with(['message'=>'連絡帳を公開しました。','status'=>'success']);
+        });
     }
+
+    public function unpublish(ContactNote $contactNote)
+    {
+        abort_if($contactNote->facility_id !== $this->facilityId(),403);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($contactNote) {
+            $note=ContactNote::where('facility_id',$this->facilityId())->whereKey($contactNote->id)->lockForUpdate()->firstOrFail();
+            if (!$note->isPublished() && !$note->withdrawn_at) {
+                return back()->with(['message'=>'公開されていない連絡帳です。','status'=>'success']);
+            }
+            if ($note->isPublished()) {
+                $note->forceFill(['status'=>ContactNote::STATUS_DRAFT,'published_at'=>null,'published_by'=>null,
+                    'withdrawn_at'=>now(),'yoyaku_synced_at'=>null])->save();
+            }
+            // 再送時も最新の状態をジョブで読み直す。本文はキューに保持しない。
+            PushContactNote::dispatch($note->id)->afterCommit();
+            return back()->with(['message'=>'公開の取り下げを受け付けました。保護者側への反映は連携の完了後です。','status'=>'success']);
+        });
+    }
+
 }
