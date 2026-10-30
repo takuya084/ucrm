@@ -38,53 +38,68 @@ class PushContactNote implements ShouldQueue
 
     public function handle(YoyakuApiService $api): void
     {
-        $note = ContactNote::with(['child', 'supportRecord.programs', 'publishedByStaff'])
-            ->find($this->contactNoteId);
-        if (!$note || !$note->isPublished()) return;
+        $delivery = \Illuminate\Support\Facades\DB::transaction(function () {
+            $note = ContactNote::with(['child', 'supportRecord.programs', 'publishedByStaff'])
+                ->lockForUpdate()->find($this->contactNoteId);
+            if (!$note || !$note->isPublished()) return;
 
-        if (!YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'))) return;
-        $facility = Facility::findOrFail($note->facility_id);
+            if (!YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'))) return;
+            $facility = Facility::findOrFail($note->facility_id);
 
-        // A valid recipient must never receive another child's related content.
-        $support = $note->supportRecord;
-        if ($note->support_record_id && (!$support || (int) $support->child_id !== (int) $note->child_id
-            || $support->date->format('Y-m-d') !== $note->date->format('Y-m-d'))) {
-            throw new \RuntimeException('Contact note support record does not match its recipient');
-        }
-        if ($support?->usage_record_id) {
-            $usage = $support->usageRecord;
-            if (!$usage || (int) $usage->facility_id !== (int) $note->facility_id
-                || (int) $usage->child_id !== (int) $note->child_id
-                || $usage->date->format('Y-m-d') !== $note->date->format('Y-m-d')) {
-                throw new \RuntimeException('Contact note attendance does not match its recipient');
+            // A valid recipient must never receive another child's related content.
+            $support = $note->supportRecord;
+            if ($note->support_record_id && (!$support || (int) $support->child_id !== (int) $note->child_id
+                || $support->date->format('Y-m-d') !== $note->date->format('Y-m-d'))) {
+                throw new \RuntimeException('Contact note support record does not match its recipient');
             }
-        }
-        if (($note->published_by && (!$note->publishedByStaff
-                || (int) $note->publishedByStaff->facility_id !== (int) $note->facility_id))
-            || ($support && $support->programs->contains(fn ($program) => (int) $program->facility_id !== (int) $note->facility_id))) {
-            throw new \RuntimeException('Contact note related content belongs to another facility');
-        }
+            if ($support?->usage_record_id) {
+                $usage = $support->usageRecord;
+                if (!$usage || (int) $usage->facility_id !== (int) $note->facility_id
+                    || (int) $usage->child_id !== (int) $note->child_id
+                    || $usage->date->format('Y-m-d') !== $note->date->format('Y-m-d')) {
+                    throw new \RuntimeException('Contact note attendance does not match its recipient');
+                }
+            }
+            if (($note->published_by && (!$note->publishedByStaff
+                    || (int) $note->publishedByStaff->facility_id !== (int) $note->facility_id))
+                || ($support && $support->programs->contains(fn ($program) => (int) $program->facility_id !== (int) $note->facility_id))) {
+                throw new \RuntimeException('Contact note related content belongs to another facility');
+            }
 
-        // 実施プログラム（活動名と時間のみ。詳細メモは内部情報のため送らない）
-        $activities = $note->supportRecord
-            ? $note->supportRecord->programs->map(fn ($p) => [
-                'name'             => $p->name,
-                'duration_minutes' => $p->pivot->duration_minutes,
-            ])->values()->all()
-            : [];
+            // 実施プログラム（活動名と時間のみ。詳細メモは内部情報のため送らない）
+            $activities = $note->supportRecord
+                ? $note->supportRecord->programs->map(fn ($p) => [
+                    'name'             => $p->name,
+                    'duration_minutes' => $p->pivot->duration_minutes,
+                ])->values()->all()
+                : [];
 
-        $result = $api->upsertContactNote([
-            'external_ref'     => "ucrm:{$note->id}",
-            'user_id'          => $this->target['user_id'],
-            'date'             => $note->date->format('Y-m-d'),
-            'condition'        => $note->supportRecord?->condition,
-            'activities'       => $activities,
-            'meal_note'        => $note->meal_note,
-            'health_note'      => $note->health_note,
-            'guardian_message' => $note->guardian_message,
-            'staff_name'       => $note->publishedByStaff?->name,
-            'published_at'     => $note->published_at?->toIso8601String(),
-        ], $facility->id, $this->target['token_hash']);
+            // 本文のスナップショットと世代の採番を同じ行ロック内で確定する。
+            $revision=(int)$note->delivery_revision+1;
+            if ($revision>9007199254740991) throw new \RuntimeException('Contact delivery revision exhausted');
+            // 配信管理情報だけの更新なので個人情報の監査イベントは発火させない。
+            \Illuminate\Support\Facades\DB::table('contact_notes')->where('id',$note->id)->update(['delivery_revision'=>$revision]);
+            $note->delivery_revision=$revision;
+            $note->syncOriginalAttribute('delivery_revision');
+            $payload=[
+                'revision' => $revision,
+                'external_ref'     => "ucrm:{$note->id}",
+                'user_id'          => $this->target['user_id'],
+                'date'             => $note->date->format('Y-m-d'),
+                'condition'        => $note->supportRecord?->condition,
+                'activities'       => $activities,
+                'meal_note'        => $note->meal_note,
+                'health_note'      => $note->health_note,
+                'guardian_message' => $note->guardian_message,
+                'staff_name'       => $note->publishedByStaff?->name,
+                'published_at'     => $note->published_at?->toIso8601String(),
+            ];
+            return compact('note','facility','payload');
+        });
+        if (!$delivery) return;
+        ['note'=>$note,'facility'=>$facility,'payload'=>$payload]=$delivery;
+        // 通信中はDBロックを保持しない。遅れて到着した本文は受信側の世代で拒否する。
+        $result=$api->upsertContactNote($payload,$facility->id,$this->target['token_hash']);
 
         if ($result !== null) {
             // 同期時刻の記録のみ（個人情報の変更ではないため監査ログは発火させない）

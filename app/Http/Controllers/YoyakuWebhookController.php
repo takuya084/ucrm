@@ -119,7 +119,22 @@ class YoyakuWebhookController extends Controller
 
         // 連絡帳イベント（出欠と違い請求に影響しないため、請求ロックの対象外）
         if (str_starts_with($event, 'contact_note.')) {
-            return $this->handleContactNoteEvent($event, $facility, $child, $date, $payload);
+            if (array_key_exists('revision',$payload)
+                && (!$this->positiveId($payload['revision']) || $payload['revision']>9007199254740991)) {
+                return response()->json(['error'=>'invalid contact revision'],400);
+            }
+            if (array_key_exists('external_ref',$payload)
+                && (!is_string($payload['external_ref']) || !preg_match('/^ucrm:[1-9][0-9]*$/D',$payload['external_ref']))) {
+                return response()->json(['error'=>'invalid contact reference'],400);
+            }
+            if ($event==='contact_note.guardian_entry' && (isset($payload['revision']) !== isset($payload['external_ref']))) {
+                return response()->json(['error'=>'contact revision and reference required together'],400);
+            }
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($event,$facility,$child,$date,$payload) {
+                // 未作成の場合も直列化する。施設・児童の範囲を越えない。
+                Child::where('facility_id',$facility->id)->whereKey($child->id)->lockForUpdate()->firstOrFail();
+                return $this->handleContactNoteEvent($event,$facility,$child,$date,$payload);
+            });
         }
 
         if (isset($payload['cancellation_token']) && (!is_string($payload['cancellation_token'])
@@ -256,10 +271,15 @@ class YoyakuWebhookController extends Controller
     private function handleContactNoteEvent(string $event, Facility $facility, Child $child, string $date, array $payload)
     {
         // ソフトデリート済みがあると unique(child_id, date) に当たるため withTrashed で引く
-        $note = ContactNote::withTrashed()
+        $note = ContactNote::withTrashed()->lockForUpdate()
+            ->where('facility_id',$facility->id)
             ->where('child_id', $child->id)
             ->whereDate('date', $date)
             ->first();
+
+        if (isset($payload['external_ref']) && (!$note || $payload['external_ref']!=='ucrm:'.$note->id)) {
+            return response()->json(['error'=>'contact reference target changed'],409);
+        }
 
         if ($event === 'contact_note.read') {
             if (!$note || $note->trashed() || !$note->isPublished()) {
@@ -272,6 +292,12 @@ class YoyakuWebhookController extends Controller
         }
 
         if ($event === 'contact_note.guardian_entry') {
+            $revision=isset($payload['revision'])?(int)$payload['revision']:null;
+            if ($note?->guardian_source_revision!==null) {
+                if ($revision===null) return response()->json(['error'=>'versioned contact required'],409);
+                if ($revision<=$note->guardian_source_revision) return response()->json(['ok'=>true,'applied'=>false]);
+            }
+
             if (!$note) {
                 $note = new ContactNote([
                     'child_id' => $child->id,
@@ -299,6 +325,7 @@ class YoyakuWebhookController extends Controller
                 }
             }
             $note->fill($fields);
+            if ($revision!==null) $note->guardian_source_revision=$revision;
             $note->save();
 
             return response()->json(['ok' => true]);
