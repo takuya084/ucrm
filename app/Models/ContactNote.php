@@ -43,6 +43,8 @@ class ContactNote extends Model
     ];
 
     protected $casts = [
+        'delivery_revision' => 'integer',
+        'guardian_source_revision' => 'integer',
         'date'                  => 'date',
         'five_domain_tags'      => 'array',
         'published_at'          => 'datetime',
