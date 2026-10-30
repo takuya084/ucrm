@@ -278,3 +278,30 @@ test('missing CSRF token is rejected without creating a child', async ({page}) =
   const r=await page.request.post('/children',{data:{name:'CSRF対象',contract_status:'active'},headers:{Accept:'application/json'},maxRedirects:0});
   expect(r.status()).toBe(419); expect(snapshot().children).toEqual(seeded.children);
 });
+
+test('contact publication can be withdrawn and republished without deleting history', async ({page}) => {
+  const data=fixture('contact-notes');
+  const own=data.notes.find(n=>n.child_id===ownChild().id);
+  const foreign=data.notes.find(n=>n.facility_id!==own.facility_id);
+  await login(page);
+  await visit(page,'/contact-notes?date=2026-07-01','連絡帳');
+  page.once('dialog',d=>d.dismiss());
+  await page.getByRole('button',{name:'公開を取り下げる',exact:true}).click();
+  expect(snapshot().notes.find(n=>n.id===own.id).status).toBe('published');
+  page.once('dialog',d=>d.accept());
+  const withdrawing=page.waitForResponse(r=>new URL(r.url()).pathname===`/contact-notes/${own.id}/unpublish` && r.request().method()==='POST');
+  await page.getByRole('button',{name:'公開を取り下げる',exact:true}).click();
+  expect((await withdrawing).status()).toBe(302);
+  await expect(page.getByText('取り下げを連携中',{exact:true})).toBeVisible();
+  await page.reload();
+  expect(snapshot().notes.find(n=>n.id===own.id)).toMatchObject({status:'draft',published_at:null,guardian_message:'架空の公開連絡帳',guardian_comment:'架空の家庭返信'});
+  const forbidden=await csrfRequest(page,'POST',`/contact-notes/${foreign.id}/unpublish`,{});
+  expect(forbidden.status()).toBe(403);
+  expect(snapshot().notes.find(n=>n.id===foreign.id).status).toBe('published');
+  page.once('dialog',d=>d.accept());
+  const publishing=page.waitForResponse(r=>new URL(r.url()).pathname===`/contact-notes/${own.id}/publish` && r.request().method()==='POST');
+  await page.getByRole('button',{name:'公開する',exact:true}).click();
+  expect((await publishing).status()).toBe(302);
+  await expect(page.getByRole('button',{name:'公開を取り下げる',exact:true})).toBeVisible();
+  expect(snapshot().notes.find(n=>n.id===own.id)).toMatchObject({status:'published',withdrawn_at:null,guardian_comment:'架空の家庭返信'});
+});

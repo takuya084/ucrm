@@ -72,6 +72,7 @@ class SupportRecordController extends Controller
 
         // ソフトデリート済みがあると unique(child_id, date) に当たるため withTrashed で引く
         $note = ContactNote::withTrashed()
+            ->lockForUpdate()
             ->where('child_id', $record->child_id)
             ->whereDate('date', $record->date->toDateString())
             ->first()
@@ -97,6 +98,7 @@ class SupportRecordController extends Controller
             $note->status       = ContactNote::STATUS_PUBLISHED;
             $note->published_at = now();
             $note->published_by = auth()->user()->staff?->id;
+            $note->withdrawn_at = null;
         }
 
         $note->save();

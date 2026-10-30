@@ -79,4 +79,11 @@ class ContactNoteDeliveryOrderTest extends TestCase
         $this->assertNull($this->note->fresh()->guardian_source_revision);
         $this->assertNull($this->note->fresh()->guardian_comment);
     }
+    public function test_late_guardian_callback_during_withdrawal_is_ignored(): void
+    {
+        $this->note->forceFill(['status'=>'draft','withdrawn_at'=>now()])->save();
+        $this->send()->assertOk()->assertJson(['ignored'=>'contact withdrawn']);
+        $this->assertNull($this->note->fresh()->guardian_comment);
+        $this->assertNull($this->note->fresh()->guardian_source_revision);
+    }
 }

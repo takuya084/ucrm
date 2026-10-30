@@ -154,6 +154,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('contact-notes',                        [\App\Http\Controllers\ContactNoteController::class, 'index'])  ->name('contact-notes.index');
     Route::post('contact-notes/{contactNote}/publish', [\App\Http\Controllers\ContactNoteController::class, 'publish'])->name('contact-notes.publish');
+    Route::post('contact-notes/{contactNote}/unpublish', [\App\Http\Controllers\ContactNoteController::class, 'unpublish'])->name('contact-notes.unpublish');
 });
 
 // 連絡帳の年間PDF出力（要配慮個人情報の一括出力のためリーダー以上に限定）

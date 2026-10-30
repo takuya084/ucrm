@@ -41,38 +41,43 @@ class PushContactNote implements ShouldQueue
         $delivery = \Illuminate\Support\Facades\DB::transaction(function () {
             $note = ContactNote::with(['child', 'supportRecord.programs', 'publishedByStaff'])
                 ->lockForUpdate()->find($this->contactNoteId);
-            if (!$note || !$note->isPublished()) return;
+            if (!$note) return;
+            $withdrawn=!$note->isPublished() && $note->withdrawn_at!==null;
+            if (!$note->isPublished() && !$withdrawn) return;
 
             if (!YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'))) return;
             $facility = Facility::findOrFail($note->facility_id);
 
-            // A valid recipient must never receive another child's related content.
-            $support = $note->supportRecord;
-            if ($note->support_record_id && (!$support || (int) $support->child_id !== (int) $note->child_id
-                || $support->date->format('Y-m-d') !== $note->date->format('Y-m-d'))) {
-                throw new \RuntimeException('Contact note support record does not match its recipient');
-            }
-            if ($support?->usage_record_id) {
-                $usage = $support->usageRecord;
-                if (!$usage || (int) $usage->facility_id !== (int) $note->facility_id
-                    || (int) $usage->child_id !== (int) $note->child_id
-                    || $usage->date->format('Y-m-d') !== $note->date->format('Y-m-d')) {
-                    throw new \RuntimeException('Contact note attendance does not match its recipient');
+            if (!$withdrawn) {
+                // A valid recipient must never receive another child's related content.
+                $support = $note->supportRecord;
+                if ($note->support_record_id && (!$support || (int) $support->child_id !== (int) $note->child_id
+                    || $support->date->format('Y-m-d') !== $note->date->format('Y-m-d'))) {
+                    throw new \RuntimeException('Contact note support record does not match its recipient');
                 }
-            }
-            if (($note->published_by && (!$note->publishedByStaff
-                    || (int) $note->publishedByStaff->facility_id !== (int) $note->facility_id))
-                || ($support && $support->programs->contains(fn ($program) => (int) $program->facility_id !== (int) $note->facility_id))) {
-                throw new \RuntimeException('Contact note related content belongs to another facility');
-            }
+                if ($support?->usage_record_id) {
+                    $usage = $support->usageRecord;
+                    if (!$usage || (int) $usage->facility_id !== (int) $note->facility_id
+                        || (int) $usage->child_id !== (int) $note->child_id
+                        || $usage->date->format('Y-m-d') !== $note->date->format('Y-m-d')) {
+                        throw new \RuntimeException('Contact note attendance does not match its recipient');
+                    }
+                }
+                if (($note->published_by && (!$note->publishedByStaff
+                        || (int) $note->publishedByStaff->facility_id !== (int) $note->facility_id))
+                    || ($support && $support->programs->contains(fn ($program) => (int) $program->facility_id !== (int) $note->facility_id))) {
+                    throw new \RuntimeException('Contact note related content belongs to another facility');
+                }
 
-            // 実施プログラム（活動名と時間のみ。詳細メモは内部情報のため送らない）
-            $activities = $note->supportRecord
-                ? $note->supportRecord->programs->map(fn ($p) => [
-                    'name'             => $p->name,
-                    'duration_minutes' => $p->pivot->duration_minutes,
-                ])->values()->all()
-                : [];
+                // 実施プログラム（活動名と時間のみ。詳細メモは内部情報のため送らない）
+                $activities = $note->supportRecord
+                    ? $note->supportRecord->programs->map(fn ($p) => [
+                        'name'             => $p->name,
+                        'duration_minutes' => $p->pivot->duration_minutes,
+                    ])->values()->all()
+                    : [];
+
+            }
 
             // 本文のスナップショットと世代の採番を同じ行ロック内で確定する。
             $revision=(int)$note->delivery_revision+1;
@@ -86,13 +91,16 @@ class PushContactNote implements ShouldQueue
                 'external_ref'     => "ucrm:{$note->id}",
                 'user_id'          => $this->target['user_id'],
                 'date'             => $note->date->format('Y-m-d'),
+                'withdrawn' => $withdrawn,
+                'published_at' => $withdrawn ? null : $note->published_at?->toIso8601String(),
+            ];
+            if (!$withdrawn) $payload += [
                 'condition'        => $note->supportRecord?->condition,
                 'activities'       => $activities,
                 'meal_note'        => $note->meal_note,
                 'health_note'      => $note->health_note,
                 'guardian_message' => $note->guardian_message,
                 'staff_name'       => $note->publishedByStaff?->name,
-                'published_at'     => $note->published_at?->toIso8601String(),
             ];
             return compact('note','facility','payload');
         });
@@ -104,7 +112,7 @@ class PushContactNote implements ShouldQueue
         if ($result !== null) {
             // 同期時刻の記録のみ（個人情報の変更ではないため監査ログは発火させない）
             YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'));
-            // Do not mark an edited, unpublished, moved or deleted note as synchronized.
+            // 編集・公開状態変更・移動・削除があったスナップショットは同期済みにしない。
             ContactNote::whereKey($note->id)->where($note->getRawOriginal())
                 ->update(['yoyaku_synced_at' => now()]);
         } else {
