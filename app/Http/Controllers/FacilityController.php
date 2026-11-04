@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AreaCategory;
 use App\Models\Facility;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,6 +22,7 @@ class FacilityController extends Controller
                 'yoyaku_business_id', 'yoyaku_api_token', 'yoyaku_webhook_secret',
                 'facility_code', 'service_type', 'area_unit_price', 'area_category_code', 'designated_date', 'administrator_name',
             ]),
+            'areaCategories' => AreaCategory::orderBy('code')->get(['code', 'label', 'unit_price']),
         ]);
     }
 

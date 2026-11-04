@@ -63,6 +63,8 @@ class HandleInertiaRequests extends Middleware
                 'message'             => fn() => $request->session()->get('message'),
                 'status'              => fn() => $request->session()->get('status'),
                 'import_errors'       => fn() => $request->session()->get('import_errors'),
+                'import_diff'         => fn() => $request->session()->get('import_diff'),
+                'import_token'        => fn() => $request->session()->get('import_token'),
                 'yoyaku_link_results' => fn() => $request->session()->get('yoyaku_link_results'),
             ]
         ]);
