@@ -38,6 +38,7 @@ use App\Http\Controllers\Billing\GuardianInvoiceController;
 use App\Http\Controllers\Billing\ErrorClaimController;
 use App\Http\Controllers\Billing\ClaimReturnController;
 use App\Http\Controllers\Billing\FacilityServiceSettingController;
+use App\Http\Controllers\Billing\AreaCategoryController;
 use App\Http\Controllers\Billing\MonthlyExpenseController;
 
 // 施設設定（管理者のみ）
@@ -283,7 +284,12 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->prefix('billing
     Route::post('/expenses',                  [MonthlyExpenseController::class, 'upsert']) ->name('billing.expenses.upsert');
     Route::get('/settings/service-codes',      [FacilityServiceSettingController::class, 'index'])     ->name('billing.settings.service-codes');
     Route::post('/settings/service-codes',     [FacilityServiceSettingController::class, 'bulkUpdate'])->name('billing.settings.service-codes.update');
-    Route::post('/settings/service-codes/import', [FacilityServiceSettingController::class, 'importMaster'])->name('billing.settings.service-codes.import');
+    Route::post('/settings/service-codes/import/preview', [FacilityServiceSettingController::class, 'previewImport'])->name('billing.settings.service-codes.import.preview');
+    Route::post('/settings/service-codes/import/apply',   [FacilityServiceSettingController::class, 'applyImport'])  ->name('billing.settings.service-codes.import.apply');
+
+    // 地域区分マスタ（級地コード→単価）
+    Route::get('/settings/area-categories',  [AreaCategoryController::class, 'index'])     ->name('billing.settings.area-categories');
+    Route::post('/settings/area-categories', [AreaCategoryController::class, 'bulkUpdate'])->name('billing.settings.area-categories.update');
 
     // 複式CSV出力（履歴）
     Route::get('/exports/{billingExport}/download',   [BillingPeriodController::class, 'downloadExport'])->name('billing.exports.download');

@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             InitialDataSeeder::class,
             ShiftSampleSeeder::class,
             ServiceCodeMasterSeeder::class,
+            AreaCategorySeeder::class,
         ]);
     }
 }

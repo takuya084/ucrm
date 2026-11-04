@@ -2,8 +2,10 @@
 
 namespace App\Services\Billing;
 
+use App\Models\AreaCategory;
 use App\Models\BillingExport;
 use App\Models\BillingPeriod;
+use App\Models\Facility;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
@@ -38,6 +40,8 @@ class BillingExportBundleService
 
         if (!$facility->area_category_code) {
             $warnings[] = ['level' => 'error', 'message' => '地域区分コードが未設定です（施設情報で設定してください。明細書の必須項目です）'];
+        } elseif ($w = $this->checkAreaCategoryConsistency($facility)) {
+            $warnings[] = $w;
         }
 
         if ($period->billingDetails->isEmpty()) {
@@ -95,6 +99,28 @@ class BillingExportBundleService
         }
 
         return $warnings;
+    }
+
+    /**
+     * 地域区分コードと地域区分単価（facilities.area_unit_price）の整合性チェック。
+     * マスタの単価が未確認（null）の場合は照合しない。
+     */
+    private function checkAreaCategoryConsistency(Facility $facility): ?array
+    {
+        $areaCategory = AreaCategory::where('code', $facility->area_category_code)->first();
+        if (!$areaCategory || $areaCategory->unit_price === null) {
+            return null;
+        }
+        if ((string) $areaCategory->unit_price === (string) $facility->area_unit_price) {
+            return null;
+        }
+
+        return [
+            'level'   => 'error',
+            'message' => "地域区分単価（{$facility->area_unit_price}円）が、選択されている地域区分コード"
+                . "「{$facility->area_category_code}：{$areaCategory->label}」の登録単価（{$areaCategory->unit_price}円）と一致していません。"
+                . '施設情報で修正してください。',
+        ];
     }
 
     /**

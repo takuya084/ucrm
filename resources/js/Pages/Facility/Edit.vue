@@ -3,11 +3,12 @@ import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   facility: Object,
+  areaCategories: { type: Array, default: () => [] },
 })
 
 const form = reactive({
@@ -30,6 +31,24 @@ const form = reactive({
 const update = () => {
   router.patch(route('facility.update'), form)
 }
+
+const selectedCategory = computed(() =>
+  props.areaCategories.find(c => c.code === form.area_category_code) ?? null
+)
+
+// 級地コードを選ぶと、マスタに単価が登録済みなら自動入力する（未登録ならそのまま手入力）
+const onCategoryChange = () => {
+  if (selectedCategory.value && selectedCategory.value.unit_price !== null) {
+    form.area_unit_price = selectedCategory.value.unit_price
+  }
+}
+
+// マスタの単価と手入力の単価が食い違っている場合に警告する
+const priceMismatch = computed(() => {
+  const cat = selectedCategory.value
+  if (!cat || cat.unit_price === null) return false
+  return String(Number(cat.unit_price).toFixed(2)) !== String(Number(form.area_unit_price || 0).toFixed(2))
+})
 
 const inputClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300'
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
@@ -95,20 +114,28 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   </select>
                 </div>
                 <div>
+                  <label :class="labelClass">地域区分コード</label>
+                  <select v-model="form.area_category_code" @change="onCategoryChange" :class="inputClass">
+                    <option value="">未設定</option>
+                    <option v-for="c in areaCategories" :key="c.code" :value="c.code">
+                      {{ c.code }}：{{ c.label }}{{ c.unit_price !== null ? `（${c.unit_price}円）` : '（単価未登録）' }}
+                    </option>
+                  </select>
+                  <p class="text-xs text-gray-400 mt-1">
+                    国保連CSV（明細書）の必須項目。指定通知書に記載の地域区分を選択してください。
+                    <Link :href="route('billing.settings.area-categories')" class="text-primary-500 hover:underline">地域区分マスタを管理する →</Link>
+                  </p>
+                </div>
+                <div>
                   <label :class="labelClass">地域区分単価（円）</label>
                   <input v-model="form.area_unit_price" type="number" step="0.01" min="0" max="20" :class="inputClass" />
                   <p class="text-xs text-gray-400 mt-1">地域区分に応じた1単位あたりの単価。例: 1級地=11.40、6級地=10.00</p>
-                </div>
-                <div>
-                  <label :class="labelClass">地域区分コード</label>
-                  <select v-model="form.area_category_code" :class="inputClass">
-                    <option value="">未設定</option>
-                    <option v-for="n in 19" :key="n" :value="String(n).padStart(2, '0')">
-                      {{ String(n).padStart(2, '0') }}：{{ ['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九'][n - 1] }}級地
-                    </option>
-                    <option value="20">20：その他</option>
-                  </select>
-                  <p class="text-xs text-gray-400 mt-1">国保連CSV（明細書）の必須項目。指定通知書に記載の地域区分を選択してください。</p>
+                  <p v-if="selectedCategory && selectedCategory.unit_price === null" class="text-xs text-yellow-600 mt-1">
+                    この級地コードの単価は地域区分マスタに未登録です。手入力した値がそのまま使われます。
+                  </p>
+                  <p v-if="priceMismatch" class="text-xs text-red-600 mt-1">
+                    地域区分マスタの登録単価（{{ selectedCategory.unit_price }}円）と一致していません。入力ミスの可能性があります。
+                  </p>
                 </div>
                 <div>
                   <label :class="labelClass">管理者氏名</label>
