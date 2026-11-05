@@ -239,6 +239,49 @@ test('attendance save and support record survive navigation and reload', async (
   expect(s.support[0].child_id).toBe(ownChild().id); expect(s.support[0].usage_record_id).toBe(s.usage[0].id);
 });
 
+test('attendance time options use five minutes and save, reload and clear', async ({page}) => {
+  await login(page,'staff');
+  await visit(page,'/usage-records?date=2026-07-01','出席管理');
+  const arrival=page.getByRole('combobox',{name:ownChild().name+'の来所時刻',exact:true});
+  const departure=page.getByRole('combobox',{name:ownChild().name+'の退所時刻',exact:true});
+  const expected=['',...Array.from({length:288},(_,i)=>`${String(Math.floor(i/12)).padStart(2,'0')}:${String(i%12*5).padStart(2,'0')}`)];
+  for(const control of [arrival,departure]) {
+    expect(await control.locator('option').evaluateAll(options=>options.map(o=>o.value))).toEqual(expected);
+    await expect(control.locator('option[value="15:01"]')).toHaveCount(0);
+  }
+  async function choose(control,value) {
+    const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/usage-records/bulk-store' && r.request().method()==='POST');
+    await control.selectOption(value); expect((await saved).status()).toBe(200);
+  }
+  await choose(arrival,'15:05'); await choose(departure,'17:35');
+  await page.reload();
+  await expect(arrival).toHaveValue('15:05'); await expect(departure).toHaveValue('17:35');
+  expect(snapshot().usage[0]).toMatchObject({check_in_time:'15:05',check_out_time:'17:35'});
+  await choose(arrival,''); await choose(departure,''); await page.reload();
+  await expect(arrival).toHaveValue(''); await expect(departure).toHaveValue('');
+  expect(snapshot().usage[0]).toMatchObject({check_in_time:null,check_out_time:null});
+});
+
+test('existing minute-precision attendance is displayed and preserved until explicitly changed', async ({page}) => {
+  fixture('legacy-attendance-times');
+  await login(page,'staff');
+  await visit(page,'/usage-records?date=2026-07-01','出席管理');
+  const arrival=page.getByRole('combobox',{name:ownChild().name+'の来所時刻',exact:true});
+  const departure=page.getByRole('combobox',{name:ownChild().name+'の退所時刻',exact:true});
+  await expect(arrival).toHaveValue('14:31'); await expect(departure).toHaveValue('17:33');
+  await expect(arrival.locator('option:checked')).toHaveText('14:31（既存値）');
+  const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/usage-records/bulk-store' && r.request().method()==='POST');
+  await page.getByPlaceholder('メモ',{exact:true}).fill('既存時刻の保持確認');
+  await page.getByPlaceholder('メモ',{exact:true}).press('Tab');
+  expect((await saved).status()).toBe(200);
+  await page.reload();
+  expect(snapshot().usage[0]).toMatchObject({check_in_time:'14:31',check_out_time:'17:33'});
+  const changed=page.waitForResponse(r=>new URL(r.url()).pathname==='/usage-records/bulk-store' && r.request().method()==='POST');
+  await arrival.selectOption('14:35'); expect((await changed).status()).toBe(200); await page.reload();
+  await expect(arrival).toHaveValue('14:35'); await expect(arrival.locator('option[value="14:31"]')).toHaveCount(0);
+  await expect(departure).toHaveValue('17:33');
+});
+
 test('invalid CSV rejects all rows rather than saving a partial import', async ({page}) => {
   await login(page); await visit(page,'/children/bulk');
   await page.locator('input[type="file"]').setInputFiles({name:'fixture.csv',mimeType:'text/csv',buffer:Buffer.from('name,name_kana,school_name\n架空CSV児童,カクウジドウ,架空学校a\n別児童,ベツジドウ,架空学校b\n')});

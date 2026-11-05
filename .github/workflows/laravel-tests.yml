@@ -43,7 +43,8 @@ jobs:
       - name: Test without any network interface or external database
         run: |
           runner_user="$(id -un)"
-          sudo --preserve-env unshare --net -- runuser -u "$runner_user" --preserve-environment -- bash -c '
+          source scripts/ci/isolated-env.sh
+          sudo unshare --net -- "${isolated_env[@]}" runuser -u "$runner_user" --preserve-environment -- bash -c '
             set -eu
             php artisan package:discover --ansi
             php vendor/bin/phpunit --display-warnings --fail-on-warning

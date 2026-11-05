@@ -32,6 +32,10 @@ if ($command === 'reset') {
             }
         }
     }
+} elseif ($command === 'legacy-attendance-times') {
+    $child=Child::where('name','架空児童a-active')->firstOrFail();
+    UsageRecord::create(['facility_id'=>$child->facility_id,'child_id'=>$child->id,
+        'date'=>'2026-07-01','status'=>'attended','check_in_time'=>'14:31','check_out_time'=>'17:33']);
 } elseif ($command === 'contact-notes') {
     foreach (['a','b'] as $tenant) {
         $child=Child::where('name','架空児童'.$tenant.'-active')->firstOrFail();
@@ -48,7 +52,7 @@ echo json_encode([
     'schools'=>School::orderBy('id')->get(['id','facility_id','name']),
     'children'=>Child::withTrashed()->orderBy('id')->get(['id','facility_id','school_id','name','birthdate','contract_start_date','contract_status','deleted_at']),
     'schedules'=>\App\Models\ChildSchedule::orderBy('id')->get(['child_id','day_of_week']),
-    'usage'=>UsageRecord::withTrashed()->orderBy('id')->get(['id','child_id','facility_id','status','date','deleted_at']),
+    'usage'=>UsageRecord::withTrashed()->orderBy('id')->get(['id','child_id','facility_id','status','date','deleted_at','check_in_time','check_out_time']),
     'support'=>SupportRecord::orderBy('id')->get(['id','child_id','usage_record_id','staff_id','behavior_note']),
     'notes'=>\App\Models\ContactNote::orderBy('id')->get(['id','facility_id','child_id','status','withdrawn_at','published_at','guardian_message','guardian_comment']),
 ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)."\n";
