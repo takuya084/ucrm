@@ -20,6 +20,11 @@ const props = defineProps({
 const LOCATION_LABELS = { school: '学校', home: '自宅', parents: '親送迎', others: 'その他' }
 const locationLabel = (loc) => LOCATION_LABELS[loc] ?? loc
 
+// Use explicit options: native time pickers do not consistently show step=300.
+const timeSlots = Array.from({ length: 24 * 12 }, (_, index) =>
+  `${String(Math.floor(index / 12)).padStart(2, '0')}:${String((index % 12) * 5).padStart(2, '0')}`
+)
+
 // 日付ナビゲーション
 const selectedDate = ref(props.date)
 const goToDate = () => {
@@ -367,11 +372,19 @@ const rowBg = (status) => ({
               <div v-if="row.status === 'attended'" class="mt-2 flex gap-3 items-center flex-wrap text-xs text-gray-600">
                 <label class="flex items-center gap-1">
                   来所
-                  <input v-model="row.check_in_time" type="time" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-24" @change="autoSave" />
+                  <select v-model="row.check_in_time" :aria-label="`${row.child_name}の来所時刻`" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-28" @change="autoSave">
+                    <option value="">未設定</option>
+                    <option v-if="row.check_in_time && !timeSlots.includes(row.check_in_time)" :value="row.check_in_time">{{ row.check_in_time }}（既存値）</option>
+                    <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
+                  </select>
                 </label>
                 <label class="flex items-center gap-1">
                   退所
-                  <input v-model="row.check_out_time" type="time" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-24" @change="autoSave" />
+                  <select v-model="row.check_out_time" :aria-label="`${row.child_name}の退所時刻`" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-28" @change="autoSave">
+                    <option value="">未設定</option>
+                    <option v-if="row.check_out_time && !timeSlots.includes(row.check_out_time)" :value="row.check_out_time">{{ row.check_out_time }}（既存値）</option>
+                    <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
+                  </select>
                 </label>
                 <label class="flex items-center gap-1 cursor-pointer">
                   <input v-model="row.is_school_day" type="checkbox" class="w-3 h-3" @change="autoSave" />学校日

@@ -49,7 +49,8 @@ jobs:
           mkdir "$BROWSER_FIXTURE_DIR/sessions"
           touch "$BROWSER_FIXTURE_DIR/database.sqlite"
           runner_user="$(id -un)"
-          sudo --preserve-env unshare --net -- bash -c '
+          source scripts/ci/isolated-env.sh
+          sudo unshare --net -- "${isolated_env[@]}" bash -c '
             ip link set lo up
             exec runuser -u "$1" --preserve-environment -- bash browser-tests/run-ci.sh
           ' bash "$runner_user"
