@@ -102,6 +102,19 @@ class PushContactNote implements ShouldQueue
                 'guardian_message' => $note->guardian_message,
                 'staff_name'       => $note->publishedByStaff?->name,
             ];
+            $hash=null;
+            if (!$withdrawn) {
+                $content=[];
+                foreach (['published_at','condition','activities','meal_note','health_note','guardian_message','staff_name'] as $field) $content[$field]=$payload[$field]??null;
+                $hash=hash('sha256',json_encode($content,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR));
+            }
+            if ($note->publication_hash!==$hash) {
+                $note->guardian_confirmed_at=null;
+                $note->guardian_confirmed_hash=null;
+                $note->read_at=null;
+            }
+            $note->publication_hash=$hash;
+            $note->saveQuietly();
             return compact('note','facility','payload');
         });
         if (!$delivery) return;

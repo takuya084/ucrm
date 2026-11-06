@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { router } from '@inertiajs/vue3'
 
 // 連絡帳（保護者公開）ゾーン。支援記録の Create / Edit で共用。
 // form は親の reactive フォームの contact_note サブオブジェクトをそのまま受け取り直接書き換える。
@@ -80,8 +81,14 @@ const generateDraft = async () => {
           <span v-if="contactNote.home_condition">朝の様子：{{ contactNote.home_condition }}</span>
         </div>
         <p v-if="contactNote.guardian_comment" class="text-sm text-amber-900 whitespace-pre-wrap">{{ contactNote.guardian_comment }}</p>
+        <p v-if="contactNote.guardian_checked_at" class="mt-2 text-sm text-green-700">事業所確認済み {{ new Date(contactNote.guardian_checked_at).toLocaleString('ja-JP') }}</p>
+        <button v-else type="button" class="mt-2 rounded-md bg-amber-700 px-3 py-2 text-sm text-white"
+          @click="router.post(route('contact-notes.check-guardian', contactNote.id), { guardian_revision: contactNote.guardian_source_revision ?? 0 }, { preserveScroll: true, preserveState: false })">家庭からの連絡を確認した</button>
       </div>
 
+      <p v-if="contactNote?.status === 'published'" class="text-sm text-green-700">
+        {{ contactNote.guardian_confirmed_at ? '保護者確認印済み ' + new Date(contactNote.guardian_confirmed_at).toLocaleString('ja-JP') : '保護者の確認印待ち' }}
+      </p>
       <!-- 保護者へのメッセージ -->
       <div>
         <div class="flex items-center justify-between mb-1">

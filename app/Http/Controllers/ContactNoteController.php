@@ -167,11 +167,30 @@ class ContactNoteController extends Controller
             }
             if ($note->isPublished()) {
                 $note->forceFill(['status'=>ContactNote::STATUS_DRAFT,'published_at'=>null,'published_by'=>null,
-                    'withdrawn_at'=>now(),'yoyaku_synced_at'=>null])->save();
+                    'withdrawn_at'=>now(),'yoyaku_synced_at'=>null,'publication_hash'=>null,'guardian_confirmed_at'=>null,'guardian_confirmed_hash'=>null])->save();
             }
             // 再送時も最新の状態をジョブで読み直す。本文はキューに保持しない。
             PushContactNote::dispatch($note->id)->afterCommit();
             return back()->with(['message'=>'公開の取り下げを受け付けました。保護者側への反映は連携の完了後です。','status'=>'success']);
+        });
+    }
+
+    public function checkGuardian(Request $request, ContactNote $contactNote)
+    {
+        abort_if($contactNote->facility_id!==$this->facilityId(),403);
+        $data=$request->validate(['guardian_revision'=>['required','integer','min:0']]);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($contactNote,$data) {
+            $note=ContactNote::where('facility_id',$this->facilityId())->whereKey($contactNote->id)->lockForUpdate()->firstOrFail();
+            if (!$note->guardian_submitted_at || (int)$note->guardian_source_revision!==(int)$data['guardian_revision']) {
+                return back()->withErrors(['guardian_revision'=>'家庭からの連絡が更新されました。最新の内容を読み直してから確認してください。']);
+            }
+            if (!$note->guardian_checked_at) {
+                $note->guardian_checked_at=now();
+                $note->guardian_checked_revision=(int)$note->guardian_source_revision;
+                $note->guardian_checked_by=auth()->user()->staff?->id;
+                $note->save();
+            }
+            return back()->with(['message'=>'家庭からの連絡を確認しました。','status'=>'success']);
         });
     }
 

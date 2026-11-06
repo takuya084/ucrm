@@ -152,6 +152,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // 連絡帳
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('contact-notes/{contactNote}/check-guardian', [\App\Http\Controllers\ContactNoteController::class, 'checkGuardian'])->name('contact-notes.check-guardian');
     Route::get('contact-notes',                        [\App\Http\Controllers\ContactNoteController::class, 'index'])  ->name('contact-notes.index');
     Route::post('contact-notes/{contactNote}/publish', [\App\Http\Controllers\ContactNoteController::class, 'publish'])->name('contact-notes.publish');
     Route::post('contact-notes/{contactNote}/unpublish', [\App\Http\Controllers\ContactNoteController::class, 'unpublish'])->name('contact-notes.unpublish');

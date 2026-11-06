@@ -43,6 +43,9 @@ class ContactNote extends Model
     ];
 
     protected $casts = [
+        'guardian_checked_at' => 'datetime',
+        'guardian_checked_revision' => 'integer',
+        'guardian_confirmed_at' => 'datetime',
         'withdrawn_at' => 'datetime',
         'delivery_revision' => 'integer',
         'guardian_source_revision' => 'integer',

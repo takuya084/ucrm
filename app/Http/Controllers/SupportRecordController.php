@@ -101,6 +101,11 @@ class SupportRecordController extends Controller
             $note->withdrawn_at = null;
         }
 
+        if ($note->isDirty(['meal_note','health_note','guardian_message','published_at','support_record_id'])) {
+            $note->publication_hash=null;
+            $note->guardian_confirmed_at=null;
+            $note->guardian_confirmed_hash=null;
+        }
         $note->save();
 
         // 支援記録側の保護者共有フラグは「連絡帳あり」の意味に統一

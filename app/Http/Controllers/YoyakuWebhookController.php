@@ -70,7 +70,7 @@ class YoyakuWebhookController extends Controller
 
         // Only supported event types may change records. Unknown types are not bookings.
         if (!in_array($event, ['booking.created', 'booking.updated', 'booking.deleted',
-            'contact_note.read', 'contact_note.guardian_entry'], true)) {
+            'contact_note.read', 'contact_note.guardian_entry', 'contact_note.pre_use_entry', 'contact_note.confirmed'], true)) {
             return response()->json(['error' => 'unsupported event'], 400);
         }
 
@@ -129,6 +129,24 @@ class YoyakuWebhookController extends Controller
             }
             if ($event==='contact_note.guardian_entry' && (isset($payload['revision']) !== isset($payload['external_ref']))) {
                 return response()->json(['error'=>'contact revision and reference required together'],400);
+            }
+            if ($event==='contact_note.pre_use_entry') {
+                if (!isset($payload['revision']) || !is_string($payload['guardian_entry_ref']??null)
+                    || !\Illuminate\Support\Str::isUuid($payload['guardian_entry_ref']) || array_key_exists('external_ref',$payload)) {
+                    return response()->json(['error'=>'invalid pre-use identity'],400);
+                }
+                foreach (['home_temperature'=>10,'home_sleep'=>100,'home_medication'=>100,'home_condition'=>100,'guardian_comment'=>2000] as $field=>$max) {
+                    if (isset($payload[$field]) && (!is_string($payload[$field]) || mb_strlen($payload[$field])>$max)) {
+                        return response()->json(['error'=>'invalid pre-use field'],400);
+                    }
+                }
+                if ($child->contract_status!=='active') return response()->json(['ignored'=>'child inactive']);
+            }
+            if ($event==='contact_note.confirmed' && (!isset($payload['external_ref'])
+                || !is_string($payload['publication_hash']??null) || !preg_match('/^[a-f0-9]{64}$/D',$payload['publication_hash'])
+                || !$this->absoluteTimestamp($payload['confirmed_at']??null)
+                || $this->absoluteTimestamp($payload['confirmed_at'])->greaterThan(now()->addMinutes(5)))) {
+                return response()->json(['error'=>'invalid confirmation'],400);
             }
             return \Illuminate\Support\Facades\DB::transaction(function () use ($event,$facility,$child,$date,$payload) {
                 // 未作成の場合も直列化する。施設・児童の範囲を越えない。
@@ -281,7 +299,29 @@ class YoyakuWebhookController extends Controller
             return response()->json(['error'=>'contact reference target changed'],409);
         }
 
-        if ($note?->withdrawn_at && !$note->isPublished()) return response()->json(['ignored'=>'contact withdrawn']);
+        if ($event==='contact_note.pre_use_entry') {
+            if ($note?->trashed()) return response()->json(['error'=>'contact deleted'],409);
+            if (($note?->guardian_entry_ref && $note->guardian_entry_ref!==$payload['guardian_entry_ref'])
+                || ContactNote::withTrashed()->where('guardian_entry_ref',$payload['guardian_entry_ref'])
+                    ->when($note,fn($q)=>$q->where('id','!=',$note->id))->exists()) {
+                return response()->json(['error'=>'guardian entry target changed'],409);
+            }
+        }
+
+        if ($event==='contact_note.confirmed') {
+            if (!$note || $note->trashed() || !$note->isPublished() || !$note->publication_hash
+                || !hash_equals($note->publication_hash,$payload['publication_hash'])) {
+                return response()->json(['ok'=>true,'applied'=>false]);
+            }
+            if ($note->guardian_confirmed_hash!==$note->publication_hash) {
+                $note->guardian_confirmed_at=$this->absoluteTimestamp($payload['confirmed_at']);
+                $note->guardian_confirmed_hash=$note->publication_hash;
+                $note->save();
+            }
+            return response()->json(['ok'=>true]);
+        }
+
+        if ($event!=='contact_note.pre_use_entry' && $note?->withdrawn_at && !$note->isPublished()) return response()->json(['ignored'=>'contact withdrawn']);
 
         if ($event === 'contact_note.read') {
             if (!$note || $note->trashed() || !$note->isPublished()) {
@@ -293,7 +333,7 @@ class YoyakuWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        if ($event === 'contact_note.guardian_entry') {
+        if (in_array($event,['contact_note.guardian_entry','contact_note.pre_use_entry'],true)) {
             $revision=isset($payload['revision'])?(int)$payload['revision']:null;
             if ($note?->guardian_source_revision!==null) {
                 if ($revision===null) return response()->json(['error'=>'versioned contact required'],409);
@@ -327,6 +367,10 @@ class YoyakuWebhookController extends Controller
                 }
             }
             $note->fill($fields);
+            if ($event==='contact_note.pre_use_entry') $note->guardian_entry_ref=$payload['guardian_entry_ref'];
+            $note->guardian_checked_at=null;
+            $note->guardian_checked_revision=null;
+            $note->guardian_checked_by=null;
             if ($revision!==null) $note->guardian_source_revision=$revision;
             $note->save();
 
