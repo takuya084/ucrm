@@ -61,6 +61,8 @@
                     @if ($note->isPublished())
                         {{ optional($note->published_at)->format('n/j H:i') }} 公開
                         @if ($note->read_at) ／ 保護者既読 @endif
+                        @if ($note->guardian_confirmed_at) ／ 保護者確認印 {{ $note->guardian_confirmed_at->format('n/j H:i') }} @endif
+                        @if ($note->guardian_checked_at) ／ 家庭連絡を事業所確認 {{ $note->guardian_checked_at->format('n/j H:i') }} @endif
                     @elseif ($note->guardian_message || $note->meal_note || $note->health_note)
                         未公開（下書き）
                     @else

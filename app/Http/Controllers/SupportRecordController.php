@@ -70,6 +70,8 @@ class SupportRecordController extends Controller
             'goal_progress'    => $data['goal_progress'] ?? null,
         ];
 
+        // Serialize first creation with incoming morning entries as well as existing notes.
+        Child::where('facility_id',$record->child->facility_id)->whereKey($record->child_id)->lockForUpdate()->firstOrFail();
         // ソフトデリート済みがあると unique(child_id, date) に当たるため withTrashed で引く
         $note = ContactNote::withTrashed()
             ->lockForUpdate()
@@ -101,7 +103,9 @@ class SupportRecordController extends Controller
             $note->withdrawn_at = null;
         }
 
-        if ($note->isDirty(['meal_note','health_note','guardian_message','published_at','support_record_id'])) {
+        $note->setRelation('supportRecord',$record->load('programs'));
+        $note->unsetRelation('publishedByStaff');
+        if ($note->publication_hash!==$note->currentPublicationHash()) {
             $note->publication_hash=null;
             $note->guardian_confirmed_at=null;
             $note->guardian_confirmed_hash=null;

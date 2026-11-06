@@ -310,7 +310,8 @@ class YoyakuWebhookController extends Controller
 
         if ($event==='contact_note.confirmed') {
             if (!$note || $note->trashed() || !$note->isPublished() || !$note->publication_hash
-                || !hash_equals($note->publication_hash,$payload['publication_hash'])) {
+                || !hash_equals($note->publication_hash,$payload['publication_hash'])
+                || $note->currentPublicationHash()!==$payload['publication_hash']) {
                 return response()->json(['ok'=>true,'applied'=>false]);
             }
             if ($note->guardian_confirmed_hash!==$note->publication_hash) {
