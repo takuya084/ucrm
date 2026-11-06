@@ -40,6 +40,8 @@ class ContactNoteWorkflowTest extends TestCase
         $this->assertSame('draft',$note->status); $this->assertNull($note->published_at); $this->assertNull($note->read_at);
         $this->actingAs($this->user)->post('/contact-notes/'.$note->id.'/check-guardian',['guardian_revision'=>1])->assertRedirect();
         $this->assertNotNull($note->fresh()->guardian_checked_at); $this->assertSame($this->staff->id,(int)$note->fresh()->guardian_checked_by);
+        $this->event()->assertOk()->assertJson(['applied'=>false]);
+        $this->assertNotNull($note->fresh()->guardian_checked_at);
         $this->event(data:['revision'=>2,'guardian_comment'=>'Synthetic newer condition'])->assertOk();
         $this->assertNull($note->fresh()->guardian_checked_at);
         $this->post('/contact-notes/'.$note->id.'/check-guardian',['guardian_revision'=>1])->assertSessionHasErrors('guardian_revision');
@@ -86,4 +88,24 @@ class ContactNoteWorkflowTest extends TestCase
         $this->event('contact_note.confirmed',['external_ref'=>'ucrm:'.$note->id,'publication_hash'=>$note->publication_hash,'confirmed_at'=>now()->toIso8601String()])->assertOk()->assertJson(['applied'=>false]);
         $this->assertNull($note->fresh()->guardian_confirmed_at);
     }
+    public function test_public_support_edits_invalidate_a_stamp_but_internal_notes_do_not(): void
+    {
+        $this->event()->assertOk(); $note=$this->publish();
+        $support=\App\Models\SupportRecord::create(['child_id'=>$this->child->id,'date'=>'2026-11-07',
+            'staff_id'=>$this->staff->id,'condition'=>'good','behavior_note'=>'Synthetic internal observation']);
+        $note->update(['support_record_id'=>$support->id]);
+        (new PushContactNote($note->id))->handle(app(YoyakuApiService::class));
+        $hash=$note->fresh()->publication_hash;
+        $stamp=['external_ref'=>'ucrm:'.$note->id,'publication_hash'=>$hash,'confirmed_at'=>now()->toIso8601String()];
+        $this->event('contact_note.confirmed',$stamp)->assertOk();
+        $support->update(['behavior_note'=>'Synthetic edited internal observation']);
+        $this->assertSame($hash,$note->fresh()->currentPublicationHash());
+        $support->update(['condition'=>'poor']);
+        $this->assertNotSame($hash,$note->fresh()->currentPublicationHash());
+        $this->event('contact_note.confirmed',$stamp)->assertOk()->assertJson(['applied'=>false]);
+        (new PushContactNote($note->id))->handle(app(YoyakuApiService::class));
+        $this->assertNull($note->fresh()->guardian_confirmed_at);
+        Http::assertSent(fn($request)=>!array_key_exists('behavior_note',$request->data()));
+    }
+
 }

@@ -106,7 +106,6 @@ class PushContactNote implements ShouldQueue
             if ($note->publication_hash!==$hash) {
                 $note->guardian_confirmed_at=null;
                 $note->guardian_confirmed_hash=null;
-                $note->read_at=null;
             }
             $note->publication_hash=$hash;
             $note->saveQuietly();
