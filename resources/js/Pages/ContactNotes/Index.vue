@@ -138,6 +138,23 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
                 </template>
               </div>
 
+              <div v-if="row.note?.guardian_submitted_at" class="w-full rounded-md border border-amber-200 bg-amber-50 p-3 space-y-2">
+                <p class="font-semibold text-sm">家庭からの連絡</p>
+                <p class="text-sm whitespace-pre-wrap">
+                  <span v-if="row.note.home_temperature">体温：{{ row.note.home_temperature }}　</span>
+                  <span v-if="row.note.home_sleep">睡眠：{{ row.note.home_sleep }}　</span>
+                  <span v-if="row.note.home_medication">服薬：{{ row.note.home_medication }}　</span>
+                  <span v-if="row.note.home_condition">体調：{{ row.note.home_condition }}</span>
+                </p>
+                <p class="text-sm whitespace-pre-wrap">{{ row.note.guardian_comment }}</p>
+                <p v-if="row.note.guardian_checked_at" class="text-sm text-green-700">事業所確認済み {{ new Date(row.note.guardian_checked_at).toLocaleString('ja-JP') }}</p>
+                <button v-else type="button" class="rounded-md bg-amber-700 px-3 py-2 text-sm text-white"
+                  @click="router.post(route('contact-notes.check-guardian', row.note.id), { guardian_revision: row.note.guardian_source_revision ?? 0 }, { preserveScroll: true })">家庭からの連絡を確認した</button>
+              </div>
+              <p v-if="row.note?.status === 'published'" class="w-full text-sm" :class="row.note.guardian_confirmed_at ? 'text-green-700' : 'text-gray-500'">
+                {{ row.note.guardian_confirmed_at ? '保護者確認印済み ' + new Date(row.note.guardian_confirmed_at).toLocaleString('ja-JP') : '保護者の確認印待ち' }}
+              </p>
+
               <!-- メッセージ冒頭プレビュー -->
               <p v-if="row.note?.guardian_message" class="hidden sm:block flex-1 text-xs text-gray-400 truncate min-w-0">
                 {{ row.note.guardian_message }}

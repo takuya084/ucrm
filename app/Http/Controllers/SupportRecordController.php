@@ -70,6 +70,8 @@ class SupportRecordController extends Controller
             'goal_progress'    => $data['goal_progress'] ?? null,
         ];
 
+        // Serialize first creation with incoming morning entries as well as existing notes.
+        Child::where('facility_id',$record->child->facility_id)->whereKey($record->child_id)->lockForUpdate()->firstOrFail();
         // ソフトデリート済みがあると unique(child_id, date) に当たるため withTrashed で引く
         $note = ContactNote::withTrashed()
             ->lockForUpdate()
@@ -101,6 +103,13 @@ class SupportRecordController extends Controller
             $note->withdrawn_at = null;
         }
 
+        $note->setRelation('supportRecord',$record->load('programs'));
+        $note->unsetRelation('publishedByStaff');
+        if ($note->publication_hash!==$note->currentPublicationHash()) {
+            $note->publication_hash=null;
+            $note->guardian_confirmed_at=null;
+            $note->guardian_confirmed_hash=null;
+        }
         $note->save();
 
         // 支援記録側の保護者共有フラグは「連絡帳あり」の意味に統一

@@ -71,7 +71,7 @@ class PushContactNote implements ShouldQueue
 
                 // 実施プログラム（活動名と時間のみ。詳細メモは内部情報のため送らない）
                 $activities = $note->supportRecord
-                    ? $note->supportRecord->programs->map(fn ($p) => [
+                    ? $note->supportRecord->programs->sortBy('id')->map(fn ($p) => [
                         'name'             => $p->name,
                         'duration_minutes' => $p->pivot->duration_minutes,
                     ])->values()->all()
@@ -102,6 +102,13 @@ class PushContactNote implements ShouldQueue
                 'guardian_message' => $note->guardian_message,
                 'staff_name'       => $note->publishedByStaff?->name,
             ];
+            $hash=$note->currentPublicationHash();
+            if ($note->publication_hash!==$hash) {
+                $note->guardian_confirmed_at=null;
+                $note->guardian_confirmed_hash=null;
+            }
+            $note->publication_hash=$hash;
+            $note->saveQuietly();
             return compact('note','facility','payload');
         });
         if (!$delivery) return;

@@ -43,6 +43,9 @@ class ContactNote extends Model
     ];
 
     protected $casts = [
+        'guardian_checked_at' => 'datetime',
+        'guardian_checked_revision' => 'integer',
+        'guardian_confirmed_at' => 'datetime',
         'withdrawn_at' => 'datetime',
         'delivery_revision' => 'integer',
         'guardian_source_revision' => 'integer',
@@ -141,4 +144,24 @@ class ContactNote extends Model
     {
         return filled($this->guardian_message) || filled($this->meal_note) || filled($this->health_note);
     }
+    /** Only fields that are actually public; internal support notes never enter this fingerprint. */
+    public function publicContent(): array
+    {
+        $this->loadMissing(['supportRecord.programs','publishedByStaff']);
+        return [
+            'published_at'=>$this->published_at?->toIso8601String(),
+            'condition'=>$this->supportRecord?->condition,
+            'activities'=>$this->supportRecord ? $this->supportRecord->programs->sortBy('id')->map(fn($program)=>[
+                'name'=>$program->name,'duration_minutes'=>$program->pivot->duration_minutes,
+            ])->values()->all() : [],
+            'meal_note'=>$this->meal_note,'health_note'=>$this->health_note,
+            'guardian_message'=>$this->guardian_message,'staff_name'=>$this->publishedByStaff?->name,
+        ];
+    }
+
+    public function currentPublicationHash(): ?string
+    {
+        return $this->isPublished() ? hash('sha256',json_encode($this->publicContent(),JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)) : null;
+    }
+
 }

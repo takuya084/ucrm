@@ -348,3 +348,16 @@ test('contact publication can be withdrawn and republished without deleting hist
   await expect(page.getByRole('button',{name:'公開を取り下げる',exact:true})).toBeVisible();
   expect(snapshot().notes.find(n=>n.id===own.id)).toMatchObject({status:'published',withdrawn_at:null,guardian_comment:'架空の家庭返信'});
 });
+
+test('staff reviews the morning family entry before any support record is written',async({page})=>{
+  fixture('morning-entry'); await login(page,'staff');
+  await visit(page,'/contact-notes?date=2026-07-01','連絡帳');
+  await expect(page.getByText('架空の利用前の体調連絡',{exact:true})).toBeVisible();
+  await expect(page.getByText('体温：36.6',{exact:false})).toBeVisible();
+  await expect(page.getByText('保護者確認印済み',{exact:false})).toHaveCount(0);
+  await page.getByRole('button',{name:'家庭からの連絡を確認した',exact:true}).click();
+  await expect(page.getByText(/事業所確認済み /)).toBeVisible();
+  await page.reload(); await expect(page.getByText(/事業所確認済み /)).toBeVisible();
+  expect(snapshot().notes[0].guardian_checked_at).not.toBeNull();
+  expect(snapshot().notes[0].status).toBe('draft');
+});
