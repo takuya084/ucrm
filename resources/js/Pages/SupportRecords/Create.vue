@@ -144,7 +144,7 @@ const CONDITION_OPTIONS = [
   <Head :title="child.name + ' - 記録・連絡帳'" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <div class="flex items-center gap-4">
+      <div class="flex flex-wrap items-center gap-4">
         <Link :href="route('usage-records.index', { date })" class="text-gray-400 hover:text-gray-600 text-sm">
           ← 出席管理へ
         </Link>

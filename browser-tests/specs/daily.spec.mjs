@@ -442,7 +442,9 @@ test('daily work leads staff from family review to one saved record without losi
   await visit(page,'/dashboard?date=2026-07-01','日別の業務');
   await expect(page.getByRole('button',{name:/未確認の連絡.*0件.*家庭の連絡を確認/})).toBeVisible();
   await expect(page.getByRole('button',{name:/出席児童の未入力記録.*0件.*支援記録を入力/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/支援記録保存後の未作成連絡帳.*1件.*連絡帳を入力/})).toBeVisible();
   await page.getByRole('listitem',{name:ownChild().name+'の業務',exact:true}).getByRole('link',{name:'記録・連絡帳を編集',exact:true}).click();
   await expect(behavior).toHaveValue('家庭の連絡を読みながら入力した架空の記録');
   expect(snapshot().support).toHaveLength(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });

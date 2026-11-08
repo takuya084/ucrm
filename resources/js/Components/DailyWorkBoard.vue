@@ -8,6 +8,7 @@ const filter = ref('all')
 const tasks = [
   { key: 'home', title: '家庭の連絡を確認', description: '未確認の連絡' },
   { key: 'record', title: '支援記録を入力', description: '出席児童の未入力記録' },
+  { key: 'report', title: '連絡帳を入力', description: '支援記録保存後の未作成連絡帳' },
   { key: 'draft', title: '連絡帳の下書きを確認', description: '保護者へ未公開の連絡帳' },
   { key: 'delivery', title: '連携状況を確認', description: '待機中・確認が必要な連携' },
 ]
@@ -23,7 +24,7 @@ const changeDate = () => { if (selectedDate.value) router.get(route('dashboard')
       <Link :href="route('usage-records.index', { date })" class="px-4 py-2 rounded-md bg-primary-600 text-white text-sm font-semibold">出欠・送迎を確認</Link>
       <p class="text-xs text-gray-600">日付を選び、残っている仕事から始めてください。</p>
     </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3" aria-label="対応が必要な仕事">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3" aria-label="対応が必要な仕事">
       <button v-for="task in tasks" :key="task.key" type="button" @click="filter = task.key" :aria-pressed="filter === task.key"
         :class="['text-left rounded-xl border p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600', filter === task.key ? 'bg-primary-50 border-primary-500' : 'bg-white hover:border-primary-400']">
         <span class="block text-xs text-gray-600">{{ task.description }}</span>

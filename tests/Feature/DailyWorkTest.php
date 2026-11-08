@@ -51,7 +51,7 @@ class DailyWorkTest extends TestCase
         $usage = UsageRecord::create(['child_id'=>$child->id,'facility_id'=>$facility->id,'date'=>'2026-12-01','status'=>'attended']);
         $record = SupportRecord::create(['child_id'=>$child->id,'usage_record_id'=>$usage->id,'staff_id'=>$staff->id,'date'=>'2026-12-01','condition'=>'normal']);
         $this->actingAs($user)->get('/dashboard?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->where('dailyWork.counts.record',0)->where('dailyWork.rows.0.record_url',route('support-records.edit',$record)));
+            ->where('dailyWork.counts.record',0)->where('dailyWork.counts.report',1)->where('dailyWork.rows.0.record_url',route('support-records.edit',$record)));
         $this->get('/contact-notes?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page->where('rows.0.support_record_id',$record->id));
     }
 

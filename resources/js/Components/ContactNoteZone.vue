@@ -60,8 +60,8 @@ const generateDraft = async () => {
 <template>
   <section class="border-2 border-green-300 rounded-lg overflow-hidden">
     <!-- ゾーンヘッダ -->
-    <div class="flex items-center justify-between px-4 py-2 bg-green-50 border-b border-green-200">
-      <div class="flex items-center gap-2">
+    <div class="flex flex-wrap gap-3 items-center justify-between px-4 py-2 bg-green-50 border-b border-green-200">
+      <div class="flex flex-wrap items-center gap-2">
         <span class="text-green-600 font-bold text-sm">3. 保護者への連絡帳</span>
         <span class="text-xs text-green-500">公開すると、この欄の内容が保護者に届きます</span>
       </div>

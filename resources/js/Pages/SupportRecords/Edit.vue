@@ -143,7 +143,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
   <Head :title="record.child?.name + ' - 記録・連絡帳'" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <div class="flex items-center gap-4">
+      <div class="flex flex-wrap items-center gap-4">
         <Link :href="route('usage-records.index', { date: recordDate })" class="text-gray-400 hover:text-gray-600 text-sm">
           ← 出席管理へ
         </Link>

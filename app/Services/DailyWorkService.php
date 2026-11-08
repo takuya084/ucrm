@@ -35,11 +35,12 @@ class DailyWorkService
                 'tasks' => [
                     'home' => $state['homePending'],
                     'record' => $attended && !$record,
+                    'report' => $attended && $record && !($note?->hasFacilityContent()),
                     'draft' => $note && $note->hasFacilityContent() && !$note->isPublished() && !$note->withdrawn_at,
                     'delivery' => (bool) ($state['delivery'] && str_contains($state['delivery'], '要確認')),
                 ],
             ];
         })->sortBy('child_name')->values();
-        return ['rows' => $rows, 'hasAttendance' => $usage->isNotEmpty(), 'counts' => collect(['home','record','draft','delivery'])->mapWithKeys(fn ($task) => [$task => $rows->filter(fn ($row) => $row['tasks'][$task])->count()])->all()];
+        return ['rows' => $rows, 'hasAttendance' => $usage->isNotEmpty(), 'counts' => collect(['home','record','report','draft','delivery'])->mapWithKeys(fn ($task) => [$task => $rows->filter(fn ($row) => $row['tasks'][$task])->count()])->all()];
     }
 }
