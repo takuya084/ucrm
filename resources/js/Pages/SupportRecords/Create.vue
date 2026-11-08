@@ -58,11 +58,11 @@ const expandedPrograms = ref(new Set())
 
 const saving = ref(false)
 const store = () => {
+  if (saving.value) return
   saving.value = true
-  // router.post はリダイレクトを自動追従しキャッシュ問題を起こすため、
-  // axios で直接 POST し、成功後に router.visit で出席管理に遷移する
-  axios.post(route('support-records.store'), form).then(() => {
-    router.visit(route('usage-records.index', { date: props.date }))
+  // 作成済みの記録へ切り替え、次の保存は同じ記録の更新にする。
+  axios.post(route('support-records.store'), form).then(({ data }) => {
+    router.visit(data.edit_url, { preserveScroll: true })
   }).catch(err => {
     saving.value = false
     // バリデーションエラーがあればページをリロードして表示
@@ -369,8 +369,8 @@ const CONDITION_OPTIONS = [
                 :href="route('usage-records.index', { date })"
                 class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
               >キャンセル</Link>
-              <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
-                記録を保存
+              <button type="submit" :disabled="saving" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600 disabled:opacity-50">
+                {{ saving ? '保存中…' : '記録を保存' }}
               </button>
             </div>
           </form>
@@ -379,3 +379,4 @@ const CONDITION_OPTIONS = [
     </div>
   </BreezeAuthenticatedLayout>
 </template>
+

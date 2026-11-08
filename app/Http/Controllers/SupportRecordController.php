@@ -168,7 +168,7 @@ class SupportRecordController extends Controller
     /** 支援記録保存 */
     public function store(StoreSupportRecordRequest $request)
     {
-        DB::transaction(function () use ($request) {
+        $record = DB::transaction(function () use ($request) {
             $record = SupportRecord::create([
                 'child_id'                => $request->child_id,
                 'usage_record_id'         => $request->usage_record_id,
@@ -196,6 +196,7 @@ class SupportRecordController extends Controller
             }
 
             $this->upsertContactNote($request, $record);
+            return $record;
         });
 
         $dateStr = \Carbon\Carbon::parse($request->date)->toDateString();
@@ -203,9 +204,9 @@ class SupportRecordController extends Controller
         session()->flash('status', 'success');
         // axios から呼ばれた場合は JSON を返す（Inertia リダイレクト追従によるキャッシュ問題を回避）
         if (! $request->header('X-Inertia')) {
-            return response()->json(['date' => $dateStr]);
+            return response()->json(['date' => $dateStr, 'edit_url' => route('support-records.edit', $record)]);
         }
-        return to_route('usage-records.index', ['date' => $dateStr]);
+        return to_route('support-records.edit', $record);
     }
 
     /** 支援記録詳細 */
@@ -294,6 +295,7 @@ class SupportRecordController extends Controller
         if (! $request->header('X-Inertia')) {
             return response()->json(['date' => $dateStr]);
         }
-        return to_route('usage-records.index', ['date' => $dateStr]);
+        return to_route('support-records.edit', $supportRecord);
     }
 }
+
