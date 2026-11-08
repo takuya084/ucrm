@@ -2,6 +2,8 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { router } from '@inertiajs/vue3'
+import QuickNav from '@/Components/QuickNav.vue'
+import ContactNoteStatus from '@/Components/ContactNoteStatus.vue'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { computed, ref } from 'vue'
 
@@ -67,7 +69,9 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
 
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
+        <QuickNav />
         <FlashMessage />
+        <p class="text-sm text-gray-600">家庭からの連絡を確認し、記録・連絡帳を入力して保護者へ公開します。保存・公開・連携・確認印はそれぞれ別の状態です。</p>
 
         <!-- 日付ナビ -->
         <div class="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3 flex-wrap">
@@ -109,34 +113,14 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
             この日の対象児童がいません
           </div>
           <div v-else class="divide-y">
-            <div v-for="row in rows" :key="row.child_id" class="p-4 flex items-center gap-3 flex-wrap">
+            <div v-for="row in rows" :key="row.child_id" :id="'child-' + row.child_id" class="scroll-mt-4 p-4 flex items-center gap-3 flex-wrap">
               <!-- 児童名 -->
               <div class="w-40">
                 <Link :href="route('children.show', row.child_id)"
                   class="font-medium text-gray-900 hover:text-primary-600 text-sm">{{ row.child_name }}</Link>
               </div>
 
-              <!-- 状態バッジ -->
-              <div class="flex items-center gap-2 flex-wrap">
-                <span v-if="!row.note" class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-400">未作成</span>
-                <template v-else>
-                  <span :class="['text-xs px-2 py-1 rounded-full border',
-                    row.note.status === 'published'
-                      ? 'bg-green-50 text-green-600 border-green-200'
-                      : 'bg-gray-50 text-gray-500 border-gray-200']">
-                    {{ statusLabels[row.note.status] ?? row.note.status }}
-                  </span>
-                  <span v-if="row.note.read_at" class="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
-                    ✓ 既読 {{ fmtTime(row.note.read_at) }}
-                  </span>
-                  <span v-if="row.note.guardian_submitted_at" class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
-                    家庭記入あり
-                  </span>
-                  <span v-if="row.note.withdrawn_at" class="text-xs text-amber-700">
-                    {{ row.note.yoyaku_synced_at ? '公開取り下げ済み' : '取り下げを連携中' }}
-                  </span>
-                </template>
-              </div>
+              <ContactNoteStatus :state="row.state" />
 
               <div v-if="row.note?.guardian_submitted_at" class="w-full rounded-md border border-amber-200 bg-amber-50 p-3 space-y-2">
                 <p class="font-semibold text-sm">家庭からの連絡</p>
@@ -147,14 +131,10 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
                   <span v-if="row.note.home_condition">体調：{{ row.note.home_condition }}</span>
                 </p>
                 <p class="text-sm whitespace-pre-wrap">{{ row.note.guardian_comment }}</p>
-                <p v-if="row.note.guardian_checked_at" class="text-sm text-green-700">事業所確認済み {{ new Date(row.note.guardian_checked_at).toLocaleString('ja-JP') }}</p>
+                <p v-if="!row.state.homePending" class="text-sm text-green-700">事業所確認済み {{ new Date(row.note.guardian_checked_at).toLocaleString('ja-JP') }}</p>
                 <button v-else type="button" class="rounded-md bg-amber-700 px-3 py-2 text-sm text-white"
                   @click="router.post(route('contact-notes.check-guardian', row.note.id), { guardian_revision: row.note.guardian_source_revision ?? 0 }, { preserveScroll: true })">家庭からの連絡を確認した</button>
               </div>
-              <p v-if="row.note?.status === 'published'" class="w-full text-sm" :class="row.note.guardian_confirmed_at ? 'text-green-700' : 'text-gray-500'">
-                {{ row.note.guardian_confirmed_at ? '保護者確認印済み ' + new Date(row.note.guardian_confirmed_at).toLocaleString('ja-JP') : '保護者の確認印待ち' }}
-              </p>
-
               <!-- メッセージ冒頭プレビュー -->
               <p v-if="row.note?.guardian_message" class="hidden sm:block flex-1 text-xs text-gray-400 truncate min-w-0">
                 {{ row.note.guardian_message }}
@@ -173,15 +153,15 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
                   class="text-xs px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
                 >公開する</button>
                 <Link
-                  v-if="row.note?.support_record_id"
-                  :href="route('support-records.show', row.note.support_record_id)"
+                  v-if="row.support_record_id"
+                  :href="route('support-records.edit', row.support_record_id)"
                   class="text-xs px-3 py-1.5 border border-primary-300 text-primary-600 rounded-md hover:bg-primary-50"
-                >記録を見る</Link>
+                >記録・連絡帳を編集</Link>
                 <Link
                   v-else-if="row.usage_record_id"
                   :href="route('support-records.create', { usage_record_id: row.usage_record_id })"
                   class="text-xs px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
-                >記録・連絡帳を書く</Link>
+                >記録・連絡帳を入力</Link>
               </div>
             </div>
           </div>

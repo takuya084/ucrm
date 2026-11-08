@@ -1,9 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import Pagination from '@/Components/Pagination.vue'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
@@ -11,11 +11,14 @@ const props = defineProps({
   filters: Object,
 })
 
+const page = usePage()
+const section = computed(() => { const value = new URL(page.url, 'http://workspace.local').searchParams.get('section'); return ['plan', 'cert'].includes(value) ? value : null })
 const search = ref(props.filters?.search ?? '')
 const status = ref(props.filters?.status ?? '')
 
 const searchChildren = () => {
   router.get(route('children.index'), {
+    section: section.value,
     search: search.value,
     status: status.value,
   }, { preserveState: true, replace: true })
@@ -52,6 +55,7 @@ const certExpiryClass = (dateStr) => {
         <div class="bg-white border border-gray-200 sm:rounded-lg">
           <div class="p-6">
             <FlashMessage />
+          <p v-if="section" class="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-900">{{ section === 'plan' ? '児童を選ぶと、アセスメント・個別支援計画・モニタリング・過去の支援記録が開きます。' : '児童を選ぶと、受給者証と利用契約の情報が開きます。' }}</p>
 
             <!-- 検索バー -->
             <div class="flex flex-wrap gap-2 mb-6 items-center">
@@ -116,7 +120,7 @@ const certExpiryClass = (dateStr) => {
                     class="border-b hover:bg-gray-50"
                   >
                     <td class="px-4 py-3 font-medium text-gray-900">
-                      <Link :href="route('children.show', child.id)" class="hover:underline text-primary-600">
+                      <Link :href="route('children.show', { child: child.id, ...(section ? { tab: section } : {}) })" class="hover:underline text-primary-600">
                         {{ child.name }}
                       </Link>
                     </td>

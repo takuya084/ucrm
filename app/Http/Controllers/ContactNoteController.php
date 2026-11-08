@@ -23,11 +23,12 @@ class ContactNoteController extends Controller
     public function index(Request $request)
     {
         $facilityId = $this->facilityId();
-        $date       = $request->date ?: today()->format('Y-m-d');
+        $validated = $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
+        $date = $validated['date'] ?? today()->format('Y-m-d');
 
         $usageRecords = UsageRecord::where('facility_id', $facilityId)
             ->whereDate('date', $date)
-            ->with('child:id,name')
+            ->with(['child:id,name', 'supportRecord:id,usage_record_id'])
             ->get();
 
         $notes = ContactNote::where('facility_id', $facilityId)
@@ -44,6 +45,8 @@ class ContactNoteController extends Controller
                 'child_name'            => $ur->child?->name,
                 'usage_record_id'       => $ur->id,
                 'note'                  => $note,
+                'state' => \App\Services\ContactNoteStatus::for($note),
+                'support_record_id' => $ur->supportRecord?->id ?? $note?->support_record_id,
             ];
         });
 
@@ -55,6 +58,8 @@ class ContactNoteController extends Controller
                 'child_name'      => $note->child?->name,
                 'usage_record_id' => null,
                 'note'            => $note,
+                'state' => \App\Services\ContactNoteStatus::for($note),
+                'support_record_id' => $note->support_record_id,
             ]);
         }
 

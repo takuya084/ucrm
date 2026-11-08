@@ -34,7 +34,7 @@ class UsageRecordController extends Controller
         // 連絡帳の状態（児童ID => 連絡帳）。バッジ表示用
         $noteMap = ContactNote::where('facility_id', $facilityId)
             ->whereDate('date', $date)
-            ->get(['id', 'child_id', 'status', 'read_at', 'guardian_submitted_at'])
+            ->get()
             ->keyBy('child_id');
 
         if ($hasRecords) {
@@ -193,6 +193,7 @@ class UsageRecordController extends Controller
             'service_type'            => $rec->service_type ?? '',
             'has_support_record'      => $rec->supportRecord !== null,
             'support_record_id'       => $rec->supportRecord?->id,
+            'contact_note_state' => \App\Services\ContactNoteStatus::for($note),
             'contact_note_status'     => $note?->status,
             'contact_note_read'       => (bool) $note?->read_at,
             'contact_note_home_entry' => (bool) $note?->guardian_submitted_at,
@@ -226,6 +227,7 @@ class UsageRecordController extends Controller
             'service_type'            => '',
             'has_support_record'      => false,
             'support_record_id'       => null,
+            'contact_note_state' => \App\Services\ContactNoteStatus::for($note),
             'contact_note_status'     => $note?->status,
             'contact_note_read'       => (bool) $note?->read_at,
             'contact_note_home_entry' => (bool) $note?->guardian_submitted_at,

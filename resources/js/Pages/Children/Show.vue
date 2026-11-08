@@ -1,6 +1,6 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
@@ -33,7 +33,11 @@ const destroy = () => {
 }
 
 // ── タブ ─────────────────────────────────
-const activeTab = ref('basic')
+const page = usePage()
+const activeTab = computed({
+  get: () => { const tab = new URL(page.url, 'http://workspace.local').searchParams.get('tab'); return ['basic','cert','plan','usage'].includes(tab) ? tab : 'basic' },
+  set: tab => router.get(route('children.show', props.child.id), { tab }, { preserveState: true, preserveScroll: true, replace: true }),
+})
 
 const daysUntil = (dateStr) => Math.ceil((new Date(dateStr.slice(0, 10)) - new Date()) / 86400000)
 

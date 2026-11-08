@@ -1,9 +1,12 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
-import QuickNav from '@/Components/QuickNav.vue'
+import DailyWorkBoard from '@/Components/DailyWorkBoard.vue'
 
 const props = defineProps({
+  dailyWork: Object,
+  date: String,
+  calendarToday: String,
   todayStats:            Object,
   activeChildren:        Number,
   expiringCertificates:  Array,
@@ -34,19 +37,19 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
 </script>
 
 <template>
-  <Head title="ダッシュボード" />
+  <Head title="今日の業務" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">ダッシュボード</h2>
+      <h2 class="font-semibold text-xl text-gray-800">{{ date === calendarToday ? '今日の業務' : '日別の業務' }}</h2>
     </template>
 
     <div class="py-8">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-        <QuickNav />
+        <DailyWorkBoard :work="dailyWork" :date="date" />
 
         <!-- 前月分 請求業務の状態 -->
-        <Link :href="billingPeriod ? route('billing.show', billingPeriod.id) : route('billing.index')"
+        <Link v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="billingPeriod ? route('billing.show', billingPeriod.id) : route('billing.index')"
           class="block rounded-lg border px-4 py-3 transition hover:shadow"
           :class="billingPeriod?.status === 'completed' ? 'bg-white border-gray-200' : isBillingWindow ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'">
           <div class="flex items-center gap-3 flex-wrap text-sm">
@@ -63,7 +66,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
         <!-- 今日のサマリー -->
         <section>
           <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            本日の状況（{{ todayStats.date }}）
+            選択日の状況（{{ todayStats.date }}）
           </h3>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div class="bg-white rounded-lg border border-gray-200 p-5 text-center">
@@ -72,11 +75,11 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             </div>
             <div class="bg-green-50 rounded-lg shadow-sm p-5 text-center">
               <div class="text-3xl font-bold text-green-700">{{ todayStats.attended }}</div>
-              <div class="text-xs text-gray-500 mt-1">本日出席</div>
+              <div class="text-xs text-gray-500 mt-1">出席</div>
             </div>
             <div class="bg-amber-50 rounded-lg shadow-sm p-5 text-center">
-              <div class="text-3xl font-bold text-amber-700">{{ todayStats.total - todayStats.attended }}</div>
-              <div class="text-xs text-gray-500 mt-1">本日欠席</div>
+              <div class="text-3xl font-bold text-amber-700">{{ todayStats.absent }}</div>
+              <div class="text-xs text-gray-500 mt-1">欠席</div>
             </div>
             <div class="bg-primary-50 rounded-lg shadow-sm p-5 text-center">
               <div class="text-3xl font-bold text-primary-700">{{ todayStats.withSupport }}</div>
@@ -104,7 +107,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             <ul v-else class="divide-y">
               <li v-for="cert in expiringCertificates" :key="cert.id" class="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <Link :href="route('children.show', cert.child_id)" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                  <Link :href="route('children.show', { child: cert.child_id, tab: 'cert' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
                     {{ cert.child?.name }}
                   </Link>
                   <div class="text-xs text-gray-500">有効期限：{{ cert.valid_to }}</div>
@@ -139,7 +142,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             <ul v-else class="divide-y">
               <li v-for="mon in monitoringDue" :key="mon.id" class="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <Link :href="route('children.show', mon.child_id)" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                  <Link :href="route('children.show', { child: mon.child_id, tab: 'plan' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
                     {{ mon.child?.name }}
                   </Link>
                   <div class="text-xs text-gray-500">次回予定：{{ mon.next_review_date }}</div>
@@ -176,7 +179,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             <ul v-else class="divide-y">
               <li v-for="plan in pendingAgreements" :key="plan.id" class="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <Link :href="route('children.show', plan.child_id)" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                  <Link :href="route('children.show', { child: plan.child_id, tab: 'plan' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
                     {{ plan.child?.name }}
                   </Link>
                   <div class="text-xs text-gray-500">{{ plan.valid_from }} 〜 {{ plan.valid_to }}</div>
@@ -202,7 +205,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             <ul v-else class="divide-y">
               <li v-for="inq in openInquiries" :key="inq.id" class="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <Link :href="route('children.show', inq.child_id)" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                  <Link :href="route('inquiries.index')" class="text-sm font-medium text-gray-800 hover:text-primary-600">
                     {{ inq.child?.name }}
                   </Link>
                   <div class="text-xs text-gray-500">{{ inq.category }} — {{ inq.created_at?.slice(0, 10) }}</div>

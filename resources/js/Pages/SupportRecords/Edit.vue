@@ -3,6 +3,7 @@ import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import ContactNoteZone from '@/Components/ContactNoteZone.vue'
+import GuardianEntry from '@/Components/GuardianEntry.vue'
 import { reactive, computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
@@ -15,6 +16,7 @@ const props = defineProps({
   selectedItems:      Object,
   staffList:          Array,
   contactNote:        Object,
+  contactNoteState: Object,
   shortTermGoal:      String,
   fiveDomainLabels:   Object,
   goalProgressLabels: Object,
@@ -138,10 +140,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
 
 <template>
-  <Head :title="record.child?.name + ' - 支援記録編集'" />
+  <Head :title="record.child?.name + ' - 記録・連絡帳'" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <div class="flex items-center gap-4">
+      <div class="flex flex-wrap items-center gap-4">
         <Link :href="route('usage-records.index', { date: recordDate })" class="text-gray-400 hover:text-gray-600 text-sm">
           ← 出席管理へ
         </Link>
@@ -149,7 +151,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
           ← 記録詳細へ
         </Link>
         <h2 class="font-semibold text-xl text-gray-800">
-          支援記録編集 — {{ record.child?.name }}（{{ record.date?.slice(0, 10) }}）
+          記録・連絡帳 — {{ record.child?.name }}（{{ recordDate }}）
         </h2>
       </div>
     </template>
@@ -158,6 +160,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
       <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white border border-gray-200 rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
+          <GuardianEntry :note="contactNote" :state="contactNoteState" />
 
           <div v-if="record.child?.care_note" class="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm">
             <span class="font-medium text-amber-700">⚠ 配慮事項：</span>
@@ -165,11 +168,12 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
           </div>
 
           <div class="mb-5 p-2.5 bg-gray-100 border border-gray-200 rounded-md text-xs text-gray-600">
-            このフォームは<span class="font-bold">施設内記録</span>です。保護者に公開されるのは下部の「連絡帳」欄のみです。
+            家庭からの連絡を確認し、下の支援記録と連絡帳を入力してください。<span class="font-bold">保護者に公開されるのは「3. 保護者への連絡帳」の内容のみです。</span>
           </div>
 
           <form @submit.prevent="update" class="space-y-6">
 
+            <h3 class="font-bold text-gray-800">2. 事業所内の支援記録（職員のみ）</h3>
             <!-- 様子 -->
             <section>
               <label :class="labelClass">今日の様子 <span class="text-red-500">*</span></label>
@@ -352,6 +356,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
             <ContactNoteZone
               :form="form.contact_note"
               :contact-note="contactNote"
+              :state="contactNoteState"
               :short-term-goal="shortTermGoal"
               :five-domain-labels="fiveDomainLabels"
               :goal-progress-labels="goalProgressLabels"

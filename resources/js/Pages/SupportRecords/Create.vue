@@ -3,6 +3,7 @@ import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import ContactNoteZone from '@/Components/ContactNoteZone.vue'
+import GuardianEntry from '@/Components/GuardianEntry.vue'
 import { reactive, computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
@@ -15,6 +16,7 @@ const props = defineProps({
   staffList:          Array,
   defaultStaffId:     Number,
   contactNote:        Object,
+  contactNoteState: Object,
   shortTermGoal:      String,
   fiveDomainLabels:   Object,
   goalProgressLabels: Object,
@@ -139,15 +141,15 @@ const CONDITION_OPTIONS = [
 </script>
 
 <template>
-  <Head :title="child.name + ' - 支援記録入力'" />
+  <Head :title="child.name + ' - 記録・連絡帳'" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <div class="flex items-center gap-4">
+      <div class="flex flex-wrap items-center gap-4">
         <Link :href="route('usage-records.index', { date })" class="text-gray-400 hover:text-gray-600 text-sm">
           ← 出席管理へ
         </Link>
         <h2 class="font-semibold text-xl text-gray-800">
-          支援記録 — {{ child.name }}（{{ date?.slice(0, 10) }}）
+          記録・連絡帳 — {{ child.name }}（{{ date?.slice(0, 10) }}）
         </h2>
       </div>
     </template>
@@ -156,6 +158,7 @@ const CONDITION_OPTIONS = [
       <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white border border-gray-200 rounded-lg p-6">
           <BreezeValidationErrors class="mb-4" />
+          <GuardianEntry :note="contactNote" :state="contactNoteState" />
 
           <div v-if="child.care_note" class="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm">
             <span class="font-medium text-amber-700">⚠ 配慮事項：</span>
@@ -163,11 +166,12 @@ const CONDITION_OPTIONS = [
           </div>
 
           <div class="mb-5 p-2.5 bg-gray-100 border border-gray-200 rounded-md text-xs text-gray-600">
-            このフォームは<span class="font-bold">施設内記録</span>です。保護者に公開されるのは下部の「連絡帳」欄のみです。
+            家庭からの連絡を確認し、下の支援記録と連絡帳を入力してください。<span class="font-bold">保護者に公開されるのは「3. 保護者への連絡帳」の内容のみです。</span>
           </div>
 
           <form @submit.prevent="store" class="space-y-6">
 
+            <h3 class="font-bold text-gray-800">2. 事業所内の支援記録（職員のみ）</h3>
             <!-- 様子 -->
             <section>
               <label :class="labelClass">今日の様子 <span class="text-red-500">*</span></label>
@@ -357,6 +361,7 @@ const CONDITION_OPTIONS = [
             <ContactNoteZone
               :form="form.contact_note"
               :contact-note="contactNote"
+              :state="contactNoteState"
               :short-term-goal="shortTermGoal"
               :five-domain-labels="fiveDomainLabels"
               :goal-progress-labels="goalProgressLabels"
@@ -364,6 +369,7 @@ const CONDITION_OPTIONS = [
               :ai-context="aiContext"
             />
 
+            <div class="min-h-[1.5rem] text-sm text-gray-600">保存後もこの児童の記録・連絡帳を続けて編集できます。</div>
             <div class="flex justify-end gap-3 pt-4 border-t">
               <Link
                 :href="route('usage-records.index', { date })"
