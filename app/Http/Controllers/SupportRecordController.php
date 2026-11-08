@@ -44,6 +44,7 @@ class SupportRecordController extends Controller
 
         return [
             'contactNote'        => $note,
+            'contactNoteState' => \App\Services\ContactNoteStatus::for($note),
             'shortTermGoal'      => $activePlan?->short_term_goal,
             'fiveDomainLabels'   => ContactNote::FIVE_DOMAIN_LABELS,
             'goalProgressLabels' => ContactNote::GOAL_PROGRESS_LABELS,
@@ -107,6 +108,7 @@ class SupportRecordController extends Controller
         $note->unsetRelation('publishedByStaff');
         if ($note->publication_hash!==$note->currentPublicationHash()) {
             $note->publication_hash=null;
+            $note->yoyaku_synced_at=null;
             $note->guardian_confirmed_at=null;
             $note->guardian_confirmed_hash=null;
         }

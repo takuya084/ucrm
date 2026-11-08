@@ -2,6 +2,7 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
+import ContactNoteStatus from '@/Components/ContactNoteStatus.vue'
 import QuickNav from '@/Components/QuickNav.vue'
 import { ref, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
@@ -232,6 +233,7 @@ const rowBg = (status) => ({
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <QuickNav />
+        <p class="text-sm text-gray-600">出欠・利用実績・送迎を記録します。家庭からの連絡や連絡帳は、児童ごとのリンクから確認できます。</p>
         <FlashMessage />
 
         <!-- 集計バー -->
@@ -315,21 +317,10 @@ const rowBg = (status) => ({
 
                 <!-- 右端：連絡帳バッジ + 支援記録ボタン + 削除ボタン -->
                 <div class="ml-auto flex items-center gap-2">
-                  <span
-                    v-if="row.contact_note_home_entry"
-                    class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200"
-                    title="保護者からの連絡帳記入があります"
-                  >家庭記入</span>
-                  <span
-                    v-if="row.contact_note_status === 'published'"
-                    class="text-xs px-2 py-1 rounded-full bg-green-50 text-green-600 border border-green-200"
-                    :title="row.contact_note_read ? '保護者が既読' : '公開済み（未読）'"
-                  >{{ row.contact_note_read ? '既読' : '公開済' }}</span>
-                  <span
-                    v-else-if="row.contact_note_status === 'draft'"
-                    class="text-xs px-2 py-1 rounded-full bg-gray-50 text-gray-500 border border-gray-200"
-                    title="連絡帳は下書きです（未公開）"
-                  >下書き</span>
+                  <div class="space-y-2">
+                    <ContactNoteStatus :state="row.contact_note_state" />
+                    <Link :href="route('contact-notes.index', { date }) + '#child-' + row.child_id" class="text-xs text-primary-700 underline">{{ row.contact_note_state?.home }}</Link>
+                  </div>
                   <Link
                     v-if="row.has_support_record"
                     :href="route('support-records.show', row.support_record_id)"
@@ -339,7 +330,7 @@ const rowBg = (status) => ({
                     v-else-if="row.usage_record_id && row.status === 'attended'"
                     :href="route('support-records.create', { usage_record_id: row.usage_record_id })"
                     class="text-xs px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
-                  >支援記録を入力</Link>
+                  >記録・連絡帳を入力</Link>
 
                   <!-- 削除ボタン -->
                   <button

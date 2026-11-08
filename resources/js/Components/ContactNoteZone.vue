@@ -1,10 +1,11 @@
 <script setup>
 import { ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import ContactNoteStatus from '@/Components/ContactNoteStatus.vue'
 
 // 連絡帳（保護者公開）ゾーン。支援記録の Create / Edit で共用。
 // form は親の reactive フォームの contact_note サブオブジェクトをそのまま受け取り直接書き換える。
 const props = defineProps({
+  state: Object,
   form:               Object,  // { meal_note, health_note, guardian_message, five_domain_tags, goal_progress, publish_now }
   contactNote:        Object,  // 既存の連絡帳（null 可）
   shortTermGoal:      String,  // 有効な個別支援計画の短期目標
@@ -61,34 +62,13 @@ const generateDraft = async () => {
     <!-- ゾーンヘッダ -->
     <div class="flex items-center justify-between px-4 py-2 bg-green-50 border-b border-green-200">
       <div class="flex items-center gap-2">
-        <span class="text-green-600 font-bold text-sm">連絡帳</span>
-        <span class="text-xs text-green-500">この欄は保護者に公開されます</span>
+        <span class="text-green-600 font-bold text-sm">3. 保護者への連絡帳</span>
+        <span class="text-xs text-green-500">公開すると、この欄の内容が保護者に届きます</span>
       </div>
-      <span
-        v-if="contactNote?.status === 'published'"
-        class="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white font-medium"
-      >公開済み</span>
+      <ContactNoteStatus :state="state" />
     </div>
 
     <div class="p-4 space-y-4 bg-white">
-      <!-- 家庭からの連絡（p-yoyaku で保護者が記入） -->
-      <div v-if="contactNote?.guardian_submitted_at" class="p-3 bg-amber-50 border border-amber-200 rounded-md">
-        <p class="text-xs font-bold text-amber-700 mb-1">家庭からの連絡</p>
-        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-amber-800 mb-1">
-          <span v-if="contactNote.home_temperature">体温：{{ contactNote.home_temperature }}℃</span>
-          <span v-if="contactNote.home_sleep">睡眠：{{ contactNote.home_sleep }}</span>
-          <span v-if="contactNote.home_medication">服薬：{{ contactNote.home_medication }}</span>
-          <span v-if="contactNote.home_condition">朝の様子：{{ contactNote.home_condition }}</span>
-        </div>
-        <p v-if="contactNote.guardian_comment" class="text-sm text-amber-900 whitespace-pre-wrap">{{ contactNote.guardian_comment }}</p>
-        <p v-if="contactNote.guardian_checked_at" class="mt-2 text-sm text-green-700">事業所確認済み {{ new Date(contactNote.guardian_checked_at).toLocaleString('ja-JP') }}</p>
-        <button v-else type="button" class="mt-2 rounded-md bg-amber-700 px-3 py-2 text-sm text-white"
-          @click="router.post(route('contact-notes.check-guardian', contactNote.id), { guardian_revision: contactNote.guardian_source_revision ?? 0 }, { preserveScroll: true, preserveState: false })">家庭からの連絡を確認した</button>
-      </div>
-
-      <p v-if="contactNote?.status === 'published'" class="text-sm text-green-700">
-        {{ contactNote.guardian_confirmed_at ? '保護者確認印済み ' + new Date(contactNote.guardian_confirmed_at).toLocaleString('ja-JP') : '保護者の確認印待ち' }}
-      </p>
       <!-- 保護者へのメッセージ -->
       <div>
         <div class="flex items-center justify-between mb-1">

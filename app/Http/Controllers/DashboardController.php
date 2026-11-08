@@ -14,9 +14,10 @@ use App\Models\Inquiry;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request, \App\Services\DailyWorkService $dailyWork)
     {
-        $today = date('Y-m-d');
+        $validated = $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
+        $today = $validated['date'] ?? today()->toDateString();
         $facilityId = $this->facilityId();
 
         // 今日の出席サマリー
@@ -76,8 +77,12 @@ class DashboardController extends Controller
             ->get(['id', 'child_id', 'category', 'status', 'created_at']);
 
         return Inertia::render('Dashboard', [
+            'date' => $today,
+            'calendarToday' => today()->toDateString(),
+            'dailyWork' => $dailyWork->forDate($facilityId, $today),
             'todayStats' => [
                 'attended'    => $todayAttended,
+                'absent' => UsageRecord::where('facility_id', $facilityId)->whereDate('date', $today)->whereIn('status', ['absent','absent_notice'])->count(),
                 'total'       => $todayTotal,
                 'withSupport' => $todayWithSupport,
                 'date'        => $today,
@@ -88,7 +93,7 @@ class DashboardController extends Controller
             'pendingAgreements'   => $pendingAgreements,
             'openInquiries'       => $openInquiries,
             'billingMonth'        => $billingMonth,
-            'billingPeriod'       => $billingPeriod,
+            'billingPeriod'       => in_array(auth()->user()->staff?->role, ['admin', 'leader'], true) ? $billingPeriod : null,
         ]);
     }
 }

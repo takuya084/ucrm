@@ -34,7 +34,7 @@ async function login(page, role='admin', tenant='a') {
     ? page.waitForResponse(r=>new URL(r.url()).pathname==='/dashboard' && r.status()===403) : null;
   await page.getByRole('button', {name:'ログイン', exact:true}).click();
   if (blocked) { await blocked; return; }
-  await expect(page.getByRole('heading', {name:'ダッシュボード', exact:true})).toBeVisible();
+  await expect(page.getByRole('heading', {name:'今日の業務', exact:true})).toBeVisible();
 }
 async function visit(page, path, heading) {
   const r = await page.goto(path);
@@ -227,7 +227,7 @@ test('attendance save and support record survive navigation and reload', async (
   await page.getByRole('button',{name:'このメンバーで確定',exact:true}).click();
   expect((await saved).status()).toBe(200);
   await page.reload();
-  await page.getByRole('link',{name:'支援記録を入力',exact:true}).click();
+  await page.getByRole('link',{name:'記録・連絡帳を入力',exact:true}).click();
   await page.getByPlaceholder('今日の行動・様子を記入してください').fill('架空の支援記録です');
   const message=page.getByPlaceholder('今日の様子を保護者向けの表現で記入してください（AI下書きも利用できます）');
   await message.fill('架空の保護者向けメッセージです');
@@ -361,7 +361,7 @@ test('contact publication can be withdrawn and republished without deleting hist
   const withdrawing=page.waitForResponse(r=>new URL(r.url()).pathname===`/contact-notes/${own.id}/unpublish` && r.request().method()==='POST');
   await page.getByRole('button',{name:'公開を取り下げる',exact:true}).click();
   expect((await withdrawing).status()).toBe(302);
-  await expect(page.getByText('取り下げを連携中',{exact:true})).toBeVisible();
+  await expect(page.getByText('取り下げ連携待ち・要確認',{exact:true})).toBeVisible();
   await page.reload();
   expect(snapshot().notes.find(n=>n.id===own.id)).toMatchObject({status:'draft',published_at:null,guardian_message:'架空の公開連絡帳',guardian_comment:'架空の家庭返信'});
   const forbidden=await csrfRequest(page,'POST',`/contact-notes/${foreign.id}/unpublish`,{});
@@ -388,3 +388,61 @@ test('staff reviews the morning family entry before any support record is writte
   expect(snapshot().notes[0].status).toBe('draft');
 });
 
+
+
+test('categorized navigation works with keyboard, preserves child section and date', async ({page,isMobile}) => {
+  await login(page);
+  if (isMobile) {
+    const trigger=page.getByRole('button',{name:'メニュー',exact:true});
+    await trigger.click();
+    await expect(page.getByRole('dialog',{name:'メニュー',exact:true})).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(trigger).toBeFocused();
+    await trigger.click();
+  }
+  const nav=page.getByRole('navigation',{name:'業務メニュー',exact:true}).filter({visible:true});
+  for(const name of ['ホーム','日々の業務','児童・支援','請求・会計','事業所運営','設定']) await expect(nav.getByRole('heading',{name,exact:true})).toBeVisible();
+  await nav.getByRole('link',{name:'支援計画・モニタリング',exact:true}).click();
+  await expect(page).toHaveURL(/\/children\?section=plan$/);
+  await page.getByRole('link',{name:ownChild().name,exact:true}).click();
+  await expect(page).toHaveURL(/\?tab=plan$/);
+  await expect(page.getByRole('heading',{name:'個別支援計画',exact:true})).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'個別支援計画',exact:true})).toBeVisible();
+  await visit(page,'/usage-records?date=2026-07-01','出席管理');
+  await page.getByRole('navigation',{name:'同じ日の業務',exact:true}).getByRole('link',{name:'記録・連絡帳',exact:true}).click();
+  await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01$/);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
+
+test('daily work leads staff from family review to one saved record without losing input', async ({page,isMobile}) => {
+  fixture('morning-entry');fixture('legacy-attendance-times');
+  await login(page,'staff');
+  if(isMobile) await page.getByRole('button',{name:'メニュー',exact:true}).click();
+  const nav=page.getByRole('navigation',{name:'業務メニュー',exact:true}).filter({visible:true});
+  await expect(nav.getByRole('heading',{name:'請求・会計',exact:true})).toHaveCount(0);
+  await expect(nav.getByRole('link',{name:'施設設定',exact:true})).toHaveCount(0);
+  if(isMobile) await page.getByRole('button',{name:'閉じる',exact:true}).click();
+  await visit(page,'/dashboard?date=2026-07-01','日別の業務');
+  await expect(page.locator('main')).not.toContainText(foreignChild().name);
+  await page.getByRole('button',{name:/未確認の連絡.*1件.*家庭の連絡を確認/}).click();
+  const row=page.getByRole('listitem',{name:ownChild().name+'の業務',exact:true});
+  await expect(row).toContainText('家庭の連絡：未確認');
+  await row.getByRole('link',{name:'記録・連絡帳を入力',exact:true}).click();
+  const behavior=page.getByPlaceholder('今日の行動・様子を記入してください');
+  await behavior.fill('家庭の連絡を読みながら入力した架空の記録');
+  const family=page.getByRole('region',{name:'家庭からの連絡',exact:true});
+  await expect(family).toContainText('架空の利用前の体調連絡');
+  await family.getByRole('button',{name:'家庭からの連絡を確認した',exact:true}).click();
+  await expect(family).toContainText('事業所確認済み');
+  await expect(behavior).toHaveValue('家庭の連絡を読みながら入力した架空の記録');
+  await page.getByRole('button',{name:'記録を保存',exact:true}).click();
+  await expect(page).toHaveURL(/\/support-records\/\d+\/edit$/);
+  await expect(page.getByRole('status')).toHaveText('支援記録を保存しました。');
+  await visit(page,'/dashboard?date=2026-07-01','日別の業務');
+  await expect(page.getByRole('button',{name:/未確認の連絡.*0件.*家庭の連絡を確認/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/出席児童の未入力記録.*0件.*支援記録を入力/})).toBeVisible();
+  await page.getByRole('listitem',{name:ownChild().name+'の業務',exact:true}).getByRole('link',{name:'記録・連絡帳を編集',exact:true}).click();
+  await expect(behavior).toHaveValue('家庭の連絡を読みながら入力した架空の記録');
+  expect(snapshot().support).toHaveLength(1);
+});

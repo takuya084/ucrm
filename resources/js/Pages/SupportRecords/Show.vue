@@ -2,12 +2,15 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { router } from '@inertiajs/vue3'
+import GuardianEntry from '@/Components/GuardianEntry.vue'
+import ContactNoteStatus from '@/Components/ContactNoteStatus.vue'
 import FlashMessage from '@/Components/FlashMessage.vue'
 
 const props = defineProps({
   record:             Object,
   recordDate:         String,
   contactNote:        Object,
+  contactNoteState: Object,
   shortTermGoal:      String,
   fiveDomainLabels:   Object,
   goalProgressLabels: Object,
@@ -33,10 +36,10 @@ const CATEGORY_LABELS = {
 </script>
 
 <template>
-  <Head :title="record.child?.name + ' - 支援記録'" />
+  <Head :title="record.child?.name + ' - 記録・連絡帳'" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">支援記録</h2>
+      <h2 class="font-semibold text-xl text-gray-800">記録・連絡帳</h2>
     </template>
 
     <div class="py-8">
@@ -74,6 +77,9 @@ const CATEGORY_LABELS = {
             </div>
           </div>
         </div>
+
+        <GuardianEntry :note="contactNote" :state="contactNoteState" />
+        <ContactNoteStatus :state="contactNoteState" />
 
         <!-- メインコンテンツ 2カラム -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -140,16 +146,6 @@ const CATEGORY_LABELS = {
                 </div>
               </div>
               <div class="p-5 space-y-3">
-                <div v-if="contactNote.guardian_submitted_at" class="p-3 bg-amber-50 border border-amber-200 rounded-md">
-                  <p class="text-xs font-bold text-amber-700 mb-1">家庭からの連絡</p>
-                  <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-amber-800 mb-1">
-                    <span v-if="contactNote.home_temperature">体温：{{ contactNote.home_temperature }}℃</span>
-                    <span v-if="contactNote.home_sleep">睡眠：{{ contactNote.home_sleep }}</span>
-                    <span v-if="contactNote.home_medication">服薬：{{ contactNote.home_medication }}</span>
-                    <span v-if="contactNote.home_condition">朝の様子：{{ contactNote.home_condition }}</span>
-                  </div>
-                  <p v-if="contactNote.guardian_comment" class="text-sm text-amber-900 whitespace-pre-wrap">{{ contactNote.guardian_comment }}</p>
-                </div>
                 <p class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{{ contactNote.guardian_message || '（メッセージ未記入）' }}</p>
                 <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-600">
                   <span v-if="contactNote.meal_note">食事: {{ contactNote.meal_note }}</span>
