@@ -57,11 +57,11 @@ const expandedPrograms = ref(new Set(form.program_ids))
 
 const saving = ref(false)
 const update = () => {
+  if (saving.value) return
   saving.value = true
-  // router.patch はリダイレクトを自動追従しキャッシュ問題を起こすため、
-  // axios で直接 PATCH し、成功後に router.visit で出席管理に遷移する
+  // 公開状態などの最新 props を取得し、入力内容とスクロール位置は保持する。
   axios.patch(route('support-records.update', props.record.id), form).then(() => {
-    router.visit(route('usage-records.index', { date: props.recordDate }))
+    router.reload({ preserveScroll: true, onFinish: () => { saving.value = false } })
   }).catch(err => {
     saving.value = false
     if (err.response?.status === 422) {
@@ -142,6 +142,9 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
   <BreezeAuthenticatedLayout>
     <template #header>
       <div class="flex items-center gap-4">
+        <Link :href="route('usage-records.index', { date: recordDate })" class="text-gray-400 hover:text-gray-600 text-sm">
+          ← 出席管理へ
+        </Link>
         <Link :href="route('support-records.show', record.id)" class="text-gray-400 hover:text-gray-600 text-sm">
           ← 記録詳細へ
         </Link>
@@ -356,12 +359,15 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               :ai-context="aiContext"
             />
 
+            <div role="status" aria-live="polite" class="min-h-6 text-sm text-green-700">
+              {{ $page.props.flash?.status === 'success' ? $page.props.flash.message : '' }}
+            </div>
             <div class="flex justify-end gap-3 pt-4 border-t">
               <Link :href="route('support-records.show', record.id)" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                 キャンセル
               </Link>
-              <button type="submit" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600">
-                更新する
+              <button type="submit" :disabled="saving" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600 disabled:opacity-50">
+                {{ saving ? '保存中…' : '記録を保存' }}
               </button>
             </div>
           </form>
@@ -370,3 +376,4 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
     </div>
   </BreezeAuthenticatedLayout>
 </template>
+
