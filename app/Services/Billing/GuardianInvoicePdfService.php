@@ -18,6 +18,8 @@ class GuardianInvoicePdfService
      */
     public function generateInvoice(GuardianInvoice $invoice): string
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertInvoice($invoice);
         $invoice->load([
             'billingDetail.billingDetailLines',
             'billingDetail.billingPeriod',
@@ -52,6 +54,8 @@ class GuardianInvoicePdfService
      */
     public function generateBulkInvoices(BillingPeriod $period): array
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $invoices = GuardianInvoice::where('facility_id', $period->facility_id)
             ->where('year_month', $period->year_month)
             ->get();
@@ -69,6 +73,8 @@ class GuardianInvoicePdfService
      */
     public function createInvoicesFromBillingPeriod(BillingPeriod $period): array
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $period->load('billingDetails.child.guardians');
 
         $invoices = [];

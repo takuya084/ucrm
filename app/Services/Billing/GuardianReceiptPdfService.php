@@ -13,6 +13,8 @@ class GuardianReceiptPdfService
 {
     public function generate(GuardianInvoice $invoice): string
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertInvoice($invoice);
         $invoice->load(['child', 'guardian', 'facility']);
 
         [$y, $m] = explode('-', $invoice->year_month);

@@ -19,6 +19,8 @@ class PerformanceRecordPdfService
      */
     public function generate(BillingDetail $detail): string
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertDetail($detail);
         $detail->load([
             'child',
             'billingPeriod.facility',
@@ -52,6 +54,8 @@ class PerformanceRecordPdfService
      */
     public function generateBundle(BillingPeriod $period): string
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $period->load('billingDetails.child');
 
         $tmpDir = storage_path('app/performance-records/tmp_' . $period->id . '_' . time());

@@ -37,7 +37,12 @@ onBeforeUnmount(() => { document.body.style.overflow = '' })
         </div>
       </div>
       <header v-if="$slots.header" class="sticky top-0 z-20 bg-white border-b px-4 sm:px-6 py-4"><slot name="header" /></header>
-      <main id="main-content" tabindex="-1" class="min-w-0"><slot /></main>
+      <main id="main-content" tabindex="-1" class="min-w-0">
+        <div v-if="$page.props.errors?.billing" role="alert" class="bg-red-50 border border-red-300 text-red-900 p-4 text-sm whitespace-pre-line">
+            {{ $page.props.errors.billing }}
+          </div>
+        <slot />
+      </main>
     </div>
     <dialog ref="menu" id="workspace-menu" aria-labelledby="workspace-menu-title" @cancel.prevent="closeMenu" @click="e => { if (e.target === menu) closeMenu() }" @close="restoreScroll" class="fixed inset-y-0 left-auto right-0 m-0 h-dvh max-h-screen w-80 max-w-[90vw] bg-white p-0 shadow-xl backdrop:bg-black/40">
       <div class="flex items-center justify-between border-b p-4 sticky top-0 bg-white z-10">

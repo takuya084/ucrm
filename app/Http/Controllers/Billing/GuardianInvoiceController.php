@@ -52,6 +52,7 @@ class GuardianInvoiceController extends Controller
     public function show(GuardianInvoice $guardianInvoice)
     {
         $this->authorizeFacility($guardianInvoice);
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertInvoice($guardianInvoice);
 
         $guardianInvoice->load([
             'billingDetail.billingDetailLines',

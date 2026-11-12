@@ -24,7 +24,11 @@ class ServiceCodeResolver
         string $yearMonth,
         ?int $capacityPerDay = null,
         ?int $plannedMinutes = null
-    ): ?ServiceCodeMaster {
+    ): ServiceCodeMaster {
+        if ($plannedMinutes === null || $plannedMinutes <= 0) {
+            throw new \App\Exceptions\BaseCodeResolutionException('planned_time_missing', '有効な個別支援計画の支援時間がありません。');
+        }
+
         $query = ServiceCodeMaster::forServiceType($serviceType)
             ->ofCategory('base')
             ->validAt($yearMonth);
@@ -33,12 +37,19 @@ class ServiceCodeResolver
         $dayType = $isSchoolDay ? 'school_day' : 'holiday';
 
         $codes = $query->get();
+        if ($codes->isEmpty()) {
+            $exists = ServiceCodeMaster::forServiceType($serviceType)->ofCategory('base')->exists();
+            throw new \App\Exceptions\BaseCodeResolutionException(
+                $exists ? 'base_code_period_mismatch' : 'base_code_missing',
+                $exists ? '対象月に有効な基本報酬コードがありません。' : 'サービス種別に対応する基本報酬コードがありません。'
+            );
+        }
 
         // R6改定: 個別支援計画に定めた支援時間から時間区分を算出
         $timeCategory = $this->resolveTimeCategory($plannedMinutes);
 
         // 条件JSONからマッチするものを探す
-        return $codes->first(function ($code) use ($dayType, $checkInTime, $checkOutTime, $capacityPerDay, $timeCategory) {
+        $matches = $codes->filter(function ($code) use ($dayType, $checkInTime, $checkOutTime, $capacityPerDay, $timeCategory) {
             $conditions = $code->conditions ?? [];
 
             // day_type条件のチェック
@@ -51,6 +62,13 @@ class ServiceCodeResolver
                 if ($timeCategory === null || (int) $conditions['time_category'] !== $timeCategory) {
                     return false;
                 }
+            }
+
+            if ($capacityPerDay === null && (isset($conditions['max_capacity']) || isset($conditions['min_capacity']))) {
+                return false;
+            }
+            if ((isset($conditions['min_hours']) || isset($conditions['max_hours'])) && (!$checkInTime || !$checkOutTime)) {
+                return false;
             }
 
             // 定員条件のチェック
@@ -80,6 +98,15 @@ class ServiceCodeResolver
 
             return true;
         });
+
+        if ($matches->count() !== 1) {
+            throw new \App\Exceptions\BaseCodeResolutionException(
+                $matches->isEmpty() ? 'base_code_conditions_mismatch' : 'base_code_ambiguous',
+                $matches->isEmpty() ? '学校日・計画時間区分・定員等の適用条件に一致する基本報酬コードがありません。'
+                    : '適用条件で絞り込んでも基本報酬コードが複数残ります。マスターの重複・条件を確認してください。'
+            );
+        }
+        return $matches->first();
     }
 
     /**
