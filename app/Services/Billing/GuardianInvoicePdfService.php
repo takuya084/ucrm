@@ -37,6 +37,9 @@ class GuardianInvoicePdfService
             'lines'    => $invoice->billingDetail->billingDetailLines,
         ]);
 
+        // Keep generated font metrics in writable storage, separate from the bundled font.
+        $fontCache = storage_path('framework/cache');
+        $pdf->setOptions(['fontDir' => $fontCache, 'fontCache' => $fontCache]);
         $pdf->setPaper('A4', 'portrait');
 
         $filename = "invoice_{$invoice->facility_id}_{$invoice->year_month}_{$invoice->child_id}.pdf";

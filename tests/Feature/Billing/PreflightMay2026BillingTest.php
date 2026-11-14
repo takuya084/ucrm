@@ -287,6 +287,33 @@ class PreflightMay2026BillingTest extends TestCase
         $this->assertSame(['billing_csv/legacy.zip'], \Illuminate\Support\Facades\Storage::disk('local')->allFiles());
     }
 
+    public function test_invoice_pdf_embeds_japanese_font_with_fresh_storage(): void
+    {
+        $this->master();
+        $this->plan();
+        $this->child->update(['name' => '請求確認児童']);
+        $invoice = $this->invoice($this->calculate());
+
+        $originalStorage = storage_path();
+        $temporaryStorage = sys_get_temp_dir().'/ucrm-invoice-test-'.bin2hex(random_bytes(8));
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($temporaryStorage.'/framework/cache');
+
+        try {
+            $this->app->useStoragePath($temporaryStorage);
+            $disk = \Illuminate\Support\Facades\Storage::fake('local');
+            $path = app(\App\Services\Billing\GuardianInvoicePdfService::class)->generateInvoice($invoice);
+            $pdf = $disk->get($path);
+
+            $this->assertStringStartsWith('%PDF-', $pdf);
+            $this->assertStringContainsString('IPAexGothic', $pdf);
+            $this->assertStringContainsString('/FontFile2', $pdf);
+            $this->assertSame(609, (int) $invoice->fresh()->total_amount);
+        } finally {
+            $this->app->useStoragePath($originalStorage);
+            \Illuminate\Support\Facades\File::deleteDirectory($temporaryStorage);
+        }
+    }
+
     public function test_matching_nonzero_bill_with_zero_family_copayment_can_confirm_and_generate_invoice(): void
     {
         $this->master();
