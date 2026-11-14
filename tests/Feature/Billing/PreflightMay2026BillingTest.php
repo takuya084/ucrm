@@ -97,6 +97,21 @@ class PreflightMay2026BillingTest extends TestCase
         $this->assertSame(5481, (int) $detail->insurance_amount);
     }
 
+    public function test_billing_detail_shows_the_local_service_date(): void
+    {
+        $this->master();
+        $this->plan();
+        $detail = $this->calculate();
+        $record = $detail->dailyServiceRecords->sole();
+        $this->loginAdmin();
+
+        $this->get(route('billing.details.show', $detail))
+            ->assertOk()
+            ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+                ->component('Billing/Detail/Show')
+                ->where('serviceDates.'.$record->id, '2026-05-07'));
+    }
+
     private function reject(string $reason, callable $operation): void
     {
         try {
