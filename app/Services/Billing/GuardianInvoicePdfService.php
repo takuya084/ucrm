@@ -28,7 +28,10 @@ class GuardianInvoicePdfService
             'facility',
         ]);
 
-        $pdf = Pdf::loadView('billing.invoice-pdf', [
+        // Leave DomPDF's local file restrictions intact and use writable runtime storage.
+        $fontCache = storage_path('framework/cache');
+        $pdf = Pdf::setOptions(['fontDir' => $fontCache, 'fontCache' => $fontCache], true);
+        $pdf->loadView('billing.invoice-pdf', [
             'invoice'  => $invoice,
             'detail'   => $invoice->billingDetail,
             'child'    => $invoice->child,
@@ -37,9 +40,6 @@ class GuardianInvoicePdfService
             'lines'    => $invoice->billingDetail->billingDetailLines,
         ]);
 
-        // Keep generated font metrics in writable storage, separate from the bundled font.
-        $fontCache = storage_path('framework/cache');
-        $pdf->setOptions(['fontDir' => $fontCache, 'fontCache' => $fontCache]);
         $pdf->setPaper('A4', 'portrait');
 
         $filename = "invoice_{$invoice->facility_id}_{$invoice->year_month}_{$invoice->child_id}.pdf";

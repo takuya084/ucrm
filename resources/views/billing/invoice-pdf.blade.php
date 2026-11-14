@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <style>
         @font-face {
-            font-family: 'ipag';
+            font-family: 'invoice-ipaex';
             font-style: normal;
             font-weight: normal;
             src: url({{ resource_path('fonts/ipaexg.ttf') }}) format('truetype');
         }
         @font-face {
-            font-family: 'ipag';
+            font-family: 'invoice-ipaex';
             font-style: normal;
             font-weight: bold;
             src: url({{ resource_path('fonts/ipaexg.ttf') }}) format('truetype');
         }
         body {
-            font-family: 'ipag', sans-serif;
+            font-family: 'invoice-ipaex', sans-serif;
             font-size: 11px;
             color: #333;
             margin: 0;
