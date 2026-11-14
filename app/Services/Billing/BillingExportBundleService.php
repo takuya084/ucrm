@@ -102,6 +102,8 @@ class BillingExportBundleService
      */
     public function generateBundle(BillingPeriod $period, ?int $userId = null): BillingExport
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $warnings = $this->validate($period);
 
         $facility   = $period->facility;

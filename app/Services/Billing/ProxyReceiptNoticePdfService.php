@@ -19,6 +19,8 @@ class ProxyReceiptNoticePdfService
      */
     public function generate(BillingDetail $detail): string
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertDetail($detail);
         $detail->load([
             'child.guardians',
             'billingPeriod.facility',
@@ -54,6 +56,8 @@ class ProxyReceiptNoticePdfService
      */
     public function generateBundle(BillingPeriod $period): string
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $period->load('billingDetails.child');
 
         $zipPath = "proxy-receipts/proxy_receipts_{$period->facility_id}_" . str_replace('-', '', $period->year_month) . '.zip';

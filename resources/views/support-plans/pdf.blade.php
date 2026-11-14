@@ -6,12 +6,12 @@
         @font-face {
             font-family: 'ipag';
             font-weight: normal;
-            src: url({{ storage_path('fonts/ipaexg.ttf') }}) format('truetype');
+            src: url({{ resource_path('fonts/ipaexg.ttf') }}) format('truetype');
         }
         @font-face {
             font-family: 'ipag';
             font-weight: bold;
-            src: url({{ storage_path('fonts/ipaexg.ttf') }}) format('truetype');
+            src: url({{ resource_path('fonts/ipaexg.ttf') }}) format('truetype');
         }
         body { font-family: 'ipag', sans-serif; font-size: 10.5px; color: #000; margin: 0; padding: 22px; line-height: 1.5; }
         h1 { font-size: 16px; text-align: center; margin: 0 0 12px; border-bottom: 1.5px solid #000; padding-bottom: 4px; }

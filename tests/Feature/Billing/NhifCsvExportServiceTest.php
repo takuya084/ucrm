@@ -57,6 +57,8 @@ class NhifCsvExportServiceTest extends TestCase
         ]);
         $this->child->guardians()->attach($guardian->id, ['is_primary' => true, 'priority_order' => 1]);
 
+        $this->child->supportPlans()->create(['plan_date' => '2026-04-01', 'planned_duration_minutes' => 120]);
+
         $this->child->recipientCertificates()->create([
             'certificate_number'    => '1234567890',
             'status'                => 'active',

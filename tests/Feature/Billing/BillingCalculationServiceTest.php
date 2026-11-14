@@ -41,6 +41,8 @@ class BillingCalculationServiceTest extends TestCase
             'contract_status' => 'active',
         ]);
 
+        $this->child->supportPlans()->create(['plan_date' => '2026-04-01', 'planned_duration_minutes' => 120]);
+
         $this->child->recipientCertificates()->create([
             'certificate_number'    => '1234567890',
             'status'                => 'active',
@@ -169,14 +171,14 @@ class BillingCalculationServiceTest extends TestCase
         $this->assertCount(0, $period->billingDetails);
     }
 
-    public function test_有効な受給者証がない児童は請求対象にならない(): void
+    public function test_請求対象の出席に受給者証がなければ月次処理を停止する(): void
     {
         $this->child->recipientCertificates()->update(['status' => 'expired']);
         $this->createUsageRecord('2026-05-07');
 
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
         $period = $this->service()->calculateMonthlyBilling($this->facility->id, self::YEAR_MONTH);
 
-        $this->assertCount(0, $period->billingDetails);
     }
 
     public function test_確定済みの請求期間は再計算できない(): void
