@@ -79,40 +79,45 @@ class BillingDetailController extends Controller
             'adjustment_note.required' => '調整理由を入力してください（返戻・監査対応時の証跡になります）。',
         ]);
 
-        foreach ($validated['lines'] as $lineData) {
-            $billingDetail->billingDetailLines()
-                ->where('id', $lineData['id'])
-                ->update([
-                    'count'          => $lineData['count'],
-                    'units_per_count' => $lineData['units_per_count'],
-                    'total_units'    => $lineData['total_units'],
-                ]);
-        }
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertDetail($billingDetail);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($billingDetail, $validated) {
+            foreach ($validated['lines'] as $lineData) {
+                $billingDetail->billingDetailLines()
+                    ->where('id', $lineData['id'])
+                    ->update([
+                        'count'          => $lineData['count'],
+                        'units_per_count' => $lineData['units_per_count'],
+                        'total_units'    => $lineData['total_units'],
+                    ]);
+            }
 
-        // 合計再計算
-        $totalUnits = $billingDetail->billingDetailLines()->sum('total_units');
-        $totalAmount = (int) floor($totalUnits * $billingDetail->unit_price_yen);
-        $copaymentRate = $billingDetail->recipientCertificate?->copayment_rate ?? 10;
-        $copaymentAmount = (int) floor($totalAmount * $copaymentRate / 100);
-        $cap = $billingDetail->copayment_cap;
-        $capApplied = $cap > 0 ? min($copaymentAmount, $cap) : $copaymentAmount;
+            // 合計再計算
+            $totalUnits = $billingDetail->billingDetailLines()->sum('total_units');
+            $totalAmount = (int) floor($totalUnits * $billingDetail->unit_price_yen);
+            $copaymentRate = $billingDetail->recipientCertificate?->copayment_rate ?? 10;
+            $copaymentAmount = (int) floor($totalAmount * $copaymentRate / 100);
+            $cap = $billingDetail->copayment_cap;
+            $capApplied = $cap > 0 ? min($copaymentAmount, $cap) : $copaymentAmount;
 
-        $billingDetail->update([
-            'total_units'           => $totalUnits,
-            'total_amount'          => $totalAmount,
-            'copayment_amount'      => $copaymentAmount,
-            'copayment_cap_applied' => $capApplied,
-            'insurance_amount'      => $totalAmount - $capApplied,
-            'adjustment_note'       => $validated['adjustment_note'],
-            'adjusted_by'           => auth()->id(),
-            'adjusted_at'           => now(),
-        ]);
+            $billingDetail->update([
+                'total_units'           => $totalUnits,
+                'total_amount'          => $totalAmount,
+                'copayment_amount'      => $copaymentAmount,
+                'copayment_cap_applied' => $capApplied,
+                'insurance_amount'      => $totalAmount - $capApplied,
+                'adjustment_note'       => $validated['adjustment_note'],
+                'adjusted_by'           => auth()->id(),
+                'adjusted_at'           => now(),
+            ]);
 
-        // 明細行はクエリビルダ更新でモデルイベントが発火しないため、監査ログを直接記録する
-        \App\Models\AuditLog::record('billing_detail.manual_adjustment', $billingDetail, null, [
-            'adjustment_note' => $validated['adjustment_note'],
-            'lines'           => $validated['lines'],
-        ]);
+            // 明細行はクエリビルダ更新でモデルイベントが発火しないため、監査ログを直接記録する
+            \App\Models\AuditLog::record('billing_detail.manual_adjustment', $billingDetail, null, [
+                'adjustment_note' => $validated['adjustment_note'],
+                'lines'           => $validated['lines'],
+            ]);
+
+            app(\App\Services\Billing\BillingCompletenessGuard::class)->assertDetail($billingDetail->fresh());
+        });
 
         session()->flash('message', '明細を更新しました。');
         session()->flash('status', 'success');

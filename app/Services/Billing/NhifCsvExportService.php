@@ -40,6 +40,8 @@ class NhifCsvExportService
      */
     public function generateBillingCsv(BillingPeriod $period): string
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $period->load([
             'facility',
             'billingDetails.child.guardians',
@@ -74,6 +76,8 @@ class NhifCsvExportService
      */
     public function generatePerformanceRecordCsv(BillingPeriod $period): string
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $period->load([
             'facility',
             'billingDetails.child.supportPlans',

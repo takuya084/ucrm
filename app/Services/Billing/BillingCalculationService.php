@@ -22,6 +22,7 @@ class BillingCalculationService
     public function __construct(
         private ServiceCodeResolver $codeResolver,
         private CopaymentCapService $capService,
+        private BillingCompletenessGuard $completeness,
     ) {}
 
     /**
@@ -43,6 +44,12 @@ class BillingCalculationService
         }
 
         return DB::transaction(function () use ($facility, $yearMonth) {
+            $locked = BillingPeriod::where('facility_id', $facility->id)
+                ->where('year_month', $yearMonth)->lockForUpdate()->first();
+            if ($locked && $locked->isLocked()) {
+                throw new BillingPeriodLockedException("{$yearMonth} は確定済みのため再計算できません。");
+            }
+
             // 請求期間を取得または作成
             $period = BillingPeriod::updateOrCreate(
                 ['facility_id' => $facility->id, 'year_month' => $yearMonth],
@@ -59,6 +66,7 @@ class BillingCalculationService
                 $this->calculateChildBilling($period, $child, $facility, $yearMonth);
             }
 
+            $this->completeness->assertPeriod($period);
             $period->update(['status' => 'draft']);
 
             return $period->load('billingDetails.child', 'billingDetails.billingDetailLines');
@@ -104,16 +112,6 @@ class BillingCalculationService
 
         $serviceType = $certificate->service_type ?? $facility->service_type;
 
-        // 当月に有効な個別支援計画（R6改定: 基本報酬は計画に定めた支援時間の時間区分で算定）
-        $supportPlan = $child->supportPlans()
-            ->where('plan_date', '<=', $yearMonth . '-31')
-            ->where(function ($q) use ($yearMonth) {
-                $q->whereNull('valid_to')->orWhere('valid_to', '>=', $yearMonth . '-01');
-            })
-            ->orderByDesc('plan_date')
-            ->first();
-        $plannedMinutes = $supportPlan?->planned_duration_minutes;
-
         // 請求明細を作成
         $detail = BillingDetail::create([
             'billing_period_id'        => $period->id,
@@ -135,7 +133,7 @@ class BillingCalculationService
         $totalDays = 0;
         $additionMonthlyCounts = [];
         foreach ($usageRecords as $record) {
-            $this->processUsageRecord($record, $detail, $facility, $serviceType, $yearMonth, $plannedMinutes, $additionMonthlyCounts);
+            $this->processUsageRecord($record, $detail, $facility, $serviceType, $yearMonth, $additionMonthlyCounts);
             if ($record->status === 'attended') {
                 $totalDays++;
             }
@@ -183,20 +181,11 @@ class BillingCalculationService
         Facility $facility,
         string $serviceType,
         string $yearMonth,
-        ?int $plannedMinutes = null,
         array &$additionMonthlyCounts = []
     ): void {
         // 基本サービスコードの特定（基本報酬は出席日のみ算定。欠席日への算定は過請求となる）
         $baseCode = $record->status === 'attended'
-            ? $this->codeResolver->resolveBaseCode(
-                $serviceType,
-                $record->is_school_day ?? true,
-                $record->check_in_time,
-                $record->check_out_time,
-                $yearMonth,
-                $facility->capacity_per_day,
-                $plannedMinutes
-            )
+            ? $this->completeness->resolve($record, $facility, $serviceType, $yearMonth)
             : null;
 
         if ($baseCode) {

@@ -18,6 +18,8 @@ class GuardianInvoicePdfService
      */
     public function generateInvoice(GuardianInvoice $invoice): string
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertInvoice($invoice);
         $invoice->load([
             'billingDetail.billingDetailLines',
             'billingDetail.billingPeriod',
@@ -26,7 +28,10 @@ class GuardianInvoicePdfService
             'facility',
         ]);
 
-        $pdf = Pdf::loadView('billing.invoice-pdf', [
+        // Leave DomPDF's local file restrictions intact and use writable runtime storage.
+        $fontCache = storage_path('framework/cache');
+        $pdf = Pdf::setOptions(['fontDir' => $fontCache, 'fontCache' => $fontCache], true);
+        $pdf->loadView('billing.invoice-pdf', [
             'invoice'  => $invoice,
             'detail'   => $invoice->billingDetail,
             'child'    => $invoice->child,
@@ -52,6 +57,8 @@ class GuardianInvoicePdfService
      */
     public function generateBulkInvoices(BillingPeriod $period): array
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $invoices = GuardianInvoice::where('facility_id', $period->facility_id)
             ->where('year_month', $period->year_month)
             ->get();
@@ -69,6 +76,8 @@ class GuardianInvoicePdfService
      */
     public function createInvoicesFromBillingPeriod(BillingPeriod $period): array
     {
+
+        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $period->load('billingDetails.child.guardians');
 
         $invoices = [];
