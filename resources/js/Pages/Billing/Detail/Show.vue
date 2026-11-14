@@ -2,7 +2,7 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 
-const props = defineProps({ detail: Object })
+const props = defineProps({ detail: Object, serviceDates: Object })
 const fmt = (n) => Number(n).toLocaleString()
 </script>
 
@@ -93,7 +93,7 @@ const fmt = (n) => Number(n).toLocaleString()
             </thead>
             <tbody class="divide-y">
               <tr v-for="dsr in detail.daily_service_records" :key="dsr.id" class="hover:bg-gray-50">
-                <td class="px-4 py-2 text-xs">{{ dsr.usage_record?.date?.slice(0, 10) }}</td>
+                <td class="px-4 py-2 text-xs">{{ serviceDates[dsr.id] }}</td>
                 <td class="px-4 py-2 font-mono text-xs">{{ dsr.service_code }}</td>
                 <td class="px-4 py-2 text-right">{{ dsr.units }}</td>
                 <td class="px-4 py-2 text-center">{{ dsr.is_pickup ? '○' : '' }}</td>

@@ -27,6 +27,9 @@ class BillingDetailController extends Controller
 
         return Inertia::render('Billing/Detail/Show', [
             'detail' => $billingDetail,
+            'serviceDates' => $billingDetail->dailyServiceRecords->mapWithKeys(
+                fn ($record) => [$record->id => $record->usageRecord?->date?->format('Y-m-d')],
+            ),
         ]);
     }
 
