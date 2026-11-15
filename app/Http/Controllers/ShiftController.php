@@ -129,7 +129,7 @@ class ShiftController extends Controller
         $staffMembers = Staff::where('facility_id', $shift->facility_id)
             ->where('is_active', true)
             ->orderBy('display_order')
-            ->orderByRaw("FIELD(role, 'admin', 'leader', 'staff', 'driver')")
+            ->orderByRaw("CASE role WHEN 'admin' THEN 1 WHEN 'leader' THEN 2 WHEN 'staff' THEN 3 WHEN 'driver' THEN 4 ELSE 0 END")
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
 
