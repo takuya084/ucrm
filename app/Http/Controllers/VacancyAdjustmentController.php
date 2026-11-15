@@ -6,6 +6,7 @@ use App\Models\Child;
 use App\Models\ChildSchedule;
 use App\Models\Facility;
 use App\Models\UsageRecord;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,10 +14,12 @@ class VacancyAdjustmentController extends Controller
 {
     public function index(Request $request)
     {
-        $date       = $request->input('date', date('Y-m-d'));
+        $date       = $request->validate(['date' => 'sometimes|required|date_format:Y-m-d'])['date'] ?? date('Y-m-d');
         $dayOfWeek  = $this->getDayOfWeek($date);
         $facilityId = $this->facilityId();
-        $yearMonth  = substr($date, 0, 7); // 'Y-m'
+        $monthStart = Carbon::parse($date)->startOfMonth();
+        $monthFrom  = $monthStart->toDateString();
+        $monthUntil = $monthStart->addMonth()->toDateString();
 
         $capacity = Facility::find($facilityId)?->capacity_per_day ?? 10;
 
@@ -69,12 +72,13 @@ class VacancyAdjustmentController extends Controller
                     ->where(fn($q2) => $q2->whereNull('end_date')->orWhere('end_date', '>=', $date)),
             ])
             ->get()
-            ->map(function ($child) use ($yearMonth) {
+            ->map(function ($child) use ($monthFrom, $monthUntil) {
                 $cert        = $child->activeRecipientCertificate;
                 $usedDays    = UsageRecord::where('child_id', $child->id)
                     ->where('billing_target', true)
                     ->where('status', 'attended')
-                    ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$yearMonth])
+                    ->where('date', '>=', $monthFrom)
+                    ->where('date', '<', $monthUntil)
                     ->count();
                 $monthlyLimit   = $cert?->monthly_limit ?? 0;
                 $remainingDays  = max(0, $monthlyLimit - $usedDays);

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Child;
 use App\Models\Facility;
 use App\Models\Staff;
+use App\Models\UsageRecord;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -90,5 +91,35 @@ class PageSmokeTest extends TestCase
     public function test_未ログインでは主要ページからログインへリダイレクトされる(): void
     {
         $this->get('/children')->assertRedirect('/login');
+    }
+
+    public function test_vacancy_adjustment_counts_only_billable_attendance_in_the_selected_month(): void
+    {
+        foreach ([
+            ['2026-04-30', 'attended', true],
+            ['2026-05-01', 'attended', true],
+            ['2026-05-15', 'attended', false],
+            ['2026-05-20', 'absent', true],
+            ['2026-05-31', 'attended', true],
+            ['2026-06-01', 'attended', true],
+        ] as [$date, $status, $billingTarget]) {
+            UsageRecord::create([
+                'facility_id' => $this->facility->id,
+                'child_id' => $this->child->id,
+                'date' => $date,
+                'status' => $status,
+                'billing_target' => $billingTarget,
+            ]);
+        }
+
+        $this->actingAs($this->user)
+            ->get('/vacancy-adjustment?date=2026-05-07')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('VacancyAdjustment/Index')
+                ->has('candidates', 1)
+                ->where('candidates.0.id', $this->child->id)
+                ->where('candidates.0.used_days', 2)
+                ->where('candidates.0.remaining_days', 21));
     }
 }
