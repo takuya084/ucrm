@@ -27,16 +27,18 @@ const rateColorInverse = (v, good = 5, warn = 10) => {
 const spark = computed(() => {
   const vals = props.trend.map(t => t.total)
   const max = Math.max(...vals, 1)
-  const w = 240, h = 44
-  const step = vals.length > 1 ? w / (vals.length - 1) : 0
-  const points = vals.map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * (h - 4) - 2).toFixed(1)}`).join(' ')
-  const bars = vals.map((v, i) => ({
-    x: i * step,
-    y: h - (v / max) * (h - 4) - 2,
-    v,
-    ym: props.trend[i]?.year_month,
+  const width = 240
+  const height = 44
+  const padding = 3
+  const step = (width - padding * 2) / Math.max(vals.length - 1, 1)
+  const dots = vals.map((value, index) => ({
+    x: padding + index * step,
+    y: height - padding - (value / max) * (height - padding * 2),
+    value,
+    month: props.trend[index].year_month,
   }))
-  return { points, bars, w, h, max }
+  const points = dots.map(({ x, y }) => `${x},${y}`).join(' ')
+  return { width, height, points, dots }
 })
 
 const warnings = ref(null)
@@ -365,10 +367,10 @@ const NEXT_ACTIONS = {
           </p>
         </div>
 
-        <!-- 事業所KPI -->
+        <!-- 事業所の運営指標 -->
         <div class="bg-white border border-gray-200 rounded-lg p-5">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-gray-700">事業所KPI（{{ period.year_month }}）</h3>
+            <h3 class="text-sm font-semibold text-gray-700">事業所の運営指標（{{ period.year_month }}）</h3>
             <span class="text-[10px] text-gray-400">定員 {{ kpi.capacity_per_day ?? '—' }}名 × 営業 {{ kpi.business_days ?? '—' }}日</span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
@@ -394,14 +396,14 @@ const NEXT_ACTIONS = {
             </div>
             <div class="border rounded-lg p-3">
               <div class="text-[10px] text-gray-500">売上推移（6ヶ月）</div>
-              <svg :width="spark.w" :height="spark.h" class="mt-1">
+              <svg :viewBox="`0 0 ${spark.width} ${spark.height}`" class="mt-1 block h-auto w-full">
                 <polyline :points="spark.points" fill="none" stroke="#6366f1" stroke-width="1.5" />
-                <circle v-for="(b, i) in spark.bars" :key="i" :cx="b.x" :cy="b.y" r="2.5"
-                  :fill="b.ym === period.year_month ? '#ef4444' : '#6366f1'">
-                  <title>{{ b.ym }}: {{ fmt(b.v) }}円</title>
+                <circle v-for="dot in spark.dots" :key="dot.month" :cx="dot.x" :cy="dot.y" r="2.5"
+                  :fill="dot.month === period.year_month ? '#ef4444' : '#6366f1'">
+                  <title>{{ dot.month }}: {{ fmt(dot.value) }}円</title>
                 </circle>
               </svg>
-              <div class="text-[10px] text-gray-400 flex justify-between mt-0.5">
+              <div class="text-[10px] text-gray-400 flex flex-wrap justify-between gap-x-2 mt-0.5">
                 <span>{{ trend[0]?.year_month }}</span>
                 <span>{{ trend[trend.length - 1]?.year_month }}</span>
               </div>
