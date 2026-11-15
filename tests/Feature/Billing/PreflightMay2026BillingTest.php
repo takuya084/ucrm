@@ -97,6 +97,31 @@ class PreflightMay2026BillingTest extends TestCase
         $this->assertSame(5481, (int) $detail->insurance_amount);
     }
 
+    public function test_confirmed_billing_downloads_zip_with_cp932_kana_on_sqlite(): void
+    {
+        $storage = \Illuminate\Support\Facades\Storage::fake('local');
+        $this->child->update(['name_kana' => 'カクウ']);
+        $this->master();
+        $this->plan();
+        $detail = $this->calculate();
+        $this->loginAdmin();
+
+        $url = '/billing/'.$detail->billing_period_id;
+        $this->patch($url.'/confirm')->assertSessionHasNoErrors()->assertRedirect();
+        $this->get($url.'/export-bundle')->assertOk()->assertDownload('JIG9999999999_202605.zip');
+
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($storage->path('billing_csv/JIG9999999999_202605.zip')));
+        try {
+            $csv = $zip->getFromName('K112605.CSV');
+            $this->assertIsString($csv);
+            $fields = str_getcsv(explode("\r\n", $csv)[3]);
+            $this->assertSame(hex2bin('b6b8b3'), $fields[10]);
+        } finally {
+            $zip->close();
+        }
+    }
+
     private function reject(string $reason, callable $operation): void
     {
         try {

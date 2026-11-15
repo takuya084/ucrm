@@ -29,6 +29,7 @@ class StaffingComplianceService
     {
         $facilityId = $period->facility_id;
         $yearMonth  = $period->year_month;
+        [$year, $month] = array_map('intval', explode('-', $yearMonth));
 
         // 「休み/有給」扱いのラベル名を取得
         $offLabels = ShiftLabel::where('facility_id', $facilityId)
@@ -39,7 +40,8 @@ class StaffingComplianceService
         // 当月シフトエントリを取得
         $entries = ShiftEntry::whereHas('monthlyShift', fn($q) =>
                 $q->where('facility_id', $facilityId)
-                  ->whereRaw("DATE_FORMAT(CONCAT(year,'-',LPAD(month,2,'0'),'-01'), '%Y-%m') = ?", [$yearMonth]))
+                  ->where('year', $year)
+                  ->where('month', $month))
             ->with('staff:id,role')
             ->get(['id', 'staff_id', 'date', 'work_type']);
 
