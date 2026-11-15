@@ -265,7 +265,7 @@ class BillingPeriodController extends Controller
         $performanceCsvPath  = $this->csvExportService->generatePerformanceRecordCsv($billingPeriod);
 
         // 請求明細CSVをダウンロード（実績記録票は別途ダウンロードできるようにする）
-        return Storage::disk('local')->download($billingCsvPath);
+        return $this->downloadNhifCsv($billingCsvPath);
     }
 
     /**
@@ -277,7 +277,15 @@ class BillingPeriodController extends Controller
         \App\Models\AuditLog::record('exported', $billingPeriod);
 
         $path = $this->csvExportService->generatePerformanceRecordCsv($billingPeriod);
-        return Storage::disk('local')->download($path);
+        return $this->downloadNhifCsv($path);
+    }
+
+    private function downloadNhifCsv(string $path)
+    {
+        // 国保連向けのCP932ファイルをバイナリの添付ファイルとして返す。
+        return response()->download(Storage::disk('local')->path($path), basename($path), [
+            'Content-Type' => 'application/octet-stream',
+        ]);
     }
 
     /**

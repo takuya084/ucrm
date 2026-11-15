@@ -97,7 +97,7 @@ class PreflightMay2026BillingTest extends TestCase
         $this->assertSame(5481, (int) $detail->insurance_amount);
     }
 
-    public function test_confirmed_billing_downloads_zip_with_cp932_kana_on_sqlite(): void
+    public function test_confirmed_billing_downloads_matching_cp932_csv_and_zip_on_sqlite(): void
     {
         $storage = \Illuminate\Support\Facades\Storage::fake('local');
         $this->child->update(['name_kana' => 'カクウ']);
@@ -117,6 +117,17 @@ class PreflightMay2026BillingTest extends TestCase
             $this->assertIsString($csv);
             $fields = str_getcsv(explode("\r\n", $csv)[3]);
             $this->assertSame(hex2bin('b6b8b3'), $fields[10]);
+
+            $download = $this->get($url.'/export')
+                ->assertOk()
+                ->assertDownload('K112605.CSV')
+                ->assertHeader('Content-Type', 'application/octet-stream');
+            $this->assertSame($csv, file_get_contents($download->baseResponse->getFile()->getPathname()));
+
+            $this->get($url.'/export-performance')
+                ->assertOk()
+                ->assertDownload()
+                ->assertHeader('Content-Type', 'application/octet-stream');
         } finally {
             $zip->close();
         }
