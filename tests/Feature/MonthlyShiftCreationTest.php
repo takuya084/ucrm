@@ -13,7 +13,7 @@ class MonthlyShiftCreationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_open_the_editor_after_creating_a_monthly_shift(): void
+    public function test_admin_can_create_open_and_save_a_monthly_shift_twice(): void
     {
         $facility = Facility::create([
             'name' => 'Shift test facility',
@@ -21,7 +21,7 @@ class MonthlyShiftCreationTest extends TestCase
             'is_active' => true,
         ]);
         $admin = User::factory()->create();
-        Staff::create([
+        $staff = Staff::create([
             'user_id' => $admin->id,
             'facility_id' => $facility->id,
             'name' => 'Shift test admin',
@@ -37,5 +37,39 @@ class MonthlyShiftCreationTest extends TestCase
 
         $created->assertRedirect(route('shifts.edit', $shift));
         $this->get(route('shifts.edit', $shift))->assertOk();
+
+        $newStaff = Staff::create([
+            'user_id' => User::factory()->create()->id,
+            'facility_id' => $facility->id,
+            'name' => 'Shift test staff',
+            'role' => 'staff',
+            'is_active' => true,
+        ]);
+
+        $date = '2026-05-07';
+        $saveUrl = route('shifts.bulk-save', $shift);
+        $editUrl = route('shifts.edit', $shift);
+        foreach (['13:00', '13:15'] as $time) {
+            $this->from($editUrl)->post($saveUrl, [
+                'entries' => [
+                    ['staff_id' => $staff->id, 'date' => $date, 'start_time' => $time, 'work_type' => '勤務'],
+                    ['staff_id' => $newStaff->id, 'date' => $date, 'start_time' => $time, 'work_type' => '勤務'],
+                ],
+                'day_notes' => [['date' => $date, 'note' => $time]],
+            ])->assertSessionHasNoErrors()->assertRedirect($editUrl);
+
+            $entries = $shift->entries()->whereDate('date', $date)->get();
+            $this->assertCount(2, $entries);
+            foreach ($entries as $entry) {
+                $this->assertSame($time, substr($entry->start_time, 0, 5));
+            }
+            $this->assertSame($time, $shift->dayNotes()->whereDate('date', $date)->sole()->note);
+        }
+
+        $this->from($editUrl)->post($saveUrl, [
+            'entries' => [['staff_id' => $staff->id, 'date' => $date]],
+            'day_notes' => [['date' => $date, 'note' => null]],
+        ])->assertSessionHasNoErrors()->assertRedirect($editUrl);
+        $this->assertFalse($shift->dayNotes()->whereDate('date', $date)->exists());
     }
 }
