@@ -133,6 +133,47 @@ class PreflightMay2026BillingTest extends TestCase
         }
     }
 
+    public function test_staffing_check_matches_attendance_with_a_time_component_to_the_shift_day(): void
+    {
+        $this->loginAdmin();
+        $admin = \App\Models\Staff::where('facility_id', $this->facility->id)->sole();
+        $leader = \App\Models\Staff::create([
+            'user_id' => \App\Models\User::factory()->create()->id,
+            'facility_id' => $this->facility->id,
+            'name' => 'Synthetic shift leader',
+            'role' => 'leader',
+            'is_active' => true,
+        ]);
+        $shift = \App\Models\MonthlyShift::create([
+            'facility_id' => $this->facility->id,
+            'year' => 2026,
+            'month' => 5,
+            'status' => 'draft',
+            'created_by' => $admin->id,
+        ]);
+
+        \Illuminate\Support\Facades\DB::table('usage_records')
+            ->where('child_id', $this->child->id)
+            ->update(['date' => '2026-05-07 00:00:00']);
+
+        $period = new \App\Models\BillingPeriod([
+            'facility_id' => $this->facility->id,
+            'year_month' => '2026-05',
+        ]);
+        $checker = app(\App\Services\Billing\StaffingComplianceService::class);
+        $this->assertCount(3, $checker->checkPeriod($period));
+
+        foreach ([$admin, $leader] as $staff) {
+            $shift->entries()->create([
+                'staff_id' => $staff->id,
+                'date' => '2026-05-07',
+                'start_time' => '13:00',
+                'work_type' => '勤務',
+            ]);
+        }
+        $this->assertSame([], $checker->checkPeriod($period));
+    }
+
     private function reject(string $reason, callable $operation): void
     {
         try {

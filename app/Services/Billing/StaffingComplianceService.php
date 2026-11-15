@@ -63,9 +63,9 @@ class StaffingComplianceService
         $childCountByDate = UsageRecord::where('facility_id', $facilityId)
             ->where('date', 'like', $yearMonth . '%')
             ->where('status', 'attended')
-            ->selectRaw('date, COUNT(DISTINCT child_id) AS cnt')
-            ->groupBy('date')
-            ->pluck('cnt', 'date')
+            ->selectRaw('DATE(date) AS service_date, COUNT(DISTINCT child_id) AS cnt')
+            ->groupByRaw('DATE(date)')
+            ->pluck('cnt', 'service_date')
             ->all();
 
         $warnings = [];
