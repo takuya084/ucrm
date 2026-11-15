@@ -7,7 +7,6 @@ use App\Models\Child;
 use App\Models\ChildSchedule;
 use App\Models\Facility;
 use App\Models\MonthlyShift;
-use App\Models\ShiftDayNote;
 use App\Models\ShiftEntry;
 use App\Models\ShiftLabel;
 use App\Models\Staff;
@@ -211,32 +210,28 @@ class ShiftController extends Controller
 
         DB::transaction(function () use ($request, $shift) {
             foreach ($request->entries as $entry) {
-                ShiftEntry::updateOrCreate(
-                    [
-                        'monthly_shift_id' => $shift->id,
-                        'staff_id'         => $entry['staff_id'],
-                        'date'             => $entry['date'],
-                    ],
-                    [
-                        'start_time' => $entry['start_time'],
-                        'work_type'  => $entry['work_type'] ?? '',
-                        'note'       => $entry['note'],
-                    ]
+                $date = Carbon::parse($entry['date'])->toDateString();
+                // SQLite may store model dates with a midnight time component.
+                $record = $shift->entries()->whereDate('date', $date)->firstOrNew(
+                    ['staff_id' => $entry['staff_id']],
+                    ['date' => $date],
                 );
+                $record->fill([
+                    'start_time' => $entry['start_time'] ?? null,
+                    'work_type'  => $entry['work_type'] ?? '',
+                    'note'       => $entry['note'] ?? null,
+                ])->save();
             }
 
-            if ($request->has('day_notes')) {
-                foreach ($request->day_notes as $dn) {
-                    if (empty($dn['note'])) {
-                        ShiftDayNote::where('monthly_shift_id', $shift->id)
-                            ->where('date', $dn['date'])
-                            ->delete();
-                    } else {
-                        ShiftDayNote::updateOrCreate(
-                            ['monthly_shift_id' => $shift->id, 'date' => $dn['date']],
-                            ['note' => $dn['note']]
-                        );
-                    }
+            foreach ($request->input('day_notes') ?? [] as $dn) {
+                $date = Carbon::parse($dn['date'])->toDateString();
+                $notes = $shift->dayNotes()->whereDate('date', $date);
+
+                if (empty($dn['note'])) {
+                    $notes->delete();
+                } else {
+                    $notes->firstOrNew([], ['date' => $date])
+                        ->fill(['note' => $dn['note']])->save();
                 }
             }
         });
