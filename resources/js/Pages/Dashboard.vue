@@ -46,183 +46,188 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
     <div class="py-8">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-        <DailyWorkBoard :work="dailyWork" :date="date" />
+        <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday" />
 
-        <!-- 前月分 請求業務の状態 -->
-        <Link v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="billingPeriod ? route('billing.show', billingPeriod.id) : route('billing.index')"
-          class="block rounded-lg border px-4 py-3 transition hover:shadow"
-          :class="billingPeriod?.status === 'completed' ? 'bg-white border-gray-200' : isBillingWindow ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'">
-          <div class="flex items-center gap-3 flex-wrap text-sm">
-            <span class="font-semibold text-gray-700">{{ billingMonth }}分の国保連請求</span>
-            <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', billingGuide.cls]">{{ billingGuide.label }}</span>
-            <span class="text-gray-600">{{ billingGuide.text }}</span>
-            <span class="ml-auto text-xs text-primary-600">開く →</span>
-          </div>
-          <p v-if="isBillingWindow && billingPeriod?.status !== 'completed'" class="text-xs text-amber-700 mt-1">
-            毎月10日が国保連への請求締切です。
-          </p>
-        </Link>
+        <details class="rounded-xl border bg-white">
+          <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-800">事業所の集計・管理業務</summary>
+          <div class="space-y-6 border-t p-4">
+            <!-- 前月分 請求業務の状態 -->
+            <Link v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="billingPeriod ? route('billing.show', billingPeriod.id) : route('billing.index')"
+              class="block rounded-lg border px-4 py-3 transition hover:shadow"
+              :class="billingPeriod?.status === 'completed' ? 'bg-white border-gray-200' : isBillingWindow ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'">
+              <div class="flex items-center gap-3 flex-wrap text-sm">
+                <span class="font-semibold text-gray-700">{{ billingMonth }}分の国保連請求</span>
+                <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', billingGuide.cls]">{{ billingGuide.label }}</span>
+                <span class="text-gray-600">{{ billingGuide.text }}</span>
+                <span class="ml-auto text-xs text-primary-600">開く →</span>
+              </div>
+              <p v-if="isBillingWindow && billingPeriod?.status !== 'completed'" class="text-xs text-amber-700 mt-1">
+                毎月10日が国保連への請求締切です。
+              </p>
+            </Link>
 
-        <!-- 今日のサマリー -->
-        <section>
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            選択日の状況（{{ todayStats.date }}）
-          </h3>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg border border-gray-200 p-5 text-center">
-              <div class="text-3xl font-bold text-gray-800">{{ activeChildren }}</div>
-              <div class="text-xs text-gray-500 mt-1">契約中の児童</div>
-            </div>
-            <div class="bg-green-50 rounded-lg shadow-sm p-5 text-center">
-              <div class="text-3xl font-bold text-green-700">{{ todayStats.attended }}</div>
-              <div class="text-xs text-gray-500 mt-1">出席</div>
-            </div>
-            <div class="bg-amber-50 rounded-lg shadow-sm p-5 text-center">
-              <div class="text-3xl font-bold text-amber-700">{{ todayStats.absent }}</div>
-              <div class="text-xs text-gray-500 mt-1">欠席</div>
-            </div>
-            <div class="bg-primary-50 rounded-lg shadow-sm p-5 text-center">
-              <div class="text-3xl font-bold text-primary-700">{{ todayStats.withSupport }}</div>
-              <div class="text-xs text-gray-500 mt-1">支援記録済</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- アラートセクション -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          <!-- 受給者証 期限アラート -->
-          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div class="px-5 py-3 border-b flex items-center justify-between">
-              <h3 class="text-sm font-semibold text-gray-700">
-                受給者証 期限アラート
-                <span v-if="expiringCertificates.length" class="ml-2 px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
-                  {{ expiringCertificates.length }}件
-                </span>
+            <!-- 今日のサマリー -->
+            <section>
+              <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                選択日の状況（{{ todayStats.date }}）
               </h3>
-            </div>
-            <div v-if="expiringCertificates.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">
-              期限切れ間近の受給者証はありません
-            </div>
-            <ul v-else class="divide-y">
-              <li v-for="cert in expiringCertificates" :key="cert.id" class="px-5 py-3 flex items-center justify-between">
-                <div>
-                  <Link :href="route('children.show', { child: cert.child_id, tab: 'cert' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
-                    {{ cert.child?.name }}
-                  </Link>
-                  <div class="text-xs text-gray-500">有効期限：{{ cert.valid_to }}</div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-white rounded-lg border border-gray-200 p-5 text-center">
+                  <div class="text-3xl font-bold text-gray-800">{{ activeChildren }}</div>
+                  <div class="text-xs text-gray-500 mt-1">契約中の児童</div>
                 </div>
-                <span
-                  :class="[
-                    'text-xs font-medium px-2 py-1 rounded-full',
-                    daysUntil(cert.valid_to) <= 7
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-amber-100 text-amber-700'
-                  ]"
-                >
-                  あと {{ daysUntil(cert.valid_to) }}日
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- モニタリング期限アラート -->
-          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div class="px-5 py-3 border-b flex items-center justify-between">
-              <h3 class="text-sm font-semibold text-gray-700">
-                モニタリング 実施アラート
-                <span v-if="monitoringDue.length" class="ml-2 px-2 py-0.5 bg-orange-100 text-orange-600 text-xs rounded-full">
-                  {{ monitoringDue.length }}件
-                </span>
-              </h3>
-            </div>
-            <div v-if="monitoringDue.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">
-              期限の近いモニタリングはありません
-            </div>
-            <ul v-else class="divide-y">
-              <li v-for="mon in monitoringDue" :key="mon.id" class="px-5 py-3 flex items-center justify-between">
-                <div>
-                  <Link :href="route('children.show', { child: mon.child_id, tab: 'plan' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
-                    {{ mon.child?.name }}
-                  </Link>
-                  <div class="text-xs text-gray-500">次回予定：{{ mon.next_review_date }}</div>
+                <div class="bg-green-50 rounded-lg shadow-sm p-5 text-center">
+                  <div class="text-3xl font-bold text-green-700">{{ todayStats.attended }}</div>
+                  <div class="text-xs text-gray-500 mt-1">出席</div>
                 </div>
-                <span
-                  :class="[
-                    'text-xs font-medium px-2 py-1 rounded-full',
-                    daysUntil(mon.next_review_date) < 0
-                      ? 'bg-red-100 text-red-700'
-                      : daysUntil(mon.next_review_date) <= 7
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-amber-100 text-amber-700'
-                  ]"
-                >
-                  {{ daysUntil(mon.next_review_date) < 0 ? `${Math.abs(daysUntil(mon.next_review_date))}日超過` : `あと${daysUntil(mon.next_review_date)}日` }}
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- 個別支援計画 同意待ち -->
-          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div class="px-5 py-3 border-b">
-              <h3 class="text-sm font-semibold text-gray-700">
-                個別支援計画 同意待ち
-                <span v-if="pendingAgreements.length" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">
-                  {{ pendingAgreements.length }}件
-                </span>
-              </h3>
-            </div>
-            <div v-if="pendingAgreements.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">
-              同意待ちの計画書はありません
-            </div>
-            <ul v-else class="divide-y">
-              <li v-for="plan in pendingAgreements" :key="plan.id" class="px-5 py-3 flex items-center justify-between">
-                <div>
-                  <Link :href="route('children.show', { child: plan.child_id, tab: 'plan' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
-                    {{ plan.child?.name }}
-                  </Link>
-                  <div class="text-xs text-gray-500">{{ plan.valid_from }} 〜 {{ plan.valid_to }}</div>
+                <div class="bg-amber-50 rounded-lg shadow-sm p-5 text-center">
+                  <div class="text-3xl font-bold text-amber-700">{{ todayStats.absent }}</div>
+                  <div class="text-xs text-gray-500 mt-1">欠席</div>
                 </div>
-                <span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">同意待ち</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- 未対応・対応中の問い合わせ -->
-          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div class="px-5 py-3 border-b">
-              <h3 class="text-sm font-semibold text-gray-700">
-                対応が必要な問い合わせ
-                <span v-if="openInquiries.length" class="ml-2 px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full">
-                  {{ openInquiries.length }}件
-                </span>
-              </h3>
-            </div>
-            <div v-if="openInquiries.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">
-              対応が必要な問い合わせはありません
-            </div>
-            <ul v-else class="divide-y">
-              <li v-for="inq in openInquiries" :key="inq.id" class="px-5 py-3 flex items-center justify-between">
-                <div>
-                  <Link :href="route('inquiries.index')" class="text-sm font-medium text-gray-800 hover:text-primary-600">
-                    {{ inq.child?.name }}
-                  </Link>
-                  <div class="text-xs text-gray-500">{{ inq.category }} — {{ inq.created_at?.slice(0, 10) }}</div>
+                <div class="bg-primary-50 rounded-lg shadow-sm p-5 text-center">
+                  <div class="text-3xl font-bold text-primary-700">{{ todayStats.withSupport }}</div>
+                  <div class="text-xs text-gray-500 mt-1">支援記録済</div>
                 </div>
-                <span
-                  :class="[
-                    'text-xs px-2 py-1 rounded-full',
-                    inq.status === 'open'
-                      ? 'bg-red-50 text-red-600'
-                      : 'bg-amber-50 text-amber-600'
-                  ]"
-                >{{ inq.status === 'open' ? '未対応' : '対応中' }}</span>
-              </li>
-            </ul>
-          </div>
+              </div>
+            </section>
 
-        </div>
+            <!-- アラートセクション -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+              <!-- 受給者証 期限アラート -->
+              <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-5 py-3 border-b flex items-center justify-between">
+                  <h3 class="text-sm font-semibold text-gray-700">
+                    受給者証 期限アラート
+                    <span v-if="expiringCertificates.length" class="ml-2 px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
+                      {{ expiringCertificates.length }}件
+                    </span>
+                  </h3>
+                </div>
+                <div v-if="expiringCertificates.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">
+                  期限切れ間近の受給者証はありません
+                </div>
+                <ul v-else class="divide-y">
+                  <li v-for="cert in expiringCertificates" :key="cert.id" class="px-5 py-3 flex items-center justify-between">
+                    <div>
+                      <Link :href="route('children.show', { child: cert.child_id, tab: 'cert' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                        {{ cert.child?.name }}
+                      </Link>
+                      <div class="text-xs text-gray-500">有効期限：{{ cert.valid_to }}</div>
+                    </div>
+                    <span
+                      :class="[
+                        'text-xs font-medium px-2 py-1 rounded-full',
+                        daysUntil(cert.valid_to) <= 7
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-amber-100 text-amber-700'
+                      ]"
+                    >
+                      あと {{ daysUntil(cert.valid_to) }}日
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- モニタリング期限アラート -->
+              <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-5 py-3 border-b flex items-center justify-between">
+                  <h3 class="text-sm font-semibold text-gray-700">
+                    モニタリング 実施アラート
+                    <span v-if="monitoringDue.length" class="ml-2 px-2 py-0.5 bg-orange-100 text-orange-600 text-xs rounded-full">
+                      {{ monitoringDue.length }}件
+                    </span>
+                  </h3>
+                </div>
+                <div v-if="monitoringDue.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">
+                  期限の近いモニタリングはありません
+                </div>
+                <ul v-else class="divide-y">
+                  <li v-for="mon in monitoringDue" :key="mon.id" class="px-5 py-3 flex items-center justify-between">
+                    <div>
+                      <Link :href="route('children.show', { child: mon.child_id, tab: 'plan' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                        {{ mon.child?.name }}
+                      </Link>
+                      <div class="text-xs text-gray-500">次回予定：{{ mon.next_review_date }}</div>
+                    </div>
+                    <span
+                      :class="[
+                        'text-xs font-medium px-2 py-1 rounded-full',
+                        daysUntil(mon.next_review_date) < 0
+                          ? 'bg-red-100 text-red-700'
+                          : daysUntil(mon.next_review_date) <= 7
+                            ? 'bg-orange-100 text-orange-700'
+                            : 'bg-amber-100 text-amber-700'
+                      ]"
+                    >
+                      {{ daysUntil(mon.next_review_date) < 0 ? `${Math.abs(daysUntil(mon.next_review_date))}日超過` : `あと${daysUntil(mon.next_review_date)}日` }}
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- 個別支援計画 同意待ち -->
+              <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-5 py-3 border-b">
+                  <h3 class="text-sm font-semibold text-gray-700">
+                    個別支援計画 同意待ち
+                    <span v-if="pendingAgreements.length" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">
+                      {{ pendingAgreements.length }}件
+                    </span>
+                  </h3>
+                </div>
+                <div v-if="pendingAgreements.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">
+                  同意待ちの計画書はありません
+                </div>
+                <ul v-else class="divide-y">
+                  <li v-for="plan in pendingAgreements" :key="plan.id" class="px-5 py-3 flex items-center justify-between">
+                    <div>
+                      <Link :href="route('children.show', { child: plan.child_id, tab: 'plan' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                        {{ plan.child?.name }}
+                      </Link>
+                      <div class="text-xs text-gray-500">{{ plan.valid_from }} 〜 {{ plan.valid_to }}</div>
+                    </div>
+                    <span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">同意待ち</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- 未対応・対応中の問い合わせ -->
+              <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-5 py-3 border-b">
+                  <h3 class="text-sm font-semibold text-gray-700">
+                    対応が必要な問い合わせ
+                    <span v-if="openInquiries.length" class="ml-2 px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full">
+                      {{ openInquiries.length }}件
+                    </span>
+                  </h3>
+                </div>
+                <div v-if="openInquiries.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">
+                  対応が必要な問い合わせはありません
+                </div>
+                <ul v-else class="divide-y">
+                  <li v-for="inq in openInquiries" :key="inq.id" class="px-5 py-3 flex items-center justify-between">
+                    <div>
+                      <Link :href="route('inquiries.index')" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                        {{ inq.child?.name }}
+                      </Link>
+                      <div class="text-xs text-gray-500">{{ inq.category }} — {{ inq.created_at?.slice(0, 10) }}</div>
+                    </div>
+                    <span
+                      :class="[
+                        'text-xs px-2 py-1 rounded-full',
+                        inq.status === 'open'
+                          ? 'bg-red-50 text-red-600'
+                          : 'bg-amber-50 text-amber-600'
+                      ]"
+                    >{{ inq.status === 'open' ? '未対応' : '対応中' }}</span>
+                  </li>
+                </ul>
+              </div>
+
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   </BreezeAuthenticatedLayout>
