@@ -349,6 +349,9 @@ class PreflightMay2026BillingTest extends TestCase
             'file_path' => 'billing_csv/legacy.zip', 'file_name' => 'legacy.zip',
         ]);
         \Illuminate\Support\Facades\Storage::disk('local')->put('billing_csv/legacy.zip', 'synthetic legacy export');
+        $this->get('/billing/'.$period->id)->assertOk()->assertInertia(fn ($page) => $page
+            ->component('Billing/Show')
+            ->where('billingBlocker', fn ($message) => str_contains($message, 'base_record_incomplete')));
         $this->patchJson('/billing/'.$period->id.'/confirm')->assertUnprocessable()->assertJsonValidationErrors('billing');
         $this->assertSame('draft', $period->fresh()->status);
         $this->postJson('/billing/invoices/generate', ['year_month' => '2026-05'])->assertUnprocessable();

@@ -1,10 +1,9 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import ShiftCell from '@/Components/ShiftCell.vue'
 import { reactive, computed } from 'vue'
-import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   shift:                Object,   // { id, year, month, status }
@@ -19,6 +18,14 @@ const props = defineProps({
   qualificationTypes:   Object,   // { code: { name, color } }
   capacity:             Number,
 })
+
+const page = usePage()
+const billingQuery = computed(() => new URLSearchParams(page.url.split('?')[1]))
+const billingPeriod = computed(() => {
+  const id = billingQuery.value.get('billing_period')
+  return /^[1-9]\d*$/.test(id ?? '') ? id : null
+})
+const billingDate = computed(() => billingQuery.value.get('billing_date'))
 
 const STATUS_LABELS = {
   draft:     { label: '下書き', class: 'bg-amber-100 text-amber-700' },
@@ -211,14 +218,16 @@ const dailyCheck = computed(() => {
   <Head :title="`${shift.year}年${shift.month}月 シフト表`" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <h2 class="font-semibold text-xl text-gray-800">{{ shift.year }}年{{ shift.month }}月 シフト表</h2>
           <span :class="['px-2 py-0.5 rounded-md text-xs font-medium', STATUS_LABELS[shift.status]?.class]">
             {{ STATUS_LABELS[shift.status]?.label }}
           </span>
         </div>
-        <div class="flex gap-2 no-print">
+        <div class="flex flex-wrap items-center gap-2 no-print">
+          <Link v-if="billingPeriod" :href="route('billing.show', { billingPeriod, check: 1 })"
+            class="px-3 py-2 text-sm font-medium text-primary-700 underline">請求チェックに戻る</Link>
           <button v-if="canEdit" @click="save"
             class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">
             保存
@@ -317,7 +326,7 @@ const dailyCheck = computed(() => {
               </thead>
               <tbody>
                 <tr v-for="d in dates" :key="d.date"
-                  :class="DOW_COLORS[d.day_of_week] || ''">
+                  :class="d.date === billingDate ? 'bg-primary-100' : DOW_COLORS[d.day_of_week] || ''">
                   <td class="border px-1 py-1 text-center font-medium sticky left-0 z-10"
                     :class="[DOW_COLORS[d.day_of_week] || 'bg-white']">
                     {{ d.day }}

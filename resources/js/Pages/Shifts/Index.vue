@@ -1,9 +1,8 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   year: Number,
@@ -16,13 +15,22 @@ const STATUS_LABELS = {
 }
 
 const selectedYear = ref(props.year)
+const page = usePage()
+const billingContext = computed(() => {
+  const query = new URLSearchParams(page.url.split('?')[1]?.split('#')[0])
+  const period = query.get('billing_period')
+  const date = query.get('billing_date')
+  return /^[1-9]\d*$/.test(period ?? '') && /^\d{4}-\d{2}-\d{2}$/.test(date ?? '')
+    ? { billing_period: period, billing_date: date }
+    : {}
+})
 
 const changeYear = () => {
-  router.get(route('shifts.index'), { year: selectedYear.value }, { preserveState: true, replace: true })
+  router.get(route('shifts.index'), { year: selectedYear.value, ...billingContext.value }, { preserveState: true, replace: true })
 }
 
 const createShift = (month) => {
-  router.post(route('shifts.create'), { year: selectedYear.value, month })
+  router.post(route('shifts.create', billingContext.value), { year: selectedYear.value, month })
 }
 
 const destroyShift = (shift) => {
@@ -36,7 +44,11 @@ const destroyShift = (shift) => {
   <Head title="シフト管理" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">シフト管理</h2>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-semibold text-xl text-gray-800">シフト管理</h2>
+        <Link v-if="billingContext.billing_period" :href="route('billing.show', { billingPeriod: billingContext.billing_period, check: 1 })"
+          class="text-sm font-medium text-primary-700 underline">請求チェックに戻る</Link>
+      </div>
     </template>
 
     <div class="py-8">
@@ -72,7 +84,9 @@ const destroyShift = (shift) => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="m in months" :key="m.month" class="border-b hover:bg-gray-50">
+              <tr v-for="m in months" :key="m.month" :id="`shift-month-${m.month}`"
+                class="scroll-mt-4 border-b hover:bg-gray-50"
+                :class="{ 'bg-primary-50': billingContext.billing_date?.slice(0, 7) === `${selectedYear}-${String(m.month).padStart(2, '0')}` }">
                 <td class="py-3 px-3 font-medium">{{ m.month }}月</td>
                 <td class="py-3 px-3">
                   <span v-if="m.status"
@@ -85,7 +99,7 @@ const destroyShift = (shift) => {
                 <td class="py-3 px-3 text-right">
                   <div class="flex justify-end gap-2">
                     <template v-if="m.id">
-                      <Link :href="route('shifts.edit', m.id)"
+                      <Link :href="route('shifts.edit', { shift: m.id, ...billingContext })"
                         class="text-xs px-3 py-1 border rounded-md hover:bg-gray-50">
                         {{ ['admin','leader'].includes($page.props.auth.staff_role) ? '編集' : '閲覧' }}
                       </Link>

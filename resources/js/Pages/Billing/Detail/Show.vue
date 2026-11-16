@@ -10,15 +10,18 @@ const fmt = (n) => Number(n).toLocaleString()
   <Head :title="`明細詳細 - ${detail.child?.name}`" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="font-semibold text-xl text-gray-800">{{ detail.child?.name }} - 請求明細</h2>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <Link v-if="['submitted', 'completed'].includes(detail.billing_period?.status)"
+            :href="route('billing.error-claims.create', detail.id)"
+            class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">過誤申立を作成</Link>
           <a v-if="['confirmed','submitted','completed'].includes(detail.billing_period?.status)"
             :href="route('billing.details.proxy-receipt-pdf', detail.id)"
             class="px-3 py-1.5 text-xs bg-green-600 text-white rounded-md hover:bg-green-700">
             代理受領額通知書PDF
           </a>
-          <Link :href="route('billing.show', detail.billing_period_id)" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">戻る</Link>
+          <Link :href="route('billing.show', detail.billing_period_id) + '#billing-details'" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">月次請求の明細一覧へ</Link>
         </div>
       </div>
     </template>
