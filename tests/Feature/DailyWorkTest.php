@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Child, ContactNote, Facility, Staff, SupportRecord, UsageRecord, User};
+use App\Models\{Child, ChildSchedule, ContactNote, Facility, Staff, SupportRecord, UsageRecord, User};
 use App\Services\ContactNoteStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -31,6 +31,9 @@ class DailyWorkTest extends TestCase
         UsageRecord::create(['child_id'=>$children[0]->id,'facility_id'=>$facility->id,'date'=>'2026-12-02','status'=>'attended']);
         $this->get('/dashboard?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('Dashboard')->where('date','2026-12-01')->has('dailyWork.rows',2)
+            ->where('attendanceSource', 'records')->has('visits', 1)
+            ->where('visits.0.childId', $children[0]->id)
+            ->where('canManage', false)->has('openInquiries', 0)
             ->where('dailyWork.counts.home',2)->where('dailyWork.counts.record',1)->where('dailyWork.counts.draft',0)
             ->where('dailyWork.rows.0.child_id',$children[0]->id)
             ->where('dailyWork.rows.1.record','対象外')->where('dailyWork.rows.1.record_url',null)
@@ -39,6 +42,30 @@ class DailyWorkTest extends TestCase
             ->has('dailyWork.rows',1)->where('dailyWork.counts.home',0));
         $this->get('/dashboard?date=bad-date')->assertSessionHasErrors('date');
         $this->get('/contact-notes?date=bad-date')->assertSessionHasErrors('date');
+    }
+
+    public function test_dashboard_shows_fixed_schedule_before_attendance_is_saved(): void
+    {
+        $facility = Facility::create(['name'=>'事業所A','facility_code'=>'1310000001','service_type'=>'houday']);
+        $user = User::factory()->create();
+        Staff::create(['user_id'=>$user->id,'facility_id'=>$facility->id,'name'=>'児発管A','role'=>'leader','is_active'=>true]);
+        $child = Child::create([
+            'facility_id' => $facility->id,
+            'name' => '予定児童',
+            'contract_status' => 'active',
+            'allergy_note' => 'テストの注意事項',
+        ]);
+        ChildSchedule::create(['child_id' => $child->id, 'day_of_week' => 'tue', 'start_date' => '2026-11-01']);
+
+        $this->actingAs($user)->get('/dashboard?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('canManage', true)
+            ->where('attendanceSource', 'schedule')
+            ->where('dailyWork.hasAttendance', false)
+            ->has('visits', 1)
+            ->where('visits.0.childId', $child->id)
+            ->where('visits.0.allergy', 'テストの注意事項')
+            ->where('visits.0.arrival', ''));
+        $this->assertDatabaseCount('usage_records', 0);
     }
 
     public function test_record_saved_without_contact_note_is_editable_from_daily_work(): void

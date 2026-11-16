@@ -1,0 +1,146 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Child;
+use App\Models\ChildSchedule;
+use App\Models\ContactNote;
+use App\Models\Facility;
+use App\Models\UsageRecord;
+use Illuminate\Support\Carbon;
+
+class DailyAttendanceRoster
+{
+    public function __construct(private YoyakuApiService $yoyakuApi) {}
+
+    public function forDate(int $facilityId, string $date): array
+    {
+        $dayOfWeek = strtolower(Carbon::parse($date)->format('D'));
+
+        // 1. その日すでに出席記録が保存されているか確認
+        $savedRecords = UsageRecord::whereDate('date', $date)
+            ->where('facility_id', $facilityId)
+            ->with(['child.school', 'supportRecord'])
+            ->get();
+
+        $hasRecords = $savedRecords->isNotEmpty();
+
+        // 連絡帳の状態（児童ID => 連絡帳）。バッジ表示用
+        $noteMap = ContactNote::where('facility_id', $facilityId)
+            ->whereDate('date', $date)
+            ->get()
+            ->keyBy('child_id');
+
+        if ($hasRecords) {
+            // ── 保存済みモード: DBにあるものだけを表示する（勝手な補充はしない） ──
+            $rows = $savedRecords->map(fn($rec) => $this->rowFromRecord($rec, $noteMap->get($rec->child_id)));
+            $dataSource = 'records';
+        } else {
+            // ── テンプレートモード: 初めて開くときは予定を表示 ──
+            $yoyakuBusinessId = $this->getYoyakuBusinessId($facilityId);
+            $yoyakuSchedules  = $yoyakuBusinessId ? $this->yoyakuApi->getDailySchedule($date, (int) $yoyakuBusinessId, $facilityId) : null;
+
+            if ($yoyakuSchedules !== null) {
+                $dataSource    = 'yoyaku';
+                $yoyakuMap     = collect($yoyakuSchedules)->keyBy('user_id');
+                $templateChildren = Child::with('school')
+                    ->whereIn('yoyaku_user_id', $yoyakuMap->keys()->toArray())
+                    ->where('facility_id', $facilityId)
+                    ->where('contract_status', 'active')
+                    ->orderBy('name_kana')
+                    ->get();
+
+                $rows = $templateChildren->map(fn($c) => $this->rowFromChild($c, $yoyakuMap->get($c->yoyaku_user_id), $noteMap->get($c->id)));
+            } else {
+                $dataSource = 'schedule';
+                $scheduled = ChildSchedule::with('child.school')
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('start_date', '<=', $date)
+                    ->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', $date))
+                    ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId)->where('contract_status', 'active'))
+                    ->get();
+                $rows = $scheduled->map(fn($s) => $this->rowFromChild($s->child, null, $noteMap->get($s->child_id)));
+            }
+        }
+
+        // 表示順をカナ順で安定させる
+        $rows = $rows->sortBy('child_name_kana')->values();
+
+        return ['rows' => $rows, 'dataSource' => $dataSource, 'hasRecords' => $hasRecords];
+    }
+
+    /** usage_record モデルから行データを生成 */
+    private function rowFromRecord(UsageRecord $rec, ?ContactNote $note = null): array
+    {
+        return [
+            'child_id'                => $rec->child_id,
+            'child_name'              => $rec->child?->name,
+            'child_name_kana'         => $rec->child?->name_kana,
+            'school_name'             => $rec->child?->school?->name,
+            'allergy_note'            => $rec->child?->allergy_note,
+            'pickup_required'         => $rec->child?->pickup_required ?? false,
+            'yoyaku_pickup_time'      => null,
+            'yoyaku_dropoff_time'     => null,
+            'yoyaku_pickup_location'  => null,
+            'yoyaku_dropoff_location' => null,
+            'usage_record_id'         => $rec->id,
+            'status'                  => $rec->status,
+            'absent_reason'           => $rec->absent_reason ?? '',
+            'pickup_done'             => $rec->pickup_done,
+            'dropoff_done'            => $rec->dropoff_done,
+            'billing_target'          => $rec->billing_target,
+            'memo'                    => $rec->memo ?? '',
+            'check_in_time'           => $rec->check_in_time ? substr($rec->check_in_time, 0, 5) : '',
+            'check_out_time'          => $rec->check_out_time ? substr($rec->check_out_time, 0, 5) : '',
+            'is_school_day'           => $rec->is_school_day ?? true,
+            'service_type'            => $rec->service_type ?? '',
+            'has_support_record'      => $rec->supportRecord !== null,
+            'support_record_id'       => $rec->supportRecord?->id,
+            'contact_note_state' => ContactNoteStatus::for($note),
+            'contact_note_status'     => $note?->status,
+            'contact_note_read'       => (bool) $note?->read_at,
+            'contact_note_home_entry' => (bool) $note?->guardian_submitted_at,
+        ];
+    }
+
+    /** Child モデルからテンプレート行データを生成（未保存） */
+    private function rowFromChild(Child $child, ?array $yoyaku = null, ?ContactNote $note = null): array
+    {
+        return [
+            'child_id'                => $child->id,
+            'child_name'              => $child->name,
+            'child_name_kana'         => $child->name_kana,
+            'school_name'             => $child->school?->name,
+            'allergy_note'            => $child->allergy_note,
+            'pickup_required'         => $child->pickup_required,
+            'yoyaku_pickup_time'      => $yoyaku['pickup_time'] ?? null,
+            'yoyaku_dropoff_time'     => $yoyaku['dropoff_time'] ?? null,
+            'yoyaku_pickup_location'  => $yoyaku['pickup_location'] ?? null,
+            'yoyaku_dropoff_location' => $yoyaku['dropoff_location'] ?? null,
+            'usage_record_id'         => null, // 未保存
+            'status'                  => 'attended',
+            'absent_reason'           => '',
+            'pickup_done'             => $child->pickup_required,
+            'dropoff_done'            => $child->pickup_required,
+            'billing_target'          => true,
+            'memo'                    => '',
+            'check_in_time'           => '',
+            'check_out_time'          => '',
+            'is_school_day'           => true,
+            'service_type'            => '',
+            'has_support_record'      => false,
+            'support_record_id'       => null,
+            'contact_note_state' => ContactNoteStatus::for($note),
+            'contact_note_status'     => $note?->status,
+            'contact_note_read'       => (bool) $note?->read_at,
+            'contact_note_home_entry' => (bool) $note?->guardian_submitted_at,
+        ];
+    }
+
+    private function getYoyakuBusinessId(int $facilityId): ?int
+    {
+        $val = Facility::where('id', $facilityId)->value('yoyaku_business_id');
+        return $val ? (int) $val : null;
+    }
+
+}

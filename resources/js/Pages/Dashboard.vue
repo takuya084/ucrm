@@ -5,6 +5,9 @@ import DailyWorkBoard from '@/Components/DailyWorkBoard.vue'
 
 const props = defineProps({
   dailyWork: Object,
+  visits: Array,
+  attendanceSource: String,
+  canManage: Boolean,
   date: String,
   calendarToday: String,
   todayStats:            Object,
@@ -40,57 +43,24 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
   <Head title="今日の業務" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">{{ date === calendarToday ? '今日の業務' : '日別の業務' }}</h2>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-semibold text-xl text-gray-800">{{ date === calendarToday ? '今日の業務' : '日別の業務' }}</h2>
+        <nav v-if="canManage" aria-label="担当別の業務" class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          <a href="#management-work" class="text-primary-700 underline">管理者・児発管の確認事項</a>
+          <a href="#office-work" class="text-primary-700 underline">請求・集金</a>
+        </nav>
+      </div>
     </template>
 
     <div class="py-8">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-        <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday" />
+        <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday"
+          :visits="visits" :attendance-source="attendanceSource" />
 
-        <details class="rounded-xl border bg-white">
-          <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-800">事業所の集計・管理業務</summary>
-          <div class="space-y-6 border-t p-4">
-            <!-- 前月分 請求業務の状態 -->
-            <Link v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="billingPeriod ? route('billing.show', billingPeriod.id) : route('billing.index')"
-              class="block rounded-lg border px-4 py-3 transition hover:shadow"
-              :class="billingPeriod?.status === 'completed' ? 'bg-white border-gray-200' : isBillingWindow ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'">
-              <div class="flex items-center gap-3 flex-wrap text-sm">
-                <span class="font-semibold text-gray-700">{{ billingMonth }}分の国保連請求</span>
-                <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', billingGuide.cls]">{{ billingGuide.label }}</span>
-                <span class="text-gray-600">{{ billingGuide.text }}</span>
-                <span class="ml-auto text-xs text-primary-600">開く →</span>
-              </div>
-              <p v-if="isBillingWindow && billingPeriod?.status !== 'completed'" class="text-xs text-amber-700 mt-1">
-                毎月10日が国保連への請求締切です。
-              </p>
-            </Link>
-
-            <!-- 今日のサマリー -->
-            <section>
-              <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                選択日の状況（{{ todayStats.date }}）
-              </h3>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div class="bg-white rounded-lg border border-gray-200 p-5 text-center">
-                  <div class="text-3xl font-bold text-gray-800">{{ activeChildren }}</div>
-                  <div class="text-xs text-gray-500 mt-1">契約中の児童</div>
-                </div>
-                <div class="bg-green-50 rounded-lg shadow-sm p-5 text-center">
-                  <div class="text-3xl font-bold text-green-700">{{ todayStats.attended }}</div>
-                  <div class="text-xs text-gray-500 mt-1">出席</div>
-                </div>
-                <div class="bg-amber-50 rounded-lg shadow-sm p-5 text-center">
-                  <div class="text-3xl font-bold text-amber-700">{{ todayStats.absent }}</div>
-                  <div class="text-xs text-gray-500 mt-1">欠席</div>
-                </div>
-                <div class="bg-primary-50 rounded-lg shadow-sm p-5 text-center">
-                  <div class="text-3xl font-bold text-primary-700">{{ todayStats.withSupport }}</div>
-                  <div class="text-xs text-gray-500 mt-1">支援記録済</div>
-                </div>
-              </div>
-            </section>
-
+        <section v-if="canManage" id="management-work" aria-labelledby="management-heading" class="scroll-mt-4 rounded-xl border bg-white">
+          <h3 id="management-heading" class="border-b px-4 py-3 font-semibold text-gray-900">管理者・児発管の確認事項</h3>
+          <div class="space-y-6 p-4">
             <!-- アラートセクション -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -226,6 +196,57 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
               </div>
 
             </div>
+          </div>
+        </section>
+
+        <section v-if="canManage" id="office-work" aria-labelledby="office-heading" class="scroll-mt-4 space-y-3">
+          <h3 id="office-heading" class="font-semibold text-gray-900">請求・集金</h3>
+            <!-- 前月分 請求業務の状態 -->
+            <Link :href="billingPeriod ? route('billing.show', billingPeriod.id) : route('billing.index')"
+              class="block rounded-lg border px-4 py-3 transition hover:shadow"
+              :class="billingPeriod?.status === 'completed' ? 'bg-white border-gray-200' : isBillingWindow ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'">
+              <div class="flex items-center gap-3 flex-wrap text-sm">
+                <span class="font-semibold text-gray-700">{{ billingMonth }}分の国保連請求</span>
+                <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', billingGuide.cls]">{{ billingGuide.label }}</span>
+                <span class="text-gray-600">{{ billingGuide.text }}</span>
+                <span class="ml-auto text-xs text-primary-600">開く →</span>
+              </div>
+              <p v-if="isBillingWindow && billingPeriod?.status !== 'completed'" class="text-xs text-amber-700 mt-1">
+                毎月10日が国保連への請求締切です。
+              </p>
+            </Link>
+
+          <Link :href="route('billing.invoices.index')" class="inline-block text-sm font-medium text-primary-700 underline">利用者請求・入金状況を確認</Link>
+        </section>
+
+        <details class="rounded-xl border bg-white">
+          <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-800">選択日の集計</summary>
+          <div class="border-t p-4">
+            <!-- 今日のサマリー -->
+            <section>
+              <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                選択日の状況（{{ todayStats.date }}）
+              </h3>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-white rounded-lg border border-gray-200 p-5 text-center">
+                  <div class="text-3xl font-bold text-gray-800">{{ activeChildren }}</div>
+                  <div class="text-xs text-gray-500 mt-1">契約中の児童</div>
+                </div>
+                <div class="bg-green-50 rounded-lg shadow-sm p-5 text-center">
+                  <div class="text-3xl font-bold text-green-700">{{ todayStats.attended }}</div>
+                  <div class="text-xs text-gray-500 mt-1">出席</div>
+                </div>
+                <div class="bg-amber-50 rounded-lg shadow-sm p-5 text-center">
+                  <div class="text-3xl font-bold text-amber-700">{{ todayStats.absent }}</div>
+                  <div class="text-xs text-gray-500 mt-1">欠席</div>
+                </div>
+                <div class="bg-primary-50 rounded-lg shadow-sm p-5 text-center">
+                  <div class="text-3xl font-bold text-primary-700">{{ todayStats.withSupport }}</div>
+                  <div class="text-xs text-gray-500 mt-1">支援記録済</div>
+                </div>
+              </div>
+            </section>
+
           </div>
         </details>
       </div>
