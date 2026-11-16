@@ -68,6 +68,42 @@ class DailyWorkTest extends TestCase
         $this->assertDatabaseCount('usage_records', 0);
     }
 
+    public function test_transport_assignments_are_unique_and_visible_to_the_assigned_worker(): void
+    {
+        $facility = Facility::create(['name' => '事業所A', 'facility_code' => '1310000001', 'service_type' => 'houday']);
+        $other = Facility::create(['name' => '事業所B', 'facility_code' => '1310000002', 'service_type' => 'houday']);
+        $manager = User::factory()->create();
+        $worker = User::factory()->create();
+        Staff::create(['user_id' => $manager->id, 'facility_id' => $facility->id, 'name' => '児発管', 'role' => 'leader', 'is_active' => true]);
+        $driver = Staff::create(['user_id' => $worker->id, 'facility_id' => $facility->id, 'name' => '担当職員', 'role' => 'staff', 'is_active' => true]);
+        $foreignStaff = Staff::create(['user_id' => User::factory()->create()->id, 'facility_id' => $other->id, 'name' => '他の事業所', 'role' => 'staff', 'is_active' => true]);
+        $child = Child::create(['facility_id' => $facility->id, 'name' => '予定児童', 'contract_status' => 'active']);
+        ChildSchedule::create(['child_id' => $child->id, 'day_of_week' => 'tue', 'start_date' => '2026-11-01']);
+
+        $path = '/dashboard/transport-assignment';
+        $date = '2026-12-01';
+        $input = ['service_date' => $date, 'child_id' => $child->id, 'direction' => 'pickup',
+            'staff_id' => $driver->id, 'scheduled_time' => '14:30', 'location' => '学校'];
+        $this->actingAs($worker)->put($path, $input)->assertForbidden();
+        $this->actingAs($manager)->putJson($path, array_replace($input, ['staff_id' => $foreignStaff->id]))
+            ->assertUnprocessable()->assertJsonValidationErrors('staff_id');
+        $this->put($path, $input)->assertRedirect('/dashboard?date='.$date);
+        $this->put($path, array_replace($input, ['scheduled_time' => '15:00']))->assertRedirect('/dashboard?date='.$date);
+        $this->assertDatabaseCount('daily_transport_assignments', 1);
+
+        $this->get('/dashboard?date='.$date)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('myTransport', 0)->has('transportAssignments', 1));
+        $this->actingAs($worker)->get('/dashboard?date='.$date)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('transportAssignments', 0)->has('transportStaff', 0)->has('myTransport', 1)
+            ->where('myTransport.0.child_id', $child->id)
+            ->where('myTransport.0.scheduled_time', fn ($time) => str_starts_with($time, '15:00')));
+        $this->get('/dashboard?date=2026-12-08')->assertOk()->assertInertia(fn (Assert $page) => $page->has('myTransport', 0));
+
+        $this->actingAs($manager)->put($path, array_replace($input, ['staff_id' => null]))
+            ->assertRedirect('/dashboard?date='.$date);
+        $this->assertDatabaseCount('daily_transport_assignments', 0);
+    }
+
     public function test_record_saved_without_contact_note_is_editable_from_daily_work(): void
     {
         Queue::fake();

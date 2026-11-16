@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Models\Child;
 use App\Models\UsageRecord;
+use App\Models\Staff;
 use App\Models\RecipientCertificate;
 use App\Models\MonitoringRecord;
 use App\Models\SupportPlan;
@@ -20,7 +22,8 @@ class DashboardController extends Controller
         $validated = $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
         $today = $validated['date'] ?? today()->toDateString();
         $facilityId = $this->facilityId();
-        $canManage = in_array(auth()->user()->staff?->role, ['admin', 'leader'], true);
+        $staff = auth()->user()->staff;
+        $canManage = in_array($staff?->role, ['admin', 'leader'], true);
         $attendance = $roster->forDate($facilityId, $today);
         $visits = $attendance['rows']
             ->filter(fn ($row) => $row['status'] === 'attended' && $row['child_name'] !== null)
@@ -32,10 +35,23 @@ class DashboardController extends Controller
                 'departure' => $row['check_out_time'],
                 'pickup' => $row['yoyaku_pickup_time'],
                 'dropoff' => $row['yoyaku_dropoff_time'],
+                'pickupLocation' => $row['yoyaku_pickup_location'],
+                'dropoffLocation' => $row['yoyaku_dropoff_location'],
                 'allergy' => $row['allergy_note'],
                 'home' => $row['contact_note_home_entry'] ? $row['contact_note_state']['home'] : null,
             ])
             ->values();
+
+        $assignments = DB::table('daily_transport_assignments')
+            ->where('facility_id', $facilityId)
+            ->where('service_date', $today)
+            ->whereIn('child_id', $visits->pluck('childId'))
+            ->orderBy('scheduled_time')
+            ->get(['child_id', 'staff_id', 'direction', 'scheduled_time', 'location']);
+        $myTransport = $assignments->where('staff_id', $staff->id)->values();
+        $transportStaff = $canManage
+            ? Staff::where('facility_id', $facilityId)->where('is_active', true)->orderBy('name')->get(['id', 'name'])
+            : [];
 
         // 今日の出席サマリー
         $todayAttended = UsageRecord::where('facility_id', $facilityId)
@@ -104,6 +120,9 @@ class DashboardController extends Controller
             'visits' => $visits,
             'attendanceSource' => $attendance['dataSource'],
             'canManage' => $canManage,
+            'myTransport' => $myTransport,
+            'transportAssignments' => $canManage ? $assignments : [],
+            'transportStaff' => $transportStaff,
             'calendarToday' => today()->toDateString(),
             'dailyWork' => $dailyWork->forDate($facilityId, $today),
             'todayStats' => [
