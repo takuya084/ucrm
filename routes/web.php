@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DailyActivityPlanController;
 use App\Http\Controllers\ChildrenController;
 use App\Http\Controllers\ChildrenYoyakuLinkController;
 use App\Http\Controllers\RecipientCertificateController;
@@ -365,6 +366,13 @@ Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
 Route::put('/dashboard/transport-assignment', [\App\Http\Controllers\DailyTransportAssignmentController::class, 'update'])
     ->middleware(['auth', 'verified', 'role:leader-or-above'])
     ->name('dashboard.transport-assignment');
+
+Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function () {
+    Route::get('daily-activities', [DailyActivityPlanController::class, 'index'])->name('daily-activities.index');
+    Route::post('daily-activities', [DailyActivityPlanController::class, 'store'])->name('daily-activities.store');
+    Route::patch('daily-activities/{activity}', [DailyActivityPlanController::class, 'update'])->name('daily-activities.update');
+    Route::delete('daily-activities/{activity}', [DailyActivityPlanController::class, 'destroy'])->name('daily-activities.destroy');
+});
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])->name('dashboard');

@@ -8,6 +8,7 @@ use Inertia\Inertia;
 use App\Models\Child;
 use App\Models\UsageRecord;
 use App\Models\Staff;
+use App\Models\DailyActivityPlan;
 use App\Models\RecipientCertificate;
 use App\Models\MonitoringRecord;
 use App\Models\SupportPlan;
@@ -120,6 +121,8 @@ class DashboardController extends Controller
             'visits' => $visits,
             'attendanceSource' => $attendance['dataSource'],
             'canManage' => $canManage,
+            'activityCategories' => DailyActivityPlan::CATEGORIES,
+            'activities' => DailyActivityPlan::forDate($facilityId, $today),
             'myTransport' => $myTransport,
             'transportAssignments' => $canManage ? $assignments : [],
             'transportStaff' => $transportStaff,
