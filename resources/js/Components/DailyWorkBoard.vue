@@ -74,6 +74,8 @@ const changeDate = () => {
       </ul>
     </section>
 
+    <slot name="after-visits" />
+
     <section aria-labelledby="pending-work" class="overflow-hidden rounded-xl border bg-white">
       <div class="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
         <h3 id="pending-work" class="font-semibold text-gray-900">対応が必要な児童</h3>

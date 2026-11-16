@@ -2,12 +2,16 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import DailyWorkBoard from '@/Components/DailyWorkBoard.vue'
+import DailyTransportBoard from '@/Components/DailyTransportBoard.vue'
 
 const props = defineProps({
   dailyWork: Object,
   visits: Array,
   attendanceSource: String,
   canManage: Boolean,
+  myTransport: Array,
+  transportAssignments: Array,
+  transportStaff: Array,
   date: String,
   calendarToday: String,
   todayStats:            Object,
@@ -56,7 +60,12 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
         <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday"
-          :visits="visits" :attendance-source="attendanceSource" />
+          :visits="visits" :attendance-source="attendanceSource">
+          <template #after-visits>
+            <DailyTransportBoard :key="date" :date="date" :visits="visits" :mine="myTransport"
+              :can-manage="canManage" :assignments="transportAssignments" :staff="transportStaff" />
+          </template>
+        </DailyWorkBoard>
 
         <section v-if="canManage" id="management-work" aria-labelledby="management-heading" class="scroll-mt-4 rounded-xl border bg-white">
           <h3 id="management-heading" class="border-b px-4 py-3 font-semibold text-gray-900">管理者・児発管の確認事項</h3>

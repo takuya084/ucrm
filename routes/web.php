@@ -362,6 +362,10 @@ Route::post('/subscribe/resend-reset-link', [SubscribeController::class, 'resend
 // Stripe Webhook（CSRF除外済み）
 Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
 
+Route::put('/dashboard/transport-assignment', [\App\Http\Controllers\DailyTransportAssignmentController::class, 'update'])
+    ->middleware(['auth', 'verified', 'role:leader-or-above'])
+    ->name('dashboard.transport-assignment');
+
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])->name('dashboard');
 
