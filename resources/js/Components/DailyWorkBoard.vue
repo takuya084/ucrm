@@ -3,7 +3,14 @@ import { computed, ref, watch } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import ContactNoteStatus from '@/Components/ContactNoteStatus.vue'
 
-const props = defineProps({ work: Object, date: String, calendarToday: String })
+const props = defineProps({
+  work: Object,
+  date: String,
+  calendarToday: String,
+  visits: Array,
+  attendanceSource: String,
+})
+const sourceLabels = { records: '保存済みの出欠', yoyaku: '予約情報', schedule: '固定の利用予定' }
 const selectedDate = ref(props.date)
 const showAll = ref(false)
 
@@ -40,16 +47,32 @@ const changeDate = () => {
       <Link v-if="date !== calendarToday" :href="route('dashboard')" class="px-3 py-2 text-sm text-primary-700 underline">今日へ戻る</Link>
     </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
-      <div>
-        <h3 class="font-semibold text-gray-900">出欠・送迎</h3>
-        <p v-if="!work.hasAttendance" class="mt-1 text-sm text-gray-700">出欠の記録がありません。予約・利用予定を確認してください。</p>
+    <section aria-labelledby="daily-visits" class="overflow-hidden rounded-xl border bg-white">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+        <div>
+          <h3 id="daily-visits" class="font-semibold text-gray-900">利用児童 <span class="ml-1 text-primary-700">{{ visits.length }}人</span></h3>
+          <p class="mt-1 text-xs text-gray-600">{{ sourceLabels[attendanceSource] }}</p>
+        </div>
+        <Link :href="route('usage-records.index', { date })" class="text-sm font-medium text-primary-700 underline">出欠・送迎を開く</Link>
       </div>
-      <Link :href="route('usage-records.index', { date })"
-        class="inline-flex rounded-md border border-primary-300 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-800 hover:bg-primary-100">
-        出欠・送迎を開く
-      </Link>
-    </div>
+
+      <p v-if="visits.length === 0" class="px-4 py-5 text-sm text-gray-700">選択日の利用児童は表示されていません。出欠・送迎画面で予定を確認できます。</p>
+      <ul v-else class="divide-y">
+        <li v-for="visit in visits" :key="visit.childId" class="grid gap-x-5 gap-y-2 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)]">
+          <Link :href="route('children.show', visit.childId)" class="break-words font-semibold text-primary-800 hover:underline">{{ visit.name }}</Link>
+          <div class="text-sm text-gray-700">
+            <p v-if="visit.arrival || visit.departure">来所 {{ visit.arrival || '未登録' }} ／ 退所 {{ visit.departure || '未登録' }}</p>
+            <p v-else>来所・退所時刻は未登録</p>
+            <p v-if="visit.pickup || visit.dropoff" class="mt-1">送迎予約 {{ visit.pickup ? `迎え ${visit.pickup}` : '' }} {{ visit.dropoff ? `送り ${visit.dropoff}` : '' }}</p>
+          </div>
+          <div class="space-y-1 text-sm">
+            <p v-if="visit.allergy" class="break-words font-medium text-red-800">アレルギー　{{ visit.allergy }}</p>
+            <Link v-if="visit.home" :href="route('contact-notes.index', { date }) + '#child-' + visit.childId"
+              class="inline-block font-medium text-primary-700 underline">{{ visit.home }}</Link>
+          </div>
+        </li>
+      </ul>
+    </section>
 
     <section aria-labelledby="pending-work" class="overflow-hidden rounded-xl border bg-white">
       <div class="flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
