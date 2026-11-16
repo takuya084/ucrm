@@ -68,8 +68,10 @@ class ShiftController extends Controller
             ->where('month', $month)
             ->first();
 
+        $billingContext = $request->only(['billing_period', 'billing_date']);
+
         if ($existing) {
-            return to_route('shifts.edit', $existing);
+            return to_route('shifts.edit', ['shift' => $existing, ...$billingContext]);
         }
 
         $shift = DB::transaction(function () use ($facilityId, $year, $month) {
@@ -117,7 +119,7 @@ class ShiftController extends Controller
             return $shift;
         });
 
-        return to_route('shifts.edit', $shift)
+        return to_route('shifts.edit', ['shift' => $shift, ...$billingContext])
             ->with(['message' => "{$year}年{$month}月のシフトを作成しました。", 'status' => 'success']);
     }
 

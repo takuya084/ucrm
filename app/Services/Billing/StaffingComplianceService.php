@@ -23,7 +23,7 @@ class StaffingComplianceService
     /**
      * 請求期間の人員配置違反を検出
      *
-     * @return array<int, array{level:string, message:string}>
+     * @return array<int, array{level:string, message:string, date:string}>
      */
     public function checkPeriod(BillingPeriod $period): array
     {
@@ -80,12 +80,14 @@ class StaffingComplianceService
             if ($actual < $required) {
                 $warnings[] = [
                     'level'   => 'error',
+                    'date'    => (string) $date,
                     'message' => "{$label}: 利用児童 {$childCount}名 に対して出勤スタッフ {$actual}名（基準 {$required}名）— 人員配置基準未達（減算対象の可能性）",
                 ];
             }
             if (!$hasLeader) {
                 $warnings[] = [
                     'level'   => 'warning',
+                    'date'    => (string) $date,
                     'message' => "{$label}: 児童発達支援管理責任者（leader）の勤務が確認できません",
                 ];
             }
@@ -96,6 +98,7 @@ class StaffingComplianceService
         foreach ($noShiftDates as $date) {
             $warnings[] = [
                 'level'   => 'warning',
+                'date'    => (string) $date,
                 'message' => Carbon::parse($date)->format('n/j') . ': 利用実績があるがシフトが未登録です',
             ];
         }

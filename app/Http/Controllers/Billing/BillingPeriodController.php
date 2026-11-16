@@ -16,10 +16,12 @@ use App\Models\Staff;
 use App\Models\UsageRecord;
 use App\Services\Billing\BillingCalculationService;
 use App\Services\Billing\BillingExportBundleService;
+use App\Services\Billing\BillingCompletenessGuard;
 use App\Services\Billing\NhifCsvExportService;
 use App\Services\Billing\PerformanceRecordPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class BillingPeriodController extends Controller
@@ -172,7 +174,18 @@ class BillingPeriodController extends Controller
             );
         }
 
+        $billingBlocker = null;
+        try {
+            app(BillingCompletenessGuard::class)->assertPeriod($billingPeriod);
+        } catch (ValidationException $e) {
+            $billingBlocker = $e->errors()['billing'][0] ?? null;
+            if ($billingBlocker === null) {
+                throw $e;
+            }
+        }
+
         return Inertia::render('Billing/Show', [
+            'billingBlocker' => $billingBlocker,
             'period'  => $billingPeriod,
             'exports' => $exports,
             'kpi'     => $kpi,
@@ -232,7 +245,7 @@ class BillingPeriodController extends Controller
     public function confirm(BillingPeriod $billingPeriod)
     {
         $this->authorizeFacility($billingPeriod);
-        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($billingPeriod);
+        app(BillingCompletenessGuard::class)->assertPeriod($billingPeriod);
 
         if (!$billingPeriod->isDraft()) {
             session()->flash('message', '下書き状態の請求のみ確定できます。');
@@ -294,7 +307,7 @@ class BillingPeriodController extends Controller
     public function validateExport(BillingPeriod $billingPeriod)
     {
         $this->authorizeFacility($billingPeriod);
-        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($billingPeriod);
+        app(BillingCompletenessGuard::class)->assertPeriod($billingPeriod);
 
         return response()->json([
             'warnings' => $this->bundleService->validate($billingPeriod),
@@ -321,7 +334,7 @@ class BillingPeriodController extends Controller
     {
         abort_if($billingExport->facility_id !== $this->facilityId(), 403);
         abort_unless($billingExport->billingPeriod, 422, "元の請求期間が存在しません。");
-        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($billingExport->billingPeriod);
+        app(BillingCompletenessGuard::class)->assertPeriod($billingExport->billingPeriod);
         \App\Models\AuditLog::record('exported', $billingExport);
         abort_unless(Storage::disk('local')->exists($billingExport->file_path), 404);
 
@@ -338,7 +351,7 @@ class BillingPeriodController extends Controller
     {
         abort_if($billingExport->facility_id !== $this->facilityId(), 403);
         abort_unless($billingExport->billingPeriod, 422, "元の請求期間が存在しません。");
-        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($billingExport->billingPeriod);
+        app(BillingCompletenessGuard::class)->assertPeriod($billingExport->billingPeriod);
 
         $billingExport->update([
             'is_submitted' => true,

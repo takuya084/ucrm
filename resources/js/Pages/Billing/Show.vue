@@ -1,13 +1,13 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import { router } from '@inertiajs/vue3'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
   period: Object,
+  billingBlocker: { type: String, default: null },
   exports: { type: Array, default: () => [] },
   kpi:    { type: Object, default: () => ({}) },
   trend:  { type: Array,  default: () => [] },
@@ -41,7 +41,20 @@ const spark = computed(() => {
   return { width, height, points, dots }
 })
 
+const page = usePage()
+const blocker = computed(() => page.props.errors?.billing || props.billingBlocker)
+const canOutput = computed(() => ['confirmed', 'submitted', 'completed'].includes(props.period.status))
 const warnings = ref(null)
+const checkError = ref(null)
+watch(() => props.period.id, () => {
+  warnings.value = null
+  checkError.value = null
+})
+const shiftReviewUrl = (date) => route('shifts.index', {
+  year: Number(date.slice(0, 4)),
+  billing_period: props.period.id,
+  billing_date: date,
+}) + `#shift-month-${Number(date.slice(5, 7))}`
 const checking = ref(false)
 const showOutputMenu = ref(false)
 const showProblemList = ref(false)
@@ -59,14 +72,26 @@ const reviewRollup = computed(() => {
 })
 
 const runValidate = async () => {
+  const periodId = props.period.id
   checking.value = true
+  checkError.value = null
+  warnings.value = null
   try {
-    const { data } = await axios.get(route('billing.validate-export', props.period.id))
-    warnings.value = data.warnings || []
+    const { data } = await axios.get(route('billing.validate-export', periodId))
+    if (props.period.id === periodId) warnings.value = data.warnings || []
+  } catch (error) {
+    if (props.period.id === periodId) {
+      checkError.value = error.response?.data?.errors?.billing?.[0] || 'チェックに失敗しました。もう一度お試しください。'
+    }
   } finally {
     checking.value = false
   }
 }
+
+onMounted(() => {
+  const query = new URL(page.url, window.location.origin).searchParams
+  if (query.get('check') === '1' && canOutput.value && !blocker.value) runValidate()
+})
 
 const exportBundle = () => {
   if (warnings.value && warnings.value.some(w => w.level === 'error')) {
@@ -135,43 +160,41 @@ const flowSteps = computed(() => {
   const confirmed = ['confirmed', 'submitted', 'completed'].includes(s)
   const submitted = ['submitted', 'completed'].includes(s)
   return [
-    { label: '請求計算',     done: true },
-    { label: '内容確認',     done: confirmed || reviewRollup.value.errors === 0 },
+    { label: '請求計算',     done: ['draft', 'confirmed', 'submitted', 'completed'].includes(s) },
+    { label: '内容確認',     done: confirmed || (!blocker.value && reviewRollup.value.errors === 0) },
     { label: '確定',         done: confirmed },
-    { label: 'CSV出力',      done: confirmed && props.exports.length > 0 },
+    { label: 'CSV出力',      done: submitted || (confirmed && props.exports.length > 0) },
     { label: '国保連へ伝送', done: submitted },
     { label: '支払突合',     done: s === 'completed' },
   ]
 })
 const currentStep = computed(() => flowSteps.value.findIndex(st => !st.done))
-const NEXT_ACTIONS = {
-  1: '児童別明細の「✕ 要修正」を解消してください（各行の「詳細」から確認できます）。',
-  2: '内容に問題がなければ、右上の「確定する」を押してください（確定後は再計算できなくなります）。',
-  3: '右上の「複式CSV一括出力（ZIP）」を押して、提出用ファイルをダウンロードしてください。',
-  4: 'ダウンロードしたCSVを国保連の電子請求受付システム（取込送信）でアップロードし、送信できたら下の出力履歴で「送信済マーク」を押してください。',
-  5: '国保連から支払決定通知が届いたら、下の「支払決定通知との突合」に通知記載の金額を入力してください。',
-}
+const nextAction = computed(() => {
+  if (blocker.value) return '請求データを修正してください'
+  switch (currentStep.value) {
+    case 0: return '請求計算の状況を確認'
+    case 1: return '児童別明細の要修正を確認'
+    case 2: return '内容を確認して確定'
+    case 3: return '提出用ZIPを出力'
+    case 4: return '国保連へ伝送し、送信を記録'
+    case 5: return '支払決定通知と請求額を照合'
+    default: return 'この月の請求は完了しています'
+  }
+})
 </script>
 
 <template>
   <Head :title="`請求詳細 ${period.year_month}`" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <div class="flex items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="font-semibold text-xl text-gray-800">{{ period.year_month }} 請求詳細</h2>
+        <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">{{ STATUS_LABEL[period.status] || period.status }}</span>
         <div class="flex items-center gap-2">
-          <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">
-            戻る
+          <Link :href="route('billing.index', { month: period.year_month })" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">
+            月次請求一覧
           </Link>
-          <button v-if="period.status === 'draft'" @click="confirmPeriod"
-            class="px-4 py-1.5 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">
-            確定する
-          </button>
-          <template v-if="['confirmed','submitted','completed'].includes(period.status)">
-            <button @click="exportBundle"
-              class="px-4 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition font-medium">
-              複式CSV一括出力（ZIP）
-            </button>
+          <template v-if="canOutput && !blocker">
             <div class="relative">
               <button @click="showOutputMenu = !showOutputMenu"
                 class="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition inline-flex items-center gap-1">
@@ -201,11 +224,6 @@ const NEXT_ACTIONS = {
                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                   代理受領額通知書PDF（全員ZIP）
                 </a>
-                <div class="border-t my-1" />
-                <button @click="runValidate(); showOutputMenu = false" :disabled="checking"
-                  class="block w-full text-left px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 disabled:opacity-50">
-                  {{ checking ? 'チェック中...' : '出力前 整合性チェック' }}
-                </button>
               </div>
             </div>
           </template>
@@ -241,12 +259,55 @@ const NEXT_ACTIONS = {
               </svg>
             </li>
           </ol>
-          <p v-if="currentStep !== -1 && NEXT_ACTIONS[currentStep]" class="mt-3 text-sm text-primary-800 bg-primary-50 rounded-md px-3 py-2">
-            <span class="font-semibold">次にやること：</span>{{ NEXT_ACTIONS[currentStep] }}
-          </p>
-          <p v-else-if="currentStep === -1" class="mt-3 text-sm text-green-700 bg-green-50 rounded-md px-3 py-2">
-            この月の請求業務はすべて完了しています。
-          </p>
+          <section class="mt-4 rounded-md bg-primary-50 p-4" aria-labelledby="next-action">
+            <h3 id="next-action" class="font-semibold text-primary-900">{{ nextAction }}</h3>
+            <p v-if="blocker && !page.props.errors?.billing" role="alert" class="mt-2 text-sm text-red-800">{{ blocker }}</p>
+            <p v-else-if="currentStep === 4" class="mt-1 text-sm text-gray-700">電子請求受付システムで送信した後、出力履歴で該当のZIPに送信済マークを付けます。</p>
+            <p v-else-if="currentStep === 5" class="mt-1 text-sm text-gray-700">通知が届いたら、記載された金額と日付を入力します。</p>
+            <div v-if="blocker || currentStep !== -1" class="mt-3 flex flex-wrap items-center gap-3 text-sm">
+              <Link v-if="blocker || currentStep === 0" :href="route('billing.index', { month: period.year_month })" class="font-medium text-primary-700 underline">
+                {{ period.year_month }}の月次請求へ
+              </Link>
+              <a v-else-if="currentStep === 1" href="#billing-details" class="font-medium text-primary-700 underline">児童別請求明細へ</a>
+              <button v-else-if="currentStep === 2" @click="confirmPeriod" class="rounded-md bg-primary-600 px-4 py-2 font-medium text-white hover:bg-primary-700">確定する</button>
+              <template v-else-if="currentStep === 3">
+                <button @click="runValidate" :disabled="checking" class="rounded-md bg-primary-600 px-4 py-2 font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+                  {{ checking ? 'チェック中…' : '出力前 整合性チェック' }}
+                </button>
+                <button @click="exportBundle" class="rounded-md border border-primary-300 bg-white px-4 py-2 font-medium text-primary-800 hover:bg-primary-100">複式CSV一括出力（ZIP）</button>
+                <button @click="router.reload({ only: ['exports'] })" class="text-primary-700 underline">出力履歴を更新</button>
+              </template>
+              <a v-else-if="currentStep === 4" href="#export-history" class="font-medium text-primary-700 underline">出力履歴へ</a>
+              <a v-else-if="currentStep === 5" href="#payment-decision" class="font-medium text-primary-700 underline">支払決定額を記録する</a>
+            </div>
+          </section>
+          <div v-if="canOutput && !blocker && currentStep !== 3" class="mt-3 flex flex-wrap gap-4 text-sm">
+            <button @click="runValidate" :disabled="checking" class="text-primary-700 underline disabled:opacity-50">{{ checking ? 'チェック中…' : '出力前 整合性チェック' }}</button>
+            <button @click="exportBundle" class="text-primary-700 underline">複式CSV一括出力（ZIP）</button>
+            <a v-if="exports.length" href="#export-history" class="text-primary-700 underline">出力履歴へ</a>
+          </div>
+        </div>
+
+        <!-- 出力前整合性チェック結果（CSV/エクスポート系の検証） -->
+        <div v-if="warnings !== null || checkError" aria-live="polite" class="bg-white border border-gray-200 rounded-lg p-5 border-l-4 border-amber-400">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-semibold text-gray-700">出力前 整合性チェック結果</h3>
+            <button @click="warnings = null; checkError = null" class="text-xs text-gray-400 hover:text-gray-600">閉じる</button>
+          </div>
+          <p v-if="checkError" role="alert" class="text-sm text-red-700">{{ checkError }}</p>
+          <div v-else-if="warnings.length === 0" class="text-sm text-green-600">問題は検出されませんでした。</div>
+          <ul v-else class="space-y-1 text-sm">
+            <li v-for="(w, i) in warnings" :key="i" class="flex items-start gap-2">
+              <span :class="w.level === 'error' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'"
+                class="px-2 py-0.5 rounded-md text-xs shrink-0">
+                {{ w.level === 'error' ? 'エラー' : '警告' }}
+              </span>
+              <div>
+                <span>{{ w.message }}</span>
+                <Link v-if="w.date" :href="shiftReviewUrl(w.date)" class="ml-2 font-medium text-primary-700 underline">該当月のシフトを開く</Link>
+              </div>
+            </li>
+          </ul>
         </div>
 
         <!-- サマリ（基本情報＋確認状態ロールアップ） -->
@@ -320,210 +381,8 @@ const NEXT_ACTIONS = {
           </div>
         </div>
 
-        <!-- 国保連支払通知との突合（提出後に表示） -->
-        <div v-if="['submitted','completed'].includes(period.status)" class="bg-white border border-gray-200 rounded-lg p-5">
-          <div class="flex items-center gap-3 mb-3 flex-wrap">
-            <h3 class="text-sm font-semibold text-gray-700">国保連 支払決定通知との突合</h3>
-            <span v-if="period.payment_decided_amount != null && paymentDiff === 0"
-              class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">請求額と一致</span>
-            <span v-else-if="period.payment_decided_amount != null && paymentDiff !== null && paymentDiff !== 0"
-              class="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">
-              差異 {{ fmt(Math.abs(paymentDiff)) }}円（{{ paymentDiff > 0 ? '支払超過' : '支払不足' }}）
-            </span>
-            <span v-else class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500">未記録</span>
-          </div>
-          <div class="flex flex-wrap items-end gap-3">
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">請求給付費（当システム）</label>
-              <div class="text-sm font-bold py-1.5">{{ fmt(kpi.insurance_amount ?? 0) }}円</div>
-            </div>
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">支払決定額（通知記載額）</label>
-              <input v-model.number="paymentForm.payment_decided_amount" type="number" min="0"
-                class="border border-gray-300 rounded-md px-3 py-1.5 text-sm w-36 text-right" />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">支払決定日</label>
-              <input v-model="paymentForm.payment_decided_at" type="date"
-                class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
-            </div>
-            <div class="flex-1 min-w-[14rem]">
-              <label class="block text-xs text-gray-500 mb-1">差異メモ（差異がある場合は必須）</label>
-              <input v-model="paymentForm.payment_difference_note" type="text"
-                class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
-                placeholder="例：○○さん分が受給者証番号誤りで返戻" />
-            </div>
-            <button @click="savePaymentDecision"
-              class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">
-              記録する
-            </button>
-          </div>
-          <p v-if="paymentDiff !== null && paymentDiff !== 0" class="mt-2 text-xs text-red-600">
-            差異があります。<Link :href="route('billing.returns.index')" class="underline">返戻管理</Link>・
-            <Link :href="route('billing.error-claims.index')" class="underline">過誤申立</Link>を確認してください。
-          </p>
-          <p v-else-if="period.status === 'submitted'" class="mt-2 text-xs text-gray-400">
-            支払決定額が請求額と一致した場合、この月の請求は自動的に「完了」になります。
-          </p>
-        </div>
-
-        <!-- 事業所の運営指標 -->
-        <div class="bg-white border border-gray-200 rounded-lg p-5">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-gray-700">事業所の運営指標（{{ period.year_month }}）</h3>
-            <span class="text-[10px] text-gray-400">定員 {{ kpi.capacity_per_day ?? '—' }}名 × 営業 {{ kpi.business_days ?? '—' }}日</span>
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            <div class="border rounded-lg p-3">
-              <div class="text-[10px] text-gray-500">利用率</div>
-              <div :class="['text-2xl font-bold', pctColor(kpi.utilization_rate)]">{{ pct(kpi.utilization_rate) }}</div>
-              <div class="text-[10px] text-gray-400 mt-1">出席 {{ kpi.attended ?? 0 }}日 / 提供可 {{ (kpi.capacity_per_day ?? 0) * (kpi.business_days ?? 0) }}日</div>
-            </div>
-            <div class="border rounded-lg p-3">
-              <div class="text-[10px] text-gray-500">キャンセル率</div>
-              <div :class="['text-2xl font-bold', rateColorInverse(kpi.cancellation_rate)]">{{ pct(kpi.cancellation_rate) }}</div>
-              <div class="text-[10px] text-gray-400 mt-1">欠席 {{ kpi.absent ?? 0 }}日 / 予定 {{ kpi.scheduled ?? 0 }}日</div>
-            </div>
-            <div class="border rounded-lg p-3">
-              <div class="text-[10px] text-gray-500">送迎実施率</div>
-              <div class="text-2xl font-bold text-gray-700">{{ pct(kpi.pickup_rate) }}</div>
-              <div class="text-[10px] text-gray-400 mt-1">迎 {{ kpi.pickups ?? 0 }} / 送 {{ kpi.dropoffs ?? 0 }}</div>
-            </div>
-            <div class="border rounded-lg p-3">
-              <div class="text-[10px] text-gray-500">給付費</div>
-              <div class="text-xl font-bold text-gray-700">{{ fmt(kpi.insurance_amount ?? 0) }}円</div>
-              <div class="text-[10px] text-gray-400 mt-1">請求対象額</div>
-            </div>
-            <div class="border rounded-lg p-3">
-              <div class="text-[10px] text-gray-500">売上推移（6ヶ月）</div>
-              <svg :viewBox="`0 0 ${spark.width} ${spark.height}`" class="mt-1 block h-auto w-full">
-                <polyline :points="spark.points" fill="none" stroke="#6366f1" stroke-width="1.5" />
-                <circle v-for="dot in spark.dots" :key="dot.month" :cx="dot.x" :cy="dot.y" r="2.5"
-                  :fill="dot.month === period.year_month ? '#ef4444' : '#6366f1'">
-                  <title>{{ dot.month }}: {{ fmt(dot.value) }}円</title>
-                </circle>
-              </svg>
-              <div class="text-[10px] text-gray-400 flex flex-wrap justify-between gap-x-2 mt-0.5">
-                <span>{{ trend[0]?.year_month }}</span>
-                <span>{{ trend[trend.length - 1]?.year_month }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 損益サマリ（経営情報のため管理者のみ） -->
-          <div v-if="$page.props.auth.staff_role === 'admin'"
-            class="mt-4 pt-3 border-t grid grid-cols-2 sm:grid-cols-5 gap-4">
-            <div class="border rounded-lg p-3">
-              <div class="text-[10px] text-gray-500">売上（請求＋自己負担）</div>
-              <div class="text-xl font-bold text-gray-800">{{ fmt(kpi.revenue ?? 0) }}円</div>
-            </div>
-            <div class="border rounded-lg p-3">
-              <div class="text-[10px] text-gray-500">人件費</div>
-              <div class="text-xl font-bold text-gray-700">{{ fmt(kpi.labor_cost ?? 0) }}円</div>
-              <div class="text-[10px] text-gray-400 mt-1"
-                :title="`常勤 ${fmt(kpi.labor_breakdown?.full_time ?? 0)}円 / パート ${fmt(kpi.labor_breakdown?.part_time ?? 0)}円`">
-                常勤{{ fmt(kpi.labor_breakdown?.full_time ?? 0) }} / ﾊﾟｰﾄ{{ fmt(kpi.labor_breakdown?.part_time ?? 0) }}
-              </div>
-            </div>
-            <div class="border rounded-lg p-3">
-              <div class="text-[10px] text-gray-500">人件費率</div>
-              <div :class="['text-2xl font-bold', rateColorInverse(kpi.labor_ratio, 60, 75)]">{{ pct(kpi.labor_ratio) }}</div>
-              <div class="text-[10px] text-gray-400 mt-1">目安 60〜75%</div>
-            </div>
-            <div class="border rounded-lg p-3">
-              <div class="text-[10px] text-gray-500">経費</div>
-              <div class="text-xl font-bold text-gray-700">{{ fmt(kpi.expenses ?? 0) }}円</div>
-              <div class="text-[10px] text-gray-400 mt-1">
-                <Link :href="route('billing.expenses.index', { month: period.year_month })" class="text-primary-500 hover:underline">
-                  編集 →
-                </Link>
-              </div>
-            </div>
-            <div class="border rounded-lg p-3"
-              :class="kpi.net_profit < 0 ? 'bg-red-50 border-red-200' : kpi.net_profit > 0 ? 'bg-green-50 border-green-200' : ''">
-              <div class="text-[10px] text-gray-500">営業利益</div>
-              <div :class="['text-2xl font-bold', (kpi.net_profit ?? 0) < 0 ? 'text-red-600' : 'text-green-700']">
-                {{ fmt(kpi.net_profit ?? 0) }}円
-              </div>
-              <div class="text-[10px] text-gray-400 mt-1">利益率 {{ pct(kpi.profit_ratio) }}</div>
-            </div>
-          </div>
-
-          <!-- 加算取得サマリ -->
-          <div v-if="kpi.addition_summary?.length" class="mt-4 pt-3 border-t">
-            <div class="text-xs text-gray-500 mb-2">加算取得サマリ</div>
-            <div class="flex flex-wrap gap-1.5">
-              <span v-for="a in kpi.addition_summary" :key="a.service_name"
-                class="inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-800 text-[11px] px-2 py-0.5 rounded-md">
-                {{ a.service_name }}
-                <span class="text-green-600 font-semibold">{{ a.total_count }}回</span>
-                <span class="text-green-500">/{{ a.child_count }}名</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 出力前整合性チェック結果（CSV/エクスポート系の検証） -->
-        <div v-if="warnings !== null" class="bg-white border border-gray-200 rounded-lg p-5 border-l-4 border-amber-400">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-semibold text-gray-700">出力前 整合性チェック結果</h3>
-            <button @click="warnings = null" class="text-xs text-gray-400 hover:text-gray-600">閉じる</button>
-          </div>
-          <div v-if="warnings.length === 0" class="text-sm text-green-600">問題は検出されませんでした。</div>
-          <ul v-else class="space-y-1 text-sm">
-            <li v-for="(w, i) in warnings" :key="i" class="flex items-start gap-2">
-              <span :class="w.level === 'error' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'"
-                class="px-2 py-0.5 rounded-md text-xs shrink-0">
-                {{ w.level === 'error' ? 'エラー' : '警告' }}
-              </span>
-              <span>{{ w.message }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- 出力履歴 -->
-        <div v-if="exports.length > 0" class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div class="px-5 py-3 border-b bg-gray-50">
-            <h3 class="text-sm font-semibold text-gray-700">出力履歴</h3>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead class="bg-gray-50 text-gray-500 text-xs">
-                <tr>
-                  <th class="px-4 py-2 text-left">種別</th>
-                  <th class="px-4 py-2 text-left">ファイル</th>
-                  <th class="px-4 py-2 text-right">サイズ</th>
-                  <th class="px-4 py-2 text-left">出力日時</th>
-                  <th class="px-4 py-2 text-left">出力者</th>
-                  <th class="px-4 py-2 text-left">送信状況</th>
-                  <th class="px-4 py-2 text-right">操作</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y">
-                <tr v-for="ex in exports" :key="ex.id" class="hover:bg-gray-50">
-                  <td class="px-4 py-3">{{ KIND_LABEL[ex.kind] || ex.kind }}</td>
-                  <td class="px-4 py-3 font-mono text-xs">{{ ex.file_name }}</td>
-                  <td class="px-4 py-3 text-right text-xs">{{ fmtSize(ex.file_size) }}</td>
-                  <td class="px-4 py-3 text-xs">{{ fmtDate(ex.created_at) }}</td>
-                  <td class="px-4 py-3 text-xs">{{ ex.created_by?.name || '-' }}</td>
-                  <td class="px-4 py-3 text-xs">
-                    <span v-if="ex.is_submitted" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
-                      送信済 {{ fmtDate(ex.submitted_at) }}
-                    </span>
-                    <span v-else class="text-gray-400">未送信</span>
-                  </td>
-                  <td class="px-4 py-3 text-right space-x-2 text-xs">
-                    <a :href="route('billing.exports.download', ex.id)" class="text-primary-600 hover:underline">再DL</a>
-                    <button v-if="!ex.is_submitted" @click="markSubmitted(ex.id)" class="text-blue-600 hover:underline">送信済マーク</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
         <!-- 児童別明細テーブル -->
-        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div id="billing-details" class="scroll-mt-4 bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
             <h3 class="text-sm font-semibold text-gray-700">児童別請求明細</h3>
             <span class="text-[10px] text-gray-400">月初確認用サマリ付き</span>
@@ -623,6 +482,190 @@ const NEXT_ACTIONS = {
             </table>
           </div>
         </div>
+
+        <!-- 国保連支払通知との突合（提出後に表示） -->
+        <div v-if="['submitted','completed'].includes(period.status)" id="payment-decision" class="bg-white border border-gray-200 rounded-lg p-5">
+          <div class="flex items-center gap-3 mb-3 flex-wrap">
+            <h3 class="text-sm font-semibold text-gray-700">国保連 支払決定通知との突合</h3>
+            <span v-if="period.payment_decided_amount != null && paymentDiff === 0"
+              class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">請求額と一致</span>
+            <span v-else-if="period.payment_decided_amount != null && paymentDiff !== null && paymentDiff !== 0"
+              class="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">
+              差異 {{ fmt(Math.abs(paymentDiff)) }}円（{{ paymentDiff > 0 ? '支払超過' : '支払不足' }}）
+            </span>
+            <span v-else class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500">未記録</span>
+          </div>
+          <div class="flex flex-wrap items-end gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">請求給付費（当システム）</label>
+              <div class="text-sm font-bold py-1.5">{{ fmt(kpi.insurance_amount ?? 0) }}円</div>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">支払決定額（通知記載額）</label>
+              <input v-model.number="paymentForm.payment_decided_amount" type="number" min="0"
+                class="border border-gray-300 rounded-md px-3 py-1.5 text-sm w-36 text-right" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">支払決定日</label>
+              <input v-model="paymentForm.payment_decided_at" type="date"
+                class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
+            </div>
+            <div class="flex-1 min-w-[14rem]">
+              <label class="block text-xs text-gray-500 mb-1">差異メモ（差異がある場合は必須）</label>
+              <input v-model="paymentForm.payment_difference_note" type="text"
+                class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
+                placeholder="例：○○さん分が受給者証番号誤りで返戻" />
+            </div>
+            <button @click="savePaymentDecision"
+              class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">
+              記録する
+            </button>
+          </div>
+          <p v-if="paymentDiff !== null && paymentDiff !== 0" class="mt-2 text-xs text-red-600">
+            差異があります。<Link :href="route('billing.returns.index')" class="underline">返戻管理</Link>・
+            <Link :href="route('billing.error-claims.index')" class="underline">過誤申立</Link>を確認してください。
+          </p>
+          <p v-else-if="period.status === 'submitted'" class="mt-2 text-xs text-gray-400">
+            支払決定額が請求額と一致した場合、この月の請求は自動的に「完了」になります。
+          </p>
+        </div>
+
+        <!-- 出力履歴 -->
+        <div v-if="exports.length > 0" id="export-history" class="scroll-mt-4 bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div class="px-5 py-3 border-b bg-gray-50">
+            <h3 class="text-sm font-semibold text-gray-700">出力履歴</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 text-xs">
+                <tr>
+                  <th class="px-4 py-2 text-left">種別</th>
+                  <th class="px-4 py-2 text-left">ファイル</th>
+                  <th class="px-4 py-2 text-right">サイズ</th>
+                  <th class="px-4 py-2 text-left">出力日時</th>
+                  <th class="px-4 py-2 text-left">出力者</th>
+                  <th class="px-4 py-2 text-left">送信状況</th>
+                  <th class="px-4 py-2 text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr v-for="ex in exports" :key="ex.id" class="hover:bg-gray-50">
+                  <td class="px-4 py-3">{{ KIND_LABEL[ex.kind] || ex.kind }}</td>
+                  <td class="px-4 py-3 font-mono text-xs">{{ ex.file_name }}</td>
+                  <td class="px-4 py-3 text-right text-xs">{{ fmtSize(ex.file_size) }}</td>
+                  <td class="px-4 py-3 text-xs">{{ fmtDate(ex.created_at) }}</td>
+                  <td class="px-4 py-3 text-xs">{{ ex.created_by?.name || '-' }}</td>
+                  <td class="px-4 py-3 text-xs">
+                    <span v-if="ex.is_submitted" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
+                      送信済 {{ fmtDate(ex.submitted_at) }}
+                    </span>
+                    <span v-else class="text-gray-400">送信記録なし</span>
+                  </td>
+                  <td class="px-4 py-3 text-right space-x-2 text-xs">
+                    <a :href="route('billing.exports.download', ex.id)" class="text-primary-600 hover:underline">再DL</a>
+                    <button v-if="!ex.is_submitted" @click="markSubmitted(ex.id)" class="text-blue-600 hover:underline">送信済マーク</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 事業所の運営指標 -->
+        <details class="bg-white border border-gray-200 rounded-lg p-5">
+          <summary class="cursor-pointer text-sm font-semibold text-gray-700">事業所の運営指標</summary>
+          <div class="mt-3 mb-3 text-right">
+            <span class="text-[10px] text-gray-400">定員 {{ kpi.capacity_per_day ?? '—' }}名 × 営業 {{ kpi.business_days ?? '—' }}日</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <div class="border rounded-lg p-3">
+              <div class="text-[10px] text-gray-500">利用率</div>
+              <div :class="['text-2xl font-bold', pctColor(kpi.utilization_rate)]">{{ pct(kpi.utilization_rate) }}</div>
+              <div class="text-[10px] text-gray-400 mt-1">出席 {{ kpi.attended ?? 0 }}日 / 提供可 {{ (kpi.capacity_per_day ?? 0) * (kpi.business_days ?? 0) }}日</div>
+            </div>
+            <div class="border rounded-lg p-3">
+              <div class="text-[10px] text-gray-500">キャンセル率</div>
+              <div :class="['text-2xl font-bold', rateColorInverse(kpi.cancellation_rate)]">{{ pct(kpi.cancellation_rate) }}</div>
+              <div class="text-[10px] text-gray-400 mt-1">欠席 {{ kpi.absent ?? 0 }}日 / 予定 {{ kpi.scheduled ?? 0 }}日</div>
+            </div>
+            <div class="border rounded-lg p-3">
+              <div class="text-[10px] text-gray-500">送迎実施率</div>
+              <div class="text-2xl font-bold text-gray-700">{{ pct(kpi.pickup_rate) }}</div>
+              <div class="text-[10px] text-gray-400 mt-1">迎 {{ kpi.pickups ?? 0 }} / 送 {{ kpi.dropoffs ?? 0 }}</div>
+            </div>
+            <div class="border rounded-lg p-3">
+              <div class="text-[10px] text-gray-500">給付費</div>
+              <div class="text-xl font-bold text-gray-700">{{ fmt(kpi.insurance_amount ?? 0) }}円</div>
+              <div class="text-[10px] text-gray-400 mt-1">請求対象額</div>
+            </div>
+            <div class="border rounded-lg p-3">
+              <div class="text-[10px] text-gray-500">売上推移（6ヶ月）</div>
+              <svg :viewBox="`0 0 ${spark.width} ${spark.height}`" class="mt-1 block h-auto w-full">
+                <polyline :points="spark.points" fill="none" stroke="#6366f1" stroke-width="1.5" />
+                <circle v-for="dot in spark.dots" :key="dot.month" :cx="dot.x" :cy="dot.y" r="2.5"
+                  :fill="dot.month === period.year_month ? '#ef4444' : '#6366f1'">
+                  <title>{{ dot.month }}: {{ fmt(dot.value) }}円</title>
+                </circle>
+              </svg>
+              <div class="text-[10px] text-gray-400 flex flex-wrap justify-between gap-x-2 mt-0.5">
+                <span>{{ trend[0]?.year_month }}</span>
+                <span>{{ trend[trend.length - 1]?.year_month }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 損益サマリ（経営情報のため管理者のみ） -->
+          <div v-if="$page.props.auth.staff_role === 'admin'"
+            class="mt-4 pt-3 border-t grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <div class="border rounded-lg p-3">
+              <div class="text-[10px] text-gray-500">売上（請求＋自己負担）</div>
+              <div class="text-xl font-bold text-gray-800">{{ fmt(kpi.revenue ?? 0) }}円</div>
+            </div>
+            <div class="border rounded-lg p-3">
+              <div class="text-[10px] text-gray-500">人件費</div>
+              <div class="text-xl font-bold text-gray-700">{{ fmt(kpi.labor_cost ?? 0) }}円</div>
+              <div class="text-[10px] text-gray-400 mt-1"
+                :title="`常勤 ${fmt(kpi.labor_breakdown?.full_time ?? 0)}円 / パート ${fmt(kpi.labor_breakdown?.part_time ?? 0)}円`">
+                常勤{{ fmt(kpi.labor_breakdown?.full_time ?? 0) }} / ﾊﾟｰﾄ{{ fmt(kpi.labor_breakdown?.part_time ?? 0) }}
+              </div>
+            </div>
+            <div class="border rounded-lg p-3">
+              <div class="text-[10px] text-gray-500">人件費率</div>
+              <div :class="['text-2xl font-bold', rateColorInverse(kpi.labor_ratio, 60, 75)]">{{ pct(kpi.labor_ratio) }}</div>
+              <div class="text-[10px] text-gray-400 mt-1">目安 60〜75%</div>
+            </div>
+            <div class="border rounded-lg p-3">
+              <div class="text-[10px] text-gray-500">経費</div>
+              <div class="text-xl font-bold text-gray-700">{{ fmt(kpi.expenses ?? 0) }}円</div>
+              <div class="text-[10px] text-gray-400 mt-1">
+                <Link :href="route('billing.expenses.index', { month: period.year_month })" class="text-primary-500 hover:underline">
+                  編集 →
+                </Link>
+              </div>
+            </div>
+            <div class="border rounded-lg p-3"
+              :class="kpi.net_profit < 0 ? 'bg-red-50 border-red-200' : kpi.net_profit > 0 ? 'bg-green-50 border-green-200' : ''">
+              <div class="text-[10px] text-gray-500">営業利益</div>
+              <div :class="['text-2xl font-bold', (kpi.net_profit ?? 0) < 0 ? 'text-red-600' : 'text-green-700']">
+                {{ fmt(kpi.net_profit ?? 0) }}円
+              </div>
+              <div class="text-[10px] text-gray-400 mt-1">利益率 {{ pct(kpi.profit_ratio) }}</div>
+            </div>
+          </div>
+
+          <!-- 加算取得サマリ -->
+          <div v-if="kpi.addition_summary?.length" class="mt-4 pt-3 border-t">
+            <div class="text-xs text-gray-500 mb-2">加算取得サマリ</div>
+            <div class="flex flex-wrap gap-1.5">
+              <span v-for="a in kpi.addition_summary" :key="a.service_name"
+                class="inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-800 text-[11px] px-2 py-0.5 rounded-md">
+                {{ a.service_name }}
+                <span class="text-green-600 font-semibold">{{ a.total_count }}回</span>
+                <span class="text-green-500">/{{ a.child_count }}名</span>
+              </span>
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   </BreezeAuthenticatedLayout>
