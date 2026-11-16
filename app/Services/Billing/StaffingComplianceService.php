@@ -88,7 +88,7 @@ class StaffingComplianceService
                 $warnings[] = [
                     'level'   => 'warning',
                     'date'    => (string) $date,
-                    'message' => "{$label}: 児童発達支援管理責任者（leader）の勤務が確認できません",
+                    'message' => "{$label}: 児発管の勤務が確認できません",
                 ];
             }
         }
