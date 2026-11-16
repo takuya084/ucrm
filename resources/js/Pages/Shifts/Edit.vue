@@ -88,7 +88,7 @@ const save = () => {
 
 const toggleStatus = () => {
   const newStatus = props.shift.status === 'draft' ? 'confirmed' : 'draft'
-  if (newStatus === 'confirmed' && !confirm('このシフトを確定しますか？確定後はleaderロールでは編集できなくなります。')) return
+  if (newStatus === 'confirmed' && !confirm('このシフトを確定しますか？確定後は児発管が編集できなくなります。')) return
   router.patch(route('shifts.update-status', props.shift.id), { status: newStatus })
 }
 

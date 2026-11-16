@@ -23,7 +23,7 @@ onBeforeUnmount(() => { document.body.style.overflow = '' })
       <div class="bg-white border-b px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
         <div class="min-w-0">
           <p class="text-sm font-semibold truncate">{{ $page.props.auth.facility?.name ?? '事業所業務' }}</p>
-          <p class="text-xs text-gray-500">{{ $page.props.auth.staff_role === 'admin' ? '管理者' : $page.props.auth.staff_role === 'leader' ? 'リーダー' : '職員' }}</p>
+          <p class="text-xs text-gray-500">{{ $page.props.auth.staff_role === 'admin' ? '管理者' : $page.props.auth.staff_role === 'leader' ? '児発管' : '職員' }}</p>
         </div>
         <div class="flex items-center gap-2">
           <BreezeDropdown align="right" width="48">
