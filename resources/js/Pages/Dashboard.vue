@@ -9,6 +9,8 @@ const props = defineProps({
   visits: Array,
   attendanceSource: String,
   canManage: Boolean,
+  activities: Array,
+  activityCategories: Object,
   myTransport: Array,
   transportAssignments: Array,
   transportStaff: Array,
@@ -64,6 +66,23 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
           <template #after-visits>
             <DailyTransportBoard :key="date" :date="date" :visits="visits" :mine="myTransport"
               :can-manage="canManage" :assignments="transportAssignments" :staff="transportStaff" />
+            <section id="activity-preparation" aria-labelledby="activity-preparation-heading" class="scroll-mt-4 rounded-xl border bg-white">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+                <h3 id="activity-preparation-heading" class="font-semibold text-gray-900">療育準備</h3>
+                <Link v-if="canManage" :href="route('daily-activities.index', { date })" class="text-sm font-medium text-primary-700 underline">療育予定・年間行事を編集</Link>
+              </div>
+              <p v-if="!activities.length" class="px-4 py-4 text-sm text-gray-700">この日の療育予定は登録されていません。</p>
+              <ul v-else class="divide-y">
+                <li v-for="activity in activities" :key="activity.id" class="grid gap-2 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)]">
+                  <div class="min-w-0">
+                    <p class="text-xs font-medium text-primary-700">{{ activityCategories[activity.category] }}</p>
+                    <p class="break-words font-semibold text-gray-900">{{ activity.title }}</p>
+                  </div>
+                  <p class="text-gray-700">{{ activity.starts_at?.slice(0, 5) || '時刻未定' }} ／ {{ activity.staff?.name || '担当未定' }}</p>
+                  <p class="whitespace-pre-wrap break-words text-gray-700">準備物　{{ activity.materials || '記載なし' }}</p>
+                </li>
+              </ul>
+            </section>
           </template>
         </DailyWorkBoard>
 

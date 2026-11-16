@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Child, ChildSchedule, ContactNote, Facility, Staff, SupportRecord, UsageRecord, User};
+use App\Models\{Child, ChildSchedule, ContactNote, DailyActivityPlan, Facility, Program, Staff, SupportRecord, UsageRecord, User};
 use App\Services\ContactNoteStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -116,6 +116,41 @@ class DailyWorkTest extends TestCase
         $this->actingAs($user)->get('/dashboard?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page
             ->where('dailyWork.counts.record',0)->where('dailyWork.counts.report',1)->where('dailyWork.rows.0.record_url',route('support-records.edit',$record)));
         $this->get('/contact-notes?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page->where('rows.0.support_record_id',$record->id));
+    }
+
+    public function test_daily_preparation_reuses_programs_and_keeps_annual_events_scoped(): void
+    {
+        $facility = Facility::create(['name' => '事業所A', 'facility_code' => '1310000001', 'service_type' => 'houday']);
+        $other = Facility::create(['name' => '事業所B', 'facility_code' => '1310000002', 'service_type' => 'houday']);
+        $manager = User::factory()->create();
+        $worker = User::factory()->create();
+        $lead = Staff::create(['user_id' => $manager->id, 'facility_id' => $facility->id, 'name' => '児発管', 'role' => 'leader', 'is_active' => true]);
+        Staff::create(['user_id' => $worker->id, 'facility_id' => $facility->id, 'name' => '職員', 'role' => 'staff', 'is_active' => true]);
+        $program = Program::create(['facility_id' => $facility->id, 'name' => '読み聞かせ', 'category' => 'other']);
+        $foreign = Program::create(['facility_id' => $other->id, 'name' => '他事業所の活動', 'category' => 'other']);
+        $date = '2026-12-01';
+        $path = '/daily-activities';
+        $input = ['activity_date' => $date, 'category' => 'support', 'program_id' => $program->id,
+            'staff_id' => $lead->id, 'starts_at' => '15:00', 'materials' => '絵本2冊'];
+
+        $this->actingAs($worker)->post($path, $input)->assertForbidden();
+        $this->actingAs($manager)->postJson($path, array_replace($input, ['program_id' => $foreign->id]))
+            ->assertUnprocessable()->assertJsonValidationErrors('program_id');
+        $this->post($path, $input)->assertRedirect($path.'?date='.$date);
+        $this->post($path, ['activity_date' => '2026-12-25', 'category' => 'event', 'title' => '冬の行事',
+            'program_id' => null, 'staff_id' => null])->assertRedirect($path.'?date=2026-12-25');
+        $this->get($path.'?date='.$date)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('activities', 1)->has('annualEvents', 1)->where('annualEvents.0.title', '冬の行事'));
+
+        $activity = DailyActivityPlan::where('program_id', $program->id)->sole();
+        $this->patch($path.'/'.$activity->id, array_replace($input, ['materials' => '絵本3冊']))
+            ->assertRedirect($path.'?date='.$date);
+        $this->actingAs($worker)->get('/dashboard?date='.$date)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('activities', 1)->where('activities.0.title', '読み聞かせ')
+            ->where('activities.0.staff.name', '児発管')->where('activities.0.materials', '絵本3冊'));
+        $this->get('/dashboard?date=2026-12-02')->assertOk()->assertInertia(fn (Assert $page) => $page->has('activities', 0));
+        $this->actingAs($manager)->delete($path.'/'.$activity->id)->assertRedirect($path.'?date='.$date);
+        $this->assertDatabaseMissing('daily_activity_plans', ['id' => $activity->id]);
     }
 
     public function test_status_never_treats_old_delivery_or_old_confirmation_as_current(): void
