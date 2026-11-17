@@ -43,13 +43,19 @@ class DashboardController extends Controller
             ])
             ->values();
 
-        $assignments = DB::table('daily_transport_assignments')
-            ->where('facility_id', $facilityId)
-            ->where('service_date', $today)
-            ->whereIn('child_id', $visits->pluck('childId'))
-            ->orderBy('scheduled_time')
-            ->get(['child_id', 'staff_id', 'direction', 'scheduled_time', 'location']);
-        $myTransport = $assignments->where('staff_id', $staff->id)->values();
+        $assignments = DB::table('daily_transport_assignments as assignments')
+            ->join('staff', 'staff.id', '=', 'assignments.staff_id')
+            ->where('assignments.facility_id', $facilityId)
+            ->where('staff.facility_id', $facilityId)
+            ->where('assignments.service_date', $today)
+            ->whereIn('assignments.child_id', $visits->pluck('childId'))
+            ->orderByRaw('CASE WHEN assignments.scheduled_time IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('assignments.scheduled_time')
+            ->orderBy('assignments.id')
+            ->get([
+                'assignments.child_id', 'assignments.staff_id', 'assignments.direction',
+                'assignments.scheduled_time', 'assignments.location', 'staff.name as staff_name',
+            ]);
         $transportStaff = $canManage
             ? Staff::where('facility_id', $facilityId)->where('is_active', true)->orderBy('name')->get(['id', 'name'])
             : [];
@@ -123,8 +129,7 @@ class DashboardController extends Controller
             'canManage' => $canManage,
             'activityCategories' => DailyActivityPlan::CATEGORIES,
             'activities' => DailyActivityPlan::forDate($facilityId, $today),
-            'myTransport' => $myTransport,
-            'transportAssignments' => $canManage ? $assignments : [],
+            'transportAssignments' => $assignments,
             'transportStaff' => $transportStaff,
             'calendarToday' => today()->toDateString(),
             'dailyWork' => $dailyWork->forDate($facilityId, $today),

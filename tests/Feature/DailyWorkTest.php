@@ -68,7 +68,7 @@ class DailyWorkTest extends TestCase
         $this->assertDatabaseCount('usage_records', 0);
     }
 
-    public function test_transport_assignments_are_unique_and_visible_to_the_assigned_worker(): void
+    public function test_transport_assignments_are_unique_and_visible_to_all_facility_staff(): void
     {
         $facility = Facility::create(['name' => '事業所A', 'facility_code' => '1310000001', 'service_type' => 'houday']);
         $other = Facility::create(['name' => '事業所B', 'facility_code' => '1310000002', 'service_type' => 'houday']);
@@ -92,12 +92,20 @@ class DailyWorkTest extends TestCase
         $this->assertDatabaseCount('daily_transport_assignments', 1);
 
         $this->get('/dashboard?date='.$date)->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->has('myTransport', 0)->has('transportAssignments', 1));
+            ->has('transportAssignments', 1)->where('transportAssignments.0.staff_name', '担当職員'));
         $this->actingAs($worker)->get('/dashboard?date='.$date)->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->has('transportAssignments', 0)->has('transportStaff', 0)->has('myTransport', 1)
-            ->where('myTransport.0.child_id', $child->id)
-            ->where('myTransport.0.scheduled_time', fn ($time) => str_starts_with($time, '15:00')));
-        $this->get('/dashboard?date=2026-12-08')->assertOk()->assertInertia(fn (Assert $page) => $page->has('myTransport', 0));
+            ->has('transportStaff', 0)->has('transportAssignments', 1)
+            ->where('transportAssignments.0.staff_name', '担当職員')
+            ->where('transportAssignments.0.child_id', $child->id)
+            ->where('transportAssignments.0.scheduled_time', fn ($time) => str_starts_with($time, '15:00')));
+        $this->get('/dashboard?date=2026-12-08')->assertOk()->assertInertia(fn (Assert $page) => $page->has('transportAssignments', 0));
+
+        $colleague = User::factory()->create();
+        Staff::create(['user_id' => $colleague->id, 'facility_id' => $facility->id,
+            'name' => '別の職員', 'role' => 'staff', 'is_active' => true]);
+        $this->actingAs($colleague)->get('/dashboard?date='.$date)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('transportStaff', 0)->has('transportAssignments', 1)
+            ->where('transportAssignments.0.staff_name', '担当職員'));
 
         $this->actingAs($manager)->put($path, array_replace($input, ['staff_id' => null]))
             ->assertRedirect('/dashboard?date='.$date);
