@@ -11,7 +11,6 @@ const props = defineProps({
   canManage: Boolean,
   activities: Array,
   activityCategories: Object,
-  myTransport: Array,
   transportAssignments: Array,
   transportStaff: Array,
   date: String,
@@ -64,7 +63,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
         <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday"
           :visits="visits" :attendance-source="attendanceSource">
           <template #after-visits>
-            <DailyTransportBoard :key="date" :date="date" :visits="visits" :mine="myTransport"
+            <DailyTransportBoard :key="date" :date="date" :visits="visits"
               :can-manage="canManage" :assignments="transportAssignments" :staff="transportStaff" />
             <section id="activity-preparation" aria-labelledby="activity-preparation-heading" class="scroll-mt-4 rounded-xl border bg-white">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">

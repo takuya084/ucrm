@@ -1,11 +1,10 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 
 const props = defineProps({
   date: String,
   visits: Array,
-  mine: Array,
   canManage: Boolean,
   assignments: Array,
   staff: Array,
@@ -14,7 +13,6 @@ const props = defineProps({
 const directions = { pickup: '迎え', dropoff: '送り' }
 const locations = { school: '学校', home: '自宅', parents: '親送迎', others: 'その他' }
 const visitById = computed(() => new Map(props.visits.map((visit) => [visit.childId, visit])))
-const staffById = computed(() => new Map(props.staff.map((person) => [person.id, person.name])))
 const time = (value) => value?.slice(0, 5) || ''
 const form = useForm({
   service_date: props.date,
@@ -25,8 +23,10 @@ const form = useForm({
   location: '',
 })
 const saved = ref(false)
+const editor = ref(null)
+const assigneeInput = ref(null)
 
-watch([() => form.child_id, () => form.direction], () => {
+const loadSelection = () => {
   saved.value = false
   form.clearErrors()
   const assigned = props.assignments.find((row) => row.child_id === form.child_id && row.direction === form.direction)
@@ -36,7 +36,18 @@ watch([() => form.child_id, () => form.direction], () => {
   form.staff_id = assigned?.staff_id ?? null
   form.scheduled_time = time(assigned ? assigned.scheduled_time : pickup ? visit?.pickup : visit?.dropoff)
   form.location = assigned ? assigned.location ?? '' : locations[reservationLocation] ?? reservationLocation ?? ''
-})
+}
+
+watch([() => form.child_id, () => form.direction], loadSelection)
+
+const edit = async (row) => {
+  form.child_id = row.child_id
+  form.direction = row.direction
+  loadSelection()
+  editor.value.open = true
+  await nextTick()
+  assigneeInput.value?.focus()
+}
 
 const save = () => {
   saved.value = false
@@ -48,28 +59,40 @@ const save = () => {
 </script>
 
 <template>
-  <section aria-labelledby="my-transport" class="rounded-xl border bg-white">
-    <h3 id="my-transport" class="border-b px-4 py-3 font-semibold text-gray-900">自分の送迎</h3>
-    <p v-if="mine.length === 0" class="px-4 py-4 text-sm text-gray-700">担当の送迎は登録されていません。</p>
-    <ul v-else class="divide-y">
-      <li v-for="row in mine" :key="`${row.child_id}-${row.direction}`" class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm">
-        <strong>{{ directions[row.direction] }} {{ time(row.scheduled_time) || '時刻未登録' }}</strong>
-        <span>{{ visitById.get(row.child_id)?.name }}</span>
-        <span class="break-words text-gray-700">{{ row.location || '場所未登録' }}</span>
-      </li>
-    </ul>
+  <section aria-labelledby="staff-transport" class="rounded-xl border bg-white">
+    <h3 id="staff-transport" class="border-b px-4 py-3 font-semibold text-gray-900">スタッフ全員の送迎</h3>
+    <p v-if="assignments.length === 0" class="px-4 py-4 text-sm text-gray-700">この日の送迎担当は登録されていません。</p>
+    <div v-else class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-gray-50 text-gray-700">
+          <tr>
+            <th scope="col" class="px-4 py-2 whitespace-nowrap">時刻・区分</th>
+            <th scope="col" class="px-4 py-2">児童</th>
+            <th scope="col" class="px-4 py-2">担当職員</th>
+            <th scope="col" class="px-4 py-2">場所</th>
+            <th v-if="canManage" scope="col" class="px-4 py-2">操作</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr v-for="row in assignments" :key="`${row.child_id}-${row.direction}`">
+            <td class="px-4 py-3 whitespace-nowrap">{{ time(row.scheduled_time) || '時刻未登録' }}・{{ directions[row.direction] }}</td>
+            <td class="px-4 py-3">{{ visitById.get(row.child_id)?.name }}</td>
+            <td class="px-4 py-3 font-medium">{{ row.staff_name }}</td>
+            <td class="break-words px-4 py-3 text-gray-700">{{ row.location || '場所未登録' }}</td>
+            <td v-if="canManage" class="px-4 py-3">
+              <button type="button" :disabled="form.processing" @click="edit(row)"
+                class="whitespace-nowrap text-primary-700 underline disabled:opacity-50">担当変更</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-    <details v-if="canManage" class="border-t">
+    <details v-if="canManage" ref="editor" class="border-t">
       <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-primary-700">送迎担当を割り当てる</summary>
       <div class="space-y-4 px-4 pb-4">
         <p v-if="visits.length === 0" class="text-sm text-gray-700">この日の利用児童が表示されると担当を登録できます。</p>
         <template v-else>
-          <ul v-if="assignments.length" class="space-y-1 text-sm text-gray-700" aria-label="登録済みの送迎担当">
-            <li v-for="row in assignments" :key="`${row.child_id}-${row.direction}`">
-              {{ directions[row.direction] }} {{ time(row.scheduled_time) || '時刻未登録' }} ／
-              {{ visitById.get(row.child_id)?.name }} ／ {{ staffById.get(row.staff_id) || '無効な職員' }}
-            </li>
-          </ul>
           <form class="flex flex-wrap items-end gap-3 text-sm" @submit.prevent="save">
             <label class="space-y-1">児童
               <select v-model="form.child_id" required :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
@@ -83,8 +106,9 @@ const save = () => {
               </select>
             </label>
             <label class="space-y-1">担当職員
-              <select v-model="form.staff_id" :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
+              <select ref="assigneeInput" v-model="form.staff_id" :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
                 <option :value="null">担当なし</option>
+                <option v-if="form.staff_id && !staff.some((person) => person.id === form.staff_id)" :value="form.staff_id" disabled>無効な職員</option>
                 <option v-for="person in staff" :key="person.id" :value="person.id">{{ person.name }}</option>
               </select>
             </label>
