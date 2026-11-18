@@ -58,6 +58,7 @@ class YoyakuApiService
     {
         $client = $this->client($facilityId);
         abort_unless($client, 503, 'p-yoyakuに接続できません。連携設定を確認してください。');
+        $client->timeout(max($this->timeout, 30));
         try {
             $response = $method === 'GET'
                 ? $client->get("{$this->baseUrl}/api/transport/grid", $payload)

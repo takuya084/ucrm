@@ -97,7 +97,7 @@ export function mountTransportGrid(root, options) {
       <p role="status" class="tg-message">${escape(message)}</p>
       ${editable ? `<div class="tg-toolbar"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button><button type="button" data-add-all>未予約の児童をまとめて追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div>
       <div class="tg-toolbar"><label>一括変更する列 <select data-bulk-field>${fields.map((field, i) => `<option value="${i}">${headings[i]}</option>`).join('')}</select></label><label>入力値 <input data-bulk-value aria-label="一括変更の入力値" list="${uid}-bulk" autocomplete="off"></label><datalist id="${uid}-bulk"></datalist><button type="button" data-apply>選択した児童に適用</button></div>` : ''}
-      <div class="tg-scroll"><table><thead><tr><th scope="col">選択</th><th scope="col">児童</th>${headings.map(name => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody>${rows.map((row, i) => `<tr class="${deleted.has(row.user_id) ? 'tg-deleted' : ''}"><td><input type="checkbox" data-select="${row.user_id}" aria-label="${escape(row.name)}を選択" ${selected.has(row.user_id) ? 'checked' : ''} ${!editable ? 'disabled' : ''}></td><th scope="row">${escape(row.name)}${deleted.has(row.user_id) ? '<small>保存時に予約を削除</small>' : ''}</th>${fields.map((field, col) => {
+      <div class="tg-scroll"><table><thead><tr><th scope="col">選択${editable ? '<input type="checkbox" data-select-all aria-label="表示中の児童をすべて選択">' : ''}</th><th scope="col">児童</th>${headings.map(name => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody>${rows.map((row, i) => `<tr class="${deleted.has(row.user_id) ? 'tg-deleted' : ''}"><td><input type="checkbox" data-select="${row.user_id}" aria-label="${escape(row.name)}を選択" ${selected.has(row.user_id) ? 'checked' : ''} ${!editable ? 'disabled' : ''}></td><th scope="row">${escape(row.name)}${deleted.has(row.user_id) ? '<small>保存時に予約を削除</small>' : ''}</th>${fields.map((field, col) => {
         const error = errors[`${i}.${field}`]
         return `<td><input data-cell data-row="${i}" data-col="${col}" aria-label="${escape(row.name)} ${headings[col]}" aria-invalid="${!!error}" aria-describedby="${uid}-${i}-${col}-error" value="${escape(readText(row, field))}" list="${uid}-${field}" autocomplete="off" ${!editable || deleted.has(row.user_id) || busy || uncertain ? 'disabled' : ''} class="${dirty(row) ? 'tg-dirty' : ''}"><small id="${uid}-${i}-${col}-error">${escape(error || '')}</small></td>`
       }).join('')}</tr>`).join('')}</tbody></table></div>
@@ -138,6 +138,10 @@ export function mountTransportGrid(root, options) {
       validate(); message = '選択した児童に適用しました。まだ保存していません。'; render()
     }
     root.querySelector('[data-save]').onclick = save
+    root.querySelector('[data-select-all]').onchange = event => {
+      selected.clear(); if (event.target.checked) rows.forEach(row => selected.add(row.user_id))
+      root.querySelectorAll('[data-select]').forEach(input => { input.checked = selected.has(+input.dataset.select) })
+    }
     root.querySelectorAll('[data-select]').forEach(input => { input.onchange = () => { const id = +input.dataset.select; if (input.checked) selected.add(id); else selected.delete(id) } })
     root.querySelectorAll('[data-cell]').forEach(input => {
       const row = +input.dataset.row, col = +input.dataset.col
