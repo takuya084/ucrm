@@ -54,6 +54,31 @@ class YoyakuApiService
         );
     }
 
+    public function transportGrid(string $method, array $payload, int $facilityId): array
+    {
+        $client = $this->client($facilityId);
+        abort_unless($client, 503, 'p-yoyakuに接続できません。連携設定を確認してください。');
+        try {
+            $response = $method === 'GET'
+                ? $client->get("{$this->baseUrl}/api/transport/grid", $payload)
+                : $client->put("{$this->baseUrl}/api/transport/grid", $payload);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            abort(503, '通信結果を確認できません。入力内容を控え、最新の一覧を確認してください。');
+        }
+        if ($response->status() === 422) {
+            $errors = $response->json('errors');
+            throw \Illuminate\Validation\ValidationException::withMessages(is_array($errors) && $errors ? $errors : ['grid' => '予約内容を確認してください。']);
+        }
+        abort_unless($response->successful(), 503, 'p-yoyakuから取得・保存できませんでした。最新の一覧を確認してください。');
+        $data = $response->json();
+        if ($method === 'GET') {
+            abort_unless(is_array($data) && ($data['business_id'] ?? null) === $payload['business_id']
+                && ($data['date'] ?? null) === $payload['date'] && is_array($data['rows'] ?? null)
+                && is_array($data['times'] ?? null) && is_array($data['staff'] ?? null) && is_array($data['locations'] ?? null), 503);
+        } else abort_unless(is_array($data) && ($data['ok'] ?? null) === true, 503);
+        return $data;
+    }
+
     public function getTransport(string $date, int $businessId, int $facilityId): ?array
     {
         $client = $this->client($facilityId);

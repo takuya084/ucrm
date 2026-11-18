@@ -2,6 +2,7 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import DailyWorkBoard from '@/Components/DailyWorkBoard.vue'
+import SharedTransportGrid from '@/Components/SharedTransportGrid.vue'
 import DailyTransportBoard from '@/Components/DailyTransportBoard.vue'
 
 const props = defineProps({
@@ -66,7 +67,8 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
         <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday"
           :visits="visits" :attendance-source="attendanceSource">
           <template #after-visits>
-            <DailyTransportBoard :key="date" :date="date" :visits="transportVisits"
+            <SharedTransportGrid v-if="transportState !== 'local'" :key="'shared-' + date" :date="date" :can-manage="canManage" />
+            <DailyTransportBoard v-else :key="date" :date="date" :visits="transportVisits"
               :can-manage="canManage" :assignments="transportAssignments" :staff="transportStaff" :sync-state="transportState" :local-count="localTransportCount" />
             <section id="activity-preparation" aria-labelledby="activity-preparation-heading" class="scroll-mt-4 rounded-xl border bg-white">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">

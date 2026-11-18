@@ -367,6 +367,10 @@ Route::put('/dashboard/transport-assignment', [\App\Http\Controllers\DailyTransp
     ->middleware(['auth', 'verified', 'role:leader-or-above'])
     ->name('dashboard.transport-assignment');
 
+Route::put('/dashboard/transport-grid', [\App\Http\Controllers\TransportGridController::class, 'update'])
+    ->middleware(['auth', 'verified', 'role:leader-or-above'])
+    ->name('dashboard.transport-grid.update');
+
 Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function () {
     Route::get('daily-activities', [DailyActivityPlanController::class, 'index'])->name('daily-activities.index');
     Route::post('daily-activities', [DailyActivityPlanController::class, 'store'])->name('daily-activities.store');
@@ -374,6 +378,7 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function 
     Route::delete('daily-activities/{activity}', [DailyActivityPlanController::class, 'destroy'])->name('daily-activities.destroy');
 });
 
+Route::get('/dashboard/transport-grid', [\App\Http\Controllers\TransportGridController::class, 'show'])->middleware(['auth', 'verified'])->name('dashboard.transport-grid');
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])->name('dashboard');
 
