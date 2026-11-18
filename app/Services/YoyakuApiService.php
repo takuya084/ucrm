@@ -54,6 +54,35 @@ class YoyakuApiService
         );
     }
 
+    public function getTransport(string $date, int $businessId, int $facilityId): ?array
+    {
+        $client = $this->client($facilityId);
+        if (!$client) return null;
+        $data = $this->safe(fn () => $client->get("{$this->baseUrl}/api/transport/daily", [
+            'date' => $date, 'business_id' => $businessId,
+        ]));
+        if (!is_array($data) || ($data['business_id'] ?? null) !== $businessId
+            || !is_array($data['staff'] ?? null) || !is_array($data['reservations'] ?? null)) return null;
+        return $data;
+    }
+
+    public function assignTransport(array $payload, int $facilityId): void
+    {
+        $client = $this->client($facilityId);
+        if (!$client) throw new \RuntimeException('p-yoyakuに接続できません。連携設定を確認してください。');
+        try {
+            $response = $client->put("{$this->baseUrl}/api/transport/assignment", $payload);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            throw new \RuntimeException('保存結果を確認できません。一覧を更新して担当を確認してください。');
+        }
+        if ($response->status() === 422 || $response->status() === 409) {
+            throw new \RuntimeException('担当または予約が変更されています。一覧を更新し、担当を選び直してください。');
+        }
+        if (!$response->successful() || $response->json('ok') !== true) {
+            throw new \RuntimeException('p-yoyakuに保存できませんでした。接続・権限・予約内容を確認してください。');
+        }
+    }
+
     /**
      * 実績一覧（乗降時刻付き）
      */

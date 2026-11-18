@@ -13,6 +13,9 @@ const props = defineProps({
   activityCategories: Object,
   transportAssignments: Array,
   transportStaff: Array,
+  transportVisits: Array,
+  transportState: String,
+  localTransportCount: Number,
   date: String,
   calendarToday: String,
   todayStats:            Object,
@@ -63,8 +66,8 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
         <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday"
           :visits="visits" :attendance-source="attendanceSource">
           <template #after-visits>
-            <DailyTransportBoard :key="date" :date="date" :visits="visits"
-              :can-manage="canManage" :assignments="transportAssignments" :staff="transportStaff" />
+            <DailyTransportBoard :key="date" :date="date" :visits="transportVisits"
+              :can-manage="canManage" :assignments="transportAssignments" :staff="transportStaff" :sync-state="transportState" :local-count="localTransportCount" />
             <section id="activity-preparation" aria-labelledby="activity-preparation-heading" class="scroll-mt-4 rounded-xl border bg-white">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
                 <h3 id="activity-preparation-heading" class="font-semibold text-gray-900">療育準備</h3>
