@@ -18,7 +18,7 @@ use App\Services\DailyWorkService;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request, DailyWorkService $dailyWork, DailyAttendanceRoster $roster)
+    public function index(Request $request, DailyWorkService $dailyWork, DailyAttendanceRoster $roster, \App\Services\SharedTransportBoard $transport)
     {
         $validated = $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
         $today = $validated['date'] ?? today()->toDateString();
@@ -59,6 +59,17 @@ class DashboardController extends Controller
         $transportStaff = $canManage
             ? Staff::where('facility_id', $facilityId)->where('is_active', true)->orderBy('name')->get(['id', 'name'])
             : [];
+
+        $sharedTransport = $transport->forDate($facilityId, $today);
+        $transportVisits = $visits;
+        $transportState = 'local';
+        $localTransportCount = $assignments->count();
+        if ($sharedTransport !== null) {
+            $assignments = $sharedTransport['assignments'];
+            $transportStaff = $canManage ? $sharedTransport['staff'] : [];
+            $transportVisits = $sharedTransport['visits'];
+            $transportState = $sharedTransport['state'];
+        }
 
         // 今日の出席サマリー
         $todayAttended = UsageRecord::where('facility_id', $facilityId)
@@ -131,6 +142,9 @@ class DashboardController extends Controller
             'activities' => DailyActivityPlan::forDate($facilityId, $today),
             'transportAssignments' => $assignments,
             'transportStaff' => $transportStaff,
+            'transportVisits' => $transportVisits,
+            'transportState' => $transportState,
+            'localTransportCount' => $sharedTransport !== null ? $localTransportCount : 0,
             'calendarToday' => today()->toDateString(),
             'dailyWork' => $dailyWork->forDate($facilityId, $today),
             'todayStats' => [
