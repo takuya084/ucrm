@@ -63,7 +63,7 @@ class DashboardController extends Controller
         $sharedTransport = $transport->forDate($facilityId, $today);
         $transportVisits = $visits;
         $transportState = 'local';
-        $localTransportCount = $assignments->count();
+        $localTransportCount = DB::table('daily_transport_assignments')->where('facility_id', $facilityId)->whereDate('service_date', $today)->count();
         if ($sharedTransport !== null) {
             $assignments = $sharedTransport['assignments'];
             $transportStaff = $canManage ? $sharedTransport['staff'] : [];

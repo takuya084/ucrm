@@ -61,17 +61,17 @@ const save = () => {
   saved.value = false
   form.put(route('dashboard.transport-assignment'), {
     preserveScroll: true,
-    onSuccess: () => { saved.value = true },
+    onSuccess: () => { loadSelection(); saved.value = true },
   })
 }
-const refresh = () => router.reload({
+const refresh = (resetEditor = true) => router.reload({
   only: ['transportAssignments', 'transportStaff', 'transportVisits', 'transportState', 'localTransportCount'],
-  onSuccess: () => { if (editor.value) editor.value.open = false; form.reset(); saved.value = false },
+  onSuccess: () => { if (resetEditor) { if (editor.value) editor.value.open = false; form.reset(); saved.value = false } },
 })
 let timer
 onMounted(() => {
   if (shared.value) timer = setInterval(() => {
-    if (document.visibilityState === 'visible' && !editor.value?.open && !form.processing) refresh()
+    if (document.visibilityState === 'visible' && !editor.value?.open && !form.processing) refresh(false)
   }, 30000)
 })
 onUnmounted(() => clearInterval(timer))
@@ -87,7 +87,7 @@ onUnmounted(() => clearInterval(timer))
     <p v-if="syncState === 'unavailable'" role="alert" class="px-4 py-3 text-sm text-red-700">p-yoyakuの送迎情報を取得できません。接続・連携設定とp-yoyakuの更新状況を確認し、再読み込みしてください。</p>
     <p v-if="localCount" class="px-4 pt-3 text-sm text-amber-800">UCRMだけに保存した担当が{{ localCount }}件あります。共通の一覧で担当を選び直してください。</p>
     <p v-if="assignments.length === 0 && syncState !== 'unavailable'" class="px-4 py-4 text-sm text-gray-700">この日の送迎担当は登録されていません。</p>
-    <div v-else class="overflow-x-auto">
+    <div v-else-if="assignments.length" class="overflow-x-auto">
       <table class="w-full text-left text-sm">
         <thead class="bg-gray-50 text-gray-700">
           <tr>
