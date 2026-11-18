@@ -95,7 +95,7 @@ export function mountTransportGrid(root, options) {
       <div class="tg-toolbar"><strong>送迎一覧</strong><span data-count role="status"></span><button type="button" data-reload>最新の一覧を確認</button></div>
       <p class="tg-help">セルで選択・入力できます。Excelの複数セルを貼り付けできます。範囲コピーはShift＋クリックで選択します。</p>
       <p role="status" class="tg-message">${escape(message)}</p>
-      ${editable ? `<div class="tg-toolbar"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div>
+      ${editable ? `<div class="tg-toolbar"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button><button type="button" data-add-all>未予約の児童をまとめて追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div>
       <div class="tg-toolbar"><label>一括変更する列 <select data-bulk-field>${fields.map((field, i) => `<option value="${i}">${headings[i]}</option>`).join('')}</select></label><label>入力値 <input data-bulk-value aria-label="一括変更の入力値" list="${uid}-bulk" autocomplete="off"></label><datalist id="${uid}-bulk"></datalist><button type="button" data-apply>選択した児童に適用</button></div>` : ''}
       <div class="tg-scroll"><table><thead><tr><th scope="col">選択</th><th scope="col">児童</th>${headings.map(name => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody>${rows.map((row, i) => `<tr class="${deleted.has(row.user_id) ? 'tg-deleted' : ''}"><td><input type="checkbox" data-select="${row.user_id}" aria-label="${escape(row.name)}を選択" ${selected.has(row.user_id) ? 'checked' : ''} ${!editable ? 'disabled' : ''}></td><th scope="row">${escape(row.name)}${deleted.has(row.user_id) ? '<small>保存時に予約を削除</small>' : ''}</th>${fields.map((field, col) => {
         const error = errors[`${i}.${field}`]
@@ -113,12 +113,16 @@ export function mountTransportGrid(root, options) {
       const id = +root.querySelector('[data-child]').value
       const person = config.rows.find(row => row.user_id === id)
       if (!person) return
-      rows.push(clone(person)); original.delete(id); render()
+      rows.push(clone(person)); render()
+    }
+    root.querySelector('[data-add-all]').onclick = () => {
+      rows.push(...clone(config.rows.filter(person => !rows.some(row => row.user_id === person.user_id))))
+      anchor = end = null; render()
     }
     root.querySelector('[data-delete]').onclick = () => {
       if (!selected.size) { message = '削除する児童にチェックを付けてください。'; render(); return }
-      selected.forEach(id => { if (original.has(id)) deleted.add(id) })
-      rows = rows.filter(row => original.has(row.user_id) || !selected.has(row.user_id)); selected.clear(); render()
+      selected.forEach(id => { if (original.get(id)?.exists) deleted.add(id) })
+      rows = rows.filter(row => original.get(row.user_id)?.exists || !selected.has(row.user_id)); selected.clear(); anchor = end = null; render()
     }
     root.querySelector('[data-restore]').onclick = () => { deleted.clear(); render() }
     const bulkChoices = () => {
@@ -181,7 +185,7 @@ export function mountTransportGrid(root, options) {
       const data = await options.load()
       if (disposed) return
       if (!data || !Array.isArray(data.rows) || !Array.isArray(data.times) || !Array.isArray(data.staff) || !data.locations) throw new Error('送迎一覧を読み込めません。連携設定と両アプリの更新状況を確認してください。')
-      config = data; rows = clone(data.rows.filter(row => row.exists)); original = new Map(rows.map(row => [row.user_id, clone(row)]))
+      config = data; rows = clone(data.rows.filter(row => row.exists)); original = new Map(data.rows.map(row => [row.user_id, clone(row)]))
       selected.clear(); deleted.clear(); errors = {}; anchor = end = null; uncertain = false; message = ''; busy = false; render(); return true
     } catch (error) { busy = false; root.innerHTML = `<p role="alert">${escape(error.message)}</p><button type="button">再読み込み</button>`; root.querySelector('button').onclick = load; return false }
   }
