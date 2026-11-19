@@ -77,7 +77,16 @@ export function bindCandidatePicker(input, values) {
   const choose = value => {
     input.value = value; close()
     input.dispatchEvent(new Event('input', { bubbles: true }))
-    input.dispatchEvent(new Event('change', { bubbles: true })); close(); input.focus()
+    input.dispatchEvent(new Event('change', { bubbles: true })); close(); input.focus({ preventScroll: true })
+  }
+  const position = () => {
+    const rect = input.parentElement.getBoundingClientRect()
+    const width = Math.min(Math.max(rect.width, 220), window.innerWidth - 16)
+    list.style.width = width + 'px'; list.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) + 'px'
+    const below = window.innerHeight - rect.bottom - 8
+    list.style.maxHeight = Math.max(64, Math.min(240, Math.max(below, rect.top - 8))) + 'px'
+    list.style.top = below >= Math.min(240, items.length * 44 + 12) || below >= rect.top ? rect.bottom + 4 + 'px' : 'auto'
+    list.style.bottom = list.style.top === 'auto' ? window.innerHeight - rect.top + 4 + 'px' : 'auto'
   }
   const open = (all = true) => {
     if (input.disabled) return
@@ -91,16 +100,10 @@ export function bindCandidatePicker(input, values) {
       list.append(option)
     })
     if (!items.length) { const empty = document.createElement('p'); empty.textContent = '候補がありません'; list.append(empty) }
-    const rect = input.parentElement.getBoundingClientRect()
-    const width = Math.min(Math.max(rect.width, 220), window.innerWidth - 16)
-    list.style.width = width + 'px'; list.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) + 'px'
-    const below = window.innerHeight - rect.bottom - 8
-    list.style.maxHeight = Math.max(64, Math.min(240, Math.max(below, rect.top - 8))) + 'px'
-    list.style.top = below >= Math.min(240, items.length * 44 + 12) || below >= rect.top ? rect.bottom + 4 + 'px' : 'auto'
-    list.style.bottom = list.style.top === 'auto' ? window.innerHeight - rect.top + 4 + 'px' : 'auto'
+    position()
     list.hidden = false; input.setAttribute('aria-expanded', 'true'); button.setAttribute('aria-expanded', 'true')
   }
-  button.onclick = () => { const wasOpen = !list.hidden; input.focus(); if (wasOpen) close(); else open(true) }
+  button.onclick = () => { const wasOpen = !list.hidden; input.focus({ preventScroll: true }); if (wasOpen) close(); else open(true) }
   const typed = () => open(false)
   const key = event => {
     if (event.shiftKey) return // Preserve spreadsheet range selection.
@@ -116,13 +119,13 @@ export function bindCandidatePicker(input, values) {
   const blur = event => { if (event.relatedTarget !== button) close() }
   input.addEventListener('input', typed); input.addEventListener('keydown', key)
   input.addEventListener('blur', blur); document.addEventListener('pointerdown', outside)
-  const scrolled = event => { if (!list.contains(event.target)) close() }
-  window.addEventListener('resize', close); window.addEventListener('scroll', scrolled, true)
+  const scrolled = event => { if (!list.hidden && !list.contains(event.target)) position() }
+  window.addEventListener('resize', scrolled); window.addEventListener('scroll', scrolled, true)
   close()
   return () => {
     close(); list.remove(); button.remove(); input.removeEventListener('input', typed); input.removeEventListener('keydown', key)
     input.removeEventListener('blur', blur); document.removeEventListener('pointerdown', outside)
-    window.removeEventListener('resize', close); window.removeEventListener('scroll', scrolled, true)
+    window.removeEventListener('resize', scrolled); window.removeEventListener('scroll', scrolled, true)
   }
 }
 

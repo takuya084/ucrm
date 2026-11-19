@@ -61,7 +61,7 @@ const updatePayment = () => {
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">サービス内訳</h3>
           </div>
-          <table class="w-full text-sm">
+          <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th class="px-4 py-2 text-left">サービス名</th>
@@ -76,7 +76,7 @@ const updatePayment = () => {
                 <td class="px-4 py-2 text-right">{{ fmt(line.total_units) }}</td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
         </div>
 
         <!-- 入金管理 -->

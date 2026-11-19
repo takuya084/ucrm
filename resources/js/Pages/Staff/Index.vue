@@ -50,7 +50,7 @@ const destroy = (staff) => {
             >＋ 職員追加</Link>
           </div>
 
-          <table v-if="staffMembers.length > 0" class="w-full text-sm">
+          <div v-if="staffMembers.length > 0" class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead>
               <tr class="border-b text-left text-gray-500">
                 <th class="pb-2 font-medium">氏名</th>
@@ -97,7 +97,7 @@ const destroy = (staff) => {
                 </td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
 
           <p v-else class="text-center text-gray-400 py-8">
             職員が登録されていません。「＋ 職員追加」から追加してください。

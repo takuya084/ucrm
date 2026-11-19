@@ -129,7 +129,7 @@ const confirmActual = () => {
             <h3 class="text-sm font-semibold text-gray-700">事業所別内訳</h3>
             <p class="text-xs text-gray-400 mt-1">「外」=他社事業所、金額編集で按分が再計算されます。</p>
           </div>
-          <table class="w-full text-sm">
+          <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th class="px-4 py-2 text-left">事業所名</th>
@@ -177,7 +177,7 @@ const confirmActual = () => {
                 </template>
               </tr>
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>

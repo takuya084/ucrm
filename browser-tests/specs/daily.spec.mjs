@@ -329,9 +329,11 @@ test('cancel deletion keeps child, confirm deletion soft-deletes only that child
 test('major admin pages render actual Vue without server or JavaScript failures', async ({page}) => {
   await login(page);
   for (const [path,heading] of [['/children','利用児童一覧'],['/staff','職員管理'],['/schools','学校管理']]) await visit(page,path,heading);
-  for (const path of ['/programs','/inquiries','/contact-notes','/shifts','/facility/edit']) {
+  for (const path of ['/programs','/inquiries','/contact-notes','/shifts','/shift-labels','/external-facilities','/facility/edit','/billing','/billing/invoices','/billing/returns','/billing/error-claims','/billing/expenses','/billing/cap-management']) {
     await visit(page,path); await expect(page.locator('main')).toBeVisible();
     await expect(page.locator('#app')).not.toBeEmpty();
+    await expect(page.locator('.workspace-shell')).toBeVisible();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth), path).toBe(true);
   }
 });
 

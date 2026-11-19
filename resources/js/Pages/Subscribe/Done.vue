@@ -20,7 +20,7 @@ const resend = () => {
 <template>
   <Head title="登録完了 | ハグくむ" />
 
-  <div class="min-h-screen bg-gray-50 font-sans antialiased flex items-center justify-center px-4">
+  <div class="workspace-shell min-h-screen bg-gray-50 font-sans antialiased flex items-center justify-center px-4">
     <div class="w-full max-w-md mx-auto text-center">
 
       <div class="mb-8">

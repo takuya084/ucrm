@@ -77,7 +77,7 @@ const spark = computed(() => {
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">{{ yearMonth }} の経費</h3>
           </div>
-          <table class="w-full text-sm">
+          <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th class="px-4 py-2 text-left w-40">費目</th>
@@ -99,7 +99,7 @@ const spark = computed(() => {
                 </td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
           <div class="px-5 py-3 bg-gray-50 border-t flex justify-end">
             <button @click="save"
               class="px-4 py-1.5 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600 transition">

@@ -101,7 +101,7 @@ const calculate = () => {
             まだ請求データがありません。<br />
             上の「対象年月」で請求したい月（通常は前月）を選び、「計算実行」を押してください。
           </div>
-          <table id="billing-periods" v-else class="w-full text-sm">
+          <div v-else class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table id="billing-periods" class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th class="px-5 py-2 text-left">年月</th>
@@ -126,7 +126,7 @@ const calculate = () => {
                 </td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
 
           <!-- ページネーション -->
           <div v-if="periods.last_page > 1" class="px-5 py-3 border-t flex gap-2 text-sm">

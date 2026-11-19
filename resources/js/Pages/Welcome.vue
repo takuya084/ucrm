@@ -108,7 +108,7 @@ const faqs = [
 <template>
   <Head title="ハグくむ | 放課後等デイサービス専用クラウド管理システム" />
 
-  <div class="min-h-screen bg-white text-gray-800 font-sans antialiased">
+  <div class="workspace-shell min-h-screen bg-white text-gray-800 font-sans antialiased">
 
     <!-- ナビゲーション -->
     <header class="sticky top-0 z-50 bg-white border-b border-gray-200">

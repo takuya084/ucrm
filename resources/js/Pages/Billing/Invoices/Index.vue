@@ -112,7 +112,7 @@ const savePay = (inv) => {
           <div v-if="invoices.length === 0" class="py-12 text-center text-gray-400 text-sm">
             請求書データがありません。対象月を選んで「請求書一括生成」を押すと、請求計算の結果から保護者宛の請求書が作成されます。
           </div>
-          <table v-else class="w-full text-sm">
+          <div v-else class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th class="px-4 py-2 text-left">児童名</th>
@@ -185,7 +185,7 @@ const savePay = (inv) => {
                 </tr>
               </template>
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>

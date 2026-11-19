@@ -59,7 +59,7 @@ const save = () => {
           <div class="px-5 py-3 border-b bg-gray-50">
             <h3 class="text-sm font-semibold text-gray-700">サービスコード別内訳（手動調整）</h3>
           </div>
-          <table class="w-full text-sm">
+          <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th class="px-4 py-2 text-left">コード</th>
@@ -84,7 +84,7 @@ const save = () => {
                 <td class="px-4 py-2 text-right font-medium">{{ line.total_units.toLocaleString() }}</td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
           <div class="px-5 py-4 border-t space-y-3">
             <div>
               <label class="block text-xs font-medium text-gray-600 mb-1">

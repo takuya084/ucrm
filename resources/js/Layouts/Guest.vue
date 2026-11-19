@@ -3,7 +3,7 @@ import { Link } from '@inertiajs/vue3';
 </script>
 
 <template>
-    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
+    <div class="workspace-shell workspace-auth min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
         <div>
             <Link href="/" class="text-3xl font-extrabold tracking-tight">
                 <span class="text-primary-600">ハグ</span><span class="text-gray-900">くむ</span>

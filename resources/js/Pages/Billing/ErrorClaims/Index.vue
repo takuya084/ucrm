@@ -35,7 +35,7 @@ const STATUS_LABEL = { draft: '下書き', submitted: '提出済', accepted: '�
           <div v-if="claims.data.length === 0" class="py-12 text-center text-gray-400 text-sm">
             過誤申立がありません
           </div>
-          <table v-else class="w-full text-sm">
+          <div v-else class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th class="px-4 py-2 text-left">児童名</th>
@@ -60,7 +60,7 @@ const STATUS_LABEL = { draft: '下書き', submitted: '提出済', accepted: '�
                 <td class="px-4 py-3 text-xs text-gray-500">{{ claim.created_at?.slice(0, 10) }}</td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
 
           <div v-if="claims.last_page > 1" class="px-5 py-3 border-t flex gap-2 text-sm">
             <Link v-for="link in claims.links" :key="link.label" :href="link.url ?? '#'" v-html="link.label"

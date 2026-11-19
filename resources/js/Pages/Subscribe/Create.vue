@@ -24,7 +24,7 @@ const submit = () => {
 <template>
   <Head title="事業所情報の登録 | ハグくむ" />
 
-  <div class="min-h-screen bg-gray-50 font-sans antialiased">
+  <div class="workspace-shell min-h-screen bg-gray-50 font-sans antialiased">
     <div class="max-w-lg mx-auto px-6 py-16">
 
       <div class="text-center mb-10">

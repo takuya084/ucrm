@@ -6,7 +6,7 @@ export async function checkPicker(page, expect) {
   const source = await readFile(fileURLToPath(new URL('../public/transport-grid/grid.js', import.meta.url)), 'utf8')
   await page.evaluate(async source => {
     const { mountTransportGrid } = await import('data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(source))))
-    const root = document.createElement('div'); root.id = 'picker-regression'; document.querySelector('main')?.append(root) ?? document.body.append(root)
+    const root = document.createElement('div'); root.id = 'picker-regression'; (document.querySelector('main') ?? document.body).append(root)
     const row = { user_id: 1, name: '候補確認児童', exists: true, snapshot: 'test', pickup_time: '14:30', pickup_location: 'school', pickup_staff_id: 7, dropoff_time: '17:30', dropoff_location: 'home', dropoff_staff_id: null }
     const config = { rows: [row], times: ['14:30', '15:00', '17:30'], locations: { school: '学校', home: '自宅' }, staff: [{ id: 7, name: '候補職員A' }, { id: 8, name: '候補職員B' }] }
     window.pickerSaves = []; window.disposePicker = mountTransportGrid(root, { date: '2026-12-01', load: async () => config, save: async payload => { window.pickerSaves.push(payload); Object.assign(row, payload.rows[0]) } })

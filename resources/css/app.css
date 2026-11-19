@@ -59,3 +59,16 @@
     .workspace-page-header { position: static; box-shadow: none; }
   }
 }
+
+@layer components {
+  .workspace-auth input:not([type=checkbox]), .workspace-auth select { min-height: 2.7rem; border-color: #cbd5e1; border-radius: .6rem; }
+  .workspace-auth > .bg-white { border-radius: 1rem; padding-top: 1.5rem; padding-bottom: 1.5rem; box-shadow: 0 6px 24px rgb(15 23 42 / .05); }
+}
+@layer components {
+  .workspace-table-scroll { max-width: 100%; overscroll-behavior-inline: contain; }
+  .workspace-table-scroll:focus-visible { outline: 2px solid #0066cc; outline-offset: 3px; }
+  .workspace-table-scroll thead th { white-space: nowrap; }
+  .workspace-shell #main-content :is(section, div, details).bg-white.border > h3 { padding-top: 1rem; padding-bottom: 1rem; }
+  .workspace-shell #main-content table:not(.tg table) :is(th, td) { padding-top: .8rem; padding-bottom: .8rem; }
+  @media print { .workspace-table-scroll { overflow: visible; } }
+}

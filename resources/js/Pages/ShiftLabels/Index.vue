@@ -81,7 +81,7 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
           <FlashMessage />
 
           <!-- 既存ラベル一覧 -->
-          <table class="w-full text-sm mb-6">
+          <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm mb-6">
             <thead>
               <tr class="border-b text-left text-gray-500">
                 <th class="py-2 px-2">ラベル名</th>
@@ -155,7 +155,7 @@ const isProtected = (label) => label.is_off && ['休み', '有給'].includes(lab
                 <td colspan="5" class="py-4 text-center text-gray-400">ラベルがありません</td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
 
           <!-- 新規追加フォーム -->
           <div class="border-t pt-4">
