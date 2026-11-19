@@ -42,7 +42,7 @@ const destroy = (school) => {
             >＋ 学校登録</Link>
           </div>
 
-          <table v-if="schools.length > 0" class="w-full text-sm">
+          <div v-if="schools.length > 0" class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead>
               <tr class="border-b text-left text-gray-500">
                 <th class="pb-2 font-medium">学校名</th>
@@ -79,7 +79,7 @@ const destroy = (school) => {
                 </td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
 
           <p v-else class="text-center text-gray-400 py-8">
             学校が登録されていません。「＋ 学校登録」から追加してください。

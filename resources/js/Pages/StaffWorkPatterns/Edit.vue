@@ -50,7 +50,7 @@ const save = () => {
           <BreezeValidationErrors class="mb-4" />
 
           <form @submit.prevent="save" class="space-y-2">
-            <table class="w-full text-sm">
+            <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
               <thead>
                 <tr class="border-b text-left text-gray-500">
                   <th class="py-2 px-2 w-12">曜日</th>
@@ -92,7 +92,7 @@ const save = () => {
                   </td>
                 </tr>
               </tbody>
-            </table>
+            </table></div>
 
             <div class="flex justify-between items-center pt-4 border-t">
               <Link :href="route('staff.index')" class="text-sm text-gray-500 hover:underline">

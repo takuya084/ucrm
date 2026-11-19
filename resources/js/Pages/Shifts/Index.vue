@@ -74,7 +74,7 @@ const destroyShift = (shift) => {
           </div>
 
           <!-- 月一覧テーブル -->
-          <table class="w-full text-sm">
+          <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead>
               <tr class="border-b text-left text-gray-500">
                 <th class="py-2 px-3">月</th>
@@ -118,7 +118,7 @@ const destroyShift = (shift) => {
                 </td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>

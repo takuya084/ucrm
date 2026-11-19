@@ -251,7 +251,7 @@ const transition = (id, action, label) => {
           <div v-if="returns.data.length === 0" class="py-12 text-center text-gray-400 text-sm">
             返戻データがありません
           </div>
-          <table v-else class="w-full text-sm">
+          <div v-else class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th class="px-3 py-2 text-left">児童</th>
@@ -332,7 +332,7 @@ const transition = (id, action, label) => {
                 </tr>
               </template>
             </tbody>
-          </table>
+          </table></div>
 
           <div v-if="returns.last_page > 1" class="px-5 py-3 border-t flex gap-2 text-sm">
             <Link v-for="link in returns.links" :key="link.label" :href="link.url ?? '#'" v-html="link.label"

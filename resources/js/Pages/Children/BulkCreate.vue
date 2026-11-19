@@ -86,7 +86,7 @@ const submit = () => {
         <!-- CSV項目の説明 -->
         <div class="p-6 bg-gray-50 border border-gray-200 rounded-lg">
           <h3 class="text-base font-semibold text-gray-900 mb-3">CSVの項目</h3>
-          <table class="w-full text-sm text-left">
+          <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm text-left">
             <thead class="text-xs text-gray-500 uppercase border-b">
               <tr>
                 <th class="py-2 pr-4">列名</th>
@@ -105,7 +105,7 @@ const submit = () => {
               <tr><td class="py-2 pr-4 font-mono">contract_start_date</td><td>任意</td><td class="py-2">契約開始日（例: 2026-04-01）</td></tr>
               <tr><td class="py-2 pr-4 font-mono">contract_status</td><td>任意（省略時 active）</td><td class="py-2">active / suspended / ended</td></tr>
             </tbody>
-          </table>
+          </table></div>
         </div>
 
         <!-- 登録済み学校の一覧 -->

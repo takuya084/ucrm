@@ -33,3 +33,23 @@ test('range paste is bounded and does not mutate data on failure', () => {
   assert.throws(() => pasteRange(rows, 0, 5, [['x', 'y']]))
   assert.deepEqual(rows, [{ user_id: 1 }, { user_id: 2 }])
 })
+
+
+test('requests use the current XSRF cookie after login instead of a stale head meta; 419 is not retried', async () => {
+  const { gridRequest } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'))
+  const oldDocument = globalThis.document, oldFetch = globalThis.fetch
+  let requests = []
+  try {
+    globalThis.document = { cookie: 'XSRF-TOKEN=fresh%2Bcookie%3D', querySelector: () => ({ content: 'stale-meta' }) }
+    globalThis.fetch = async (url, options) => { requests.push(options); return { ok: true, json: async () => ({ ok: true }) } }
+    await gridRequest('/grid', 'PUT', { rows: [] })
+    assert.equal(requests[0].headers['X-XSRF-TOKEN'], 'fresh+cookie=')
+    assert.equal(requests[0].headers['X-CSRF-TOKEN'], undefined)
+    globalThis.document.cookie = ''
+    await gridRequest('/grid', 'PUT', { rows: [] })
+    assert.equal(requests[1].headers['X-CSRF-TOKEN'], 'stale-meta')
+    globalThis.fetch = async () => { requests.push(null); return { ok: false, status: 419, json: async () => ({}) } }
+    await assert.rejects(() => gridRequest('/grid', 'PUT', { rows: [] }), /認証情報が期限切れ/)
+    assert.equal(requests.length, 3)
+  } finally { globalThis.document = oldDocument; globalThis.fetch = oldFetch }
+})
