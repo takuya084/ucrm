@@ -53,16 +53,14 @@ const calculate = () => {
         <FlashMessage />
 
         <!-- 毎月の流れ -->
-        <div class="bg-primary-50 border border-primary-100 rounded-lg px-4 py-3 text-sm text-primary-900">
-          <span class="font-semibold">毎月の流れ（1〜10日）：</span>
-          ① 前月分の出欠・送迎の入力もれを確認 →
-          ② 下で対象年月を選んで「計算実行」 →
-          ③ 一覧の「詳細」を開き、内容確認・確定・CSV出力・国保連への伝送まで進める
-          <span class="block text-xs text-primary-600 mt-1">※ 詳細画面に手順ガイドが表示されます。迷ったら「次にやること」に従ってください。</span>
-        </div>
+        <nav aria-label="毎月の請求の流れ" class="workspace-steps">
+          <Link :href="route('usage-records.index')"><span class="workspace-step-number">01</span><span><strong>実績を確認</strong><small>出欠・送迎の入力もれ</small></span></Link>
+          <a href="#billing-calculation"><span class="workspace-step-number">02</span><span><strong>請求を計算</strong><small>対象月を選んで計算</small></span></a>
+          <a href="#billing-periods"><span class="workspace-step-number">03</span><span><strong>詳細から出力へ</strong><small>内容確認 → 確定 → CSV出力</small></span></a>
+        </nav>
 
         <!-- 操作パネル -->
-        <div class="bg-white border border-gray-200 rounded-lg p-5">
+        <div id="billing-calculation" class="workspace-anchor bg-white border border-gray-200 rounded-lg p-5">
           <h3 class="text-sm font-semibold text-gray-700 mb-3">月次請求計算</h3>
           <div class="flex flex-wrap items-end gap-3">
             <div>
@@ -103,7 +101,7 @@ const calculate = () => {
             まだ請求データがありません。<br />
             上の「対象年月」で請求したい月（通常は前月）を選び、「計算実行」を押してください。
           </div>
-          <table v-else class="w-full text-sm">
+          <table id="billing-periods" v-else class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th class="px-5 py-2 text-left">年月</th>

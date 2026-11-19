@@ -424,6 +424,9 @@ test('daily work leads staff from family review to one saved record without losi
   await expect(nav.getByRole('link',{name:'施設設定',exact:true})).toHaveCount(0);
   if(isMobile) await page.getByRole('button',{name:'閉じる',exact:true}).click();
   await visit(page,'/dashboard?date=2026-07-01','日別の業務');
+  await expect(page.getByRole('navigation', {name:'この日の確認順',exact:true})).toBeVisible();
+  await expect(page.locator('.workspace-shell')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await expect(page.locator('main')).not.toContainText(foreignChild().name);
   const row=page.getByRole('listitem',{name:ownChild().name+'の業務',exact:true});
   await expect(row.getByRole('link',{name:'家庭の連絡を確認',exact:true})).toBeVisible();
@@ -446,3 +449,9 @@ test('daily work leads staff from family review to one saved record without losi
   expect(snapshot().support).toHaveLength(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
+
+test('candidate button shows every staff member without clearing current value; search, keyboard and saving work', async ({page}) => {
+  await login(page)
+  const { checkPicker } = await import('../picker-check.mjs')
+  await checkPicker(page, expect)
+})

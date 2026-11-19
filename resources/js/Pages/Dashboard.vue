@@ -55,8 +55,8 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
       <div class="flex flex-wrap items-center justify-between gap-2">
         <h2 class="font-semibold text-xl text-gray-800">{{ date === calendarToday ? '今日の業務' : '日別の業務' }}</h2>
         <nav v-if="canManage" aria-label="担当別の業務" class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-          <a href="#management-work" class="text-primary-700 underline">管理者・児発管の確認事項</a>
-          <a href="#office-work" class="text-primary-700 underline">請求・集金</a>
+          <a href="#management-work" class="workspace-jump">管理者・児発管の確認事項</a>
+          <a href="#office-work" class="workspace-jump">請求・集金</a>
         </nav>
       </div>
     </template>
@@ -67,10 +67,10 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
         <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday"
           :visits="visits" :attendance-source="attendanceSource">
           <template #after-visits>
-            <SharedTransportGrid v-if="transportState !== 'local'" :key="'shared-' + date" :date="date" :can-manage="canManage" />
+            <div id="transport-work" class="workspace-anchor"><SharedTransportGrid v-if="transportState !== 'local'" :key="'shared-' + date" :date="date" :can-manage="canManage" />
             <DailyTransportBoard v-else :key="date" :date="date" :visits="transportVisits"
-              :can-manage="canManage" :assignments="transportAssignments" :staff="transportStaff" :sync-state="transportState" :local-count="localTransportCount" />
-            <section id="activity-preparation" aria-labelledby="activity-preparation-heading" class="scroll-mt-4 rounded-xl border bg-white">
+              :can-manage="canManage" :assignments="transportAssignments" :staff="transportStaff" :sync-state="transportState" :local-count="localTransportCount" /></div>
+            <section id="activity-preparation" aria-labelledby="activity-preparation-heading" class="workspace-card scroll-mt-4 rounded-xl border bg-white">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
                 <h3 id="activity-preparation-heading" class="font-semibold text-gray-900">療育準備</h3>
                 <Link v-if="canManage" :href="route('daily-activities.index', { date })" class="text-sm font-medium text-primary-700 underline">療育予定・年間行事を編集</Link>
@@ -90,7 +90,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
           </template>
         </DailyWorkBoard>
 
-        <section v-if="canManage" id="management-work" aria-labelledby="management-heading" class="scroll-mt-4 rounded-xl border bg-white">
+        <section v-if="canManage" id="management-work" aria-labelledby="management-heading" class="workspace-card scroll-mt-4 rounded-xl border bg-white">
           <h3 id="management-heading" class="border-b px-4 py-3 font-semibold text-gray-900">管理者・児発管の確認事項</h3>
           <div class="space-y-6 p-4">
             <!-- アラートセクション -->

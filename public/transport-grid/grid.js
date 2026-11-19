@@ -51,9 +51,85 @@ export function pasteRange(rows, startRow, startCol, matrix) {
   return result
 }
 
+// Keep the current value when opening the complete candidate list.
+export function bindCandidatePicker(input, values) {
+  const button = document.createElement('button')
+  button.type = 'button'; button.className = 'tg-picker-toggle'; button.textContent = '▾'
+  button.setAttribute('aria-label', input.getAttribute('aria-label') + 'の候補をすべて表示')
+  button.disabled = input.disabled
+  input.after(button)
+  const list = document.createElement('div')
+  list.id = 'tg-options-' + Math.random().toString(36).slice(2)
+  list.className = 'tg-options'; list.setAttribute('role', 'listbox'); list.hidden = true
+  document.body.append(list)
+  input.removeAttribute('list'); input.setAttribute('role', 'combobox')
+  input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-controls', list.id)
+  button.setAttribute('aria-controls', list.id)
+  let items = [], index = -1
+  const close = () => {
+    list.hidden = true; input.setAttribute('aria-expanded', 'false'); button.setAttribute('aria-expanded', 'false')
+    input.removeAttribute('aria-activedescendant')
+  }
+  const highlight = () => {
+    list.querySelectorAll('[role=option]').forEach((option, i) => option.setAttribute('aria-selected', String(i === index)))
+    if (index >= 0) { input.setAttribute('aria-activedescendant', list.id + '-' + index); list.children[index]?.scrollIntoView({ block: 'nearest' }) }
+  }
+  const choose = value => {
+    input.value = value; close()
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true })); close(); input.focus()
+  }
+  const open = (all = true) => {
+    if (input.disabled) return
+    const query = all ? '' : input.value.trim().normalize('NFKC').toLowerCase()
+    items = values().filter(value => value.normalize('NFKC').toLowerCase().includes(query)); index = -1
+    list.replaceChildren()
+    items.forEach((value, i) => {
+      const option = document.createElement('div')
+      option.id = list.id + '-' + i; option.setAttribute('role', 'option'); option.setAttribute('aria-selected', 'false')
+      option.textContent = value; option.onpointerdown = event => event.preventDefault(); option.onclick = () => choose(value)
+      list.append(option)
+    })
+    if (!items.length) { const empty = document.createElement('p'); empty.textContent = '候補がありません'; list.append(empty) }
+    const rect = input.parentElement.getBoundingClientRect()
+    const width = Math.min(Math.max(rect.width, 220), window.innerWidth - 16)
+    list.style.width = width + 'px'; list.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) + 'px'
+    const below = window.innerHeight - rect.bottom - 8
+    list.style.maxHeight = Math.max(64, Math.min(240, Math.max(below, rect.top - 8))) + 'px'
+    list.style.top = below >= Math.min(240, items.length * 44 + 12) || below >= rect.top ? rect.bottom + 4 + 'px' : 'auto'
+    list.style.bottom = list.style.top === 'auto' ? window.innerHeight - rect.top + 4 + 'px' : 'auto'
+    list.hidden = false; input.setAttribute('aria-expanded', 'true'); button.setAttribute('aria-expanded', 'true')
+  }
+  button.onclick = () => { const wasOpen = !list.hidden; input.focus(); if (wasOpen) close(); else open(true) }
+  const typed = () => open(false)
+  const key = event => {
+    if (event.shiftKey) return // Preserve spreadsheet range selection.
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault(); event.stopImmediatePropagation()
+      if (list.hidden) open(true)
+      index = items.length ? (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length : -1; highlight()
+    } else if (event.key === 'Enter' && !list.hidden && index >= 0) {
+      event.preventDefault(); choose(items[index])
+    } else if (event.key === 'Escape' || event.key === 'Tab') close()
+  }
+  const outside = event => { if (event.target !== input && event.target !== button && !list.contains(event.target)) close() }
+  const blur = event => { if (event.relatedTarget !== button) close() }
+  input.addEventListener('input', typed); input.addEventListener('keydown', key)
+  input.addEventListener('blur', blur); document.addEventListener('pointerdown', outside)
+  const scrolled = event => { if (!list.contains(event.target)) close() }
+  window.addEventListener('resize', close); window.addEventListener('scroll', scrolled, true)
+  close()
+  return () => {
+    close(); list.remove(); button.remove(); input.removeEventListener('input', typed); input.removeEventListener('keydown', key)
+    input.removeEventListener('blur', blur); document.removeEventListener('pointerdown', outside)
+    window.removeEventListener('resize', close); window.removeEventListener('scroll', scrolled, true)
+  }
+}
+
 export function mountTransportGrid(root, options) {
   let config, rows = [], original = new Map(), selected = new Set(), deleted = new Set(), errors = {}, anchor = null, end = null, busy = false, uncertain = false
-  let message = '', disposed = false
+  let message = '', disposed = false, pickers = []
+  const clearPickers = () => { pickers.forEach(destroy => destroy()); pickers = [] }
   const editable = options.canManage !== false
   const uid = `tg-${Math.random().toString(36).slice(2)}`
   const dirty = row => !original.has(row.user_id) || fields.some(field => row[field] !== original.get(row.user_id)[field]) || deleted.has(row.user_id)
@@ -91,15 +167,16 @@ export function mountTransportGrid(root, options) {
   }
   const render = () => {
     if (disposed) return
+    clearPickers()
     root.innerHTML = `<section class="tg" aria-label="送迎一覧の一括編集">
       <div class="tg-toolbar"><strong>送迎一覧</strong><span data-count role="status"></span><button type="button" data-reload>最新の一覧を確認</button></div>
-      <p class="tg-help">セルで選択・入力できます。Excelの複数セルを貼り付けできます。範囲コピーはShift＋クリックで選択します。</p>
+      <details class="tg-guide"><summary>入力・コピペの使い方</summary><p class="tg-help">▼で全候補を表示。文字入力で絞り込み。Excelの複数セルを貼り付けできます。範囲コピーはShift＋クリックで選択します。</p></details>
       <p role="status" class="tg-message">${escape(message)}</p>
       ${editable ? `<div class="tg-toolbar"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button><button type="button" data-add-all>未予約の児童をまとめて追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div>
-      <div class="tg-toolbar"><label>一括変更する列 <select data-bulk-field>${fields.map((field, i) => `<option value="${i}">${headings[i]}</option>`).join('')}</select></label><label>入力値 <input data-bulk-value aria-label="一括変更の入力値" list="${uid}-bulk" autocomplete="off"></label><datalist id="${uid}-bulk"></datalist><button type="button" data-apply>選択した児童に適用</button></div>` : ''}
+      <div class="tg-toolbar"><label>一括変更する列 <select data-bulk-field>${fields.map((field, i) => `<option value="${i}">${headings[i]}</option>`).join('')}</select></label><label>入力値 <span class="tg-picker"><input data-bulk-value aria-label="一括変更の入力値" list="${uid}-bulk" autocomplete="off"></span></label><datalist id="${uid}-bulk"></datalist><button type="button" data-apply>選択した児童に適用</button></div>` : ''}
       <div class="tg-scroll"><table><thead><tr><th scope="col">選択${editable ? '<input type="checkbox" data-select-all aria-label="表示中の児童をすべて選択">' : ''}</th><th scope="col">児童</th>${headings.map(name => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody>${rows.map((row, i) => `<tr class="${deleted.has(row.user_id) ? 'tg-deleted' : ''}"><td><input type="checkbox" data-select="${row.user_id}" aria-label="${escape(row.name)}を選択" ${selected.has(row.user_id) ? 'checked' : ''} ${!editable ? 'disabled' : ''}></td><th scope="row">${escape(row.name)}${deleted.has(row.user_id) ? '<small>保存時に予約を削除</small>' : ''}</th>${fields.map((field, col) => {
         const error = errors[`${i}.${field}`]
-        return `<td><input data-cell data-row="${i}" data-col="${col}" aria-label="${escape(row.name)} ${headings[col]}" aria-invalid="${!!error}" aria-describedby="${uid}-${i}-${col}-error" value="${escape(readText(row, field))}" list="${uid}-${field}" autocomplete="off" ${!editable || deleted.has(row.user_id) || busy || uncertain ? 'disabled' : ''} class="${dirty(row) ? 'tg-dirty' : ''}"><small id="${uid}-${i}-${col}-error">${escape(error || '')}</small></td>`
+        return `<td><div class="tg-picker"><input data-cell data-row="${i}" data-col="${col}" aria-label="${escape(row.name)} ${headings[col]}" aria-invalid="${!!error}" aria-describedby="${uid}-${i}-${col}-error" value="${escape(readText(row, field))}" list="${uid}-${field}" autocomplete="off" ${!editable || deleted.has(row.user_id) || busy || uncertain ? 'disabled' : ''} class="${dirty(row) ? 'tg-dirty' : ''}"></div><small id="${uid}-${i}-${col}-error">${escape(error || '')}</small></td>`
       }).join('')}</tr>`).join('')}</tbody></table></div>
       ${fields.map(field => `<datalist id="${uid}-${field}">${(field.endsWith('_time') ? config.times : field.endsWith('_location') ? Object.values(config.locations) : staffLabels(config.staff).map(person => person.label)).map(value => `<option value="${escape(value)}"></option>`).join('')}</datalist>`).join('')}
       <p class="tg-help">時刻は設定範囲内の5分刻み、場所・担当は候補にあるものだけ保存できます。行の削除は当日の予約の取り消しです。</p>
@@ -125,10 +202,13 @@ export function mountTransportGrid(root, options) {
       rows = rows.filter(row => original.get(row.user_id)?.exists || !selected.has(row.user_id)); selected.clear(); anchor = end = null; render()
     }
     root.querySelector('[data-restore]').onclick = () => { deleted.clear(); render() }
+    let bulkPicker
     const bulkChoices = () => {
       const field = fields[+root.querySelector('[data-bulk-field]').value]
       const values = field.endsWith('_time') ? config.times : field.endsWith('_location') ? Object.values(config.locations) : staffLabels(config.staff).map(person => person.label)
-      root.querySelector(`#${uid}-bulk`).innerHTML = values.map(value => `<option value="${escape(value)}"></option>`).join('')
+      bulkPicker?.()
+      const input = root.querySelector('[data-bulk-value]')
+      bulkPicker = bindCandidatePicker(input, () => values); pickers.push(bulkPicker)
     }
     root.querySelector('[data-bulk-field]').onchange = bulkChoices; bulkChoices()
     root.querySelector('[data-apply]').onclick = () => {
@@ -166,6 +246,7 @@ export function mountTransportGrid(root, options) {
         const text = rows.slice(box.top, box.bottom + 1).map(item => fields.slice(box.left, box.right + 1).map(field => readText(item, field)).join('\t')).join('\n')
         event.preventDefault(); event.clipboardData.setData('text/plain', text)
       }
+      pickers.push(bindCandidatePicker(input, () => fields[col].endsWith('_time') ? config.times : fields[col].endsWith('_location') ? Object.values(config.locations) : staffLabels(config.staff).map(person => person.label)))
       input.onkeydown = event => {
         const moves = { ArrowDown: [1, 0], ArrowUp: [-1, 0], ArrowRight: [0, 1], ArrowLeft: [0, -1] }
         if (!event.shiftKey || !moves[event.key]) return
@@ -178,12 +259,13 @@ export function mountTransportGrid(root, options) {
   const showErrors = () => {
     root.querySelectorAll('[data-cell]').forEach(input => {
       const error = errors[`${input.dataset.row}.${fields[+input.dataset.col]}`] || ''
-      input.setAttribute('aria-invalid', String(!!error)); input.nextElementSibling.textContent = error
+      input.setAttribute('aria-invalid', String(!!error)); document.getElementById(input.getAttribute('aria-describedby')).textContent = error
     })
   }
   const load = async () => {
     if (busy) return
     busy = true
+    clearPickers()
     root.innerHTML = '<p role="status">送迎一覧を読み込んでいます。</p>'
     try {
       const data = await options.load()
@@ -222,16 +304,18 @@ export function mountTransportGrid(root, options) {
   const unload = event => { if (hasChanges()) { event.preventDefault(); event.returnValue = '' } }
   window.addEventListener('beforeunload', unload)
   load()
-  return () => { disposed = true; window.removeEventListener('beforeunload', unload); root.innerHTML = '' }
+  return () => { disposed = true; clearPickers(); window.removeEventListener('beforeunload', unload); root.innerHTML = '' }
 }
 
 export async function gridRequest(url, method = 'GET', payload) {
+  const xsrf = document.cookie.split('; ').find(value => value.startsWith('XSRF-TOKEN='))?.slice(11)
+  const csrfHeaders = xsrf ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrf) } : { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' }
   const response = await fetch(url, { method, credentials: 'same-origin', cache: 'no-store', headers: {
     Accept: 'application/json', 'Content-Type': 'application/json',
-    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+    ...csrfHeaders,
   }, ...(payload ? { body: JSON.stringify(payload) } : {}) })
   const data = await response.json().catch(() => null)
-  if (!response.ok) { const error = new Error('通信または保存に失敗しました。'); if (response.status === 422) error.errors = data?.errors; throw error }
+  if (!response.ok) { const error = new Error(response.status === 419 ? '画面の認証情報が期限切れです。ページを再読み込みしてから入力し直してください。' : '通信または保存に失敗しました。'); if (response.status === 422) error.errors = data?.errors; throw error }
   if (method !== 'GET' && data?.ok !== true) throw new Error('保存結果を確認できません。')
   return data
 }

@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
+const icons = { 'ホーム': 'M3 10l9-7 9 7v10H3z M9 20v-7h6v7', '日々の業務': 'M4 5h16v16H4z M8 3v4 M16 3v4 M4 11h16', '児童・支援': 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M17 4a4 4 0 0 1 0 8 M22 21v-2a4 4 0 0 0-3-4', '請求・会計': 'M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6', '事業所運営': 'M4 21V3h16v18 M8 7h2 M14 7h2 M8 11h2 M14 11h2 M9 21v-6h6v6', '設定': 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2' }
 const emit = defineEmits(['navigate'])
 const page = usePage()
 const role = computed(() => page.props.auth.staff_role)
@@ -54,7 +55,7 @@ const active = i => {
 <template>
   <nav aria-label="業務メニュー" class="space-y-5 px-3 py-5">
     <section v-for="group in groups" :key="group.label" :aria-label="group.label">
-      <h2 class="px-3 mb-1 text-xs font-bold tracking-wide text-gray-500">{{ group.label }}</h2>
+      <h2 class="workspace-nav-heading"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path :d="icons[group.label]" stroke-linecap="round" stroke-linejoin="round" /></svg>{{ group.label }}</h2>
       <Link v-for="entry in group.items" :key="entry.label" :href="route(entry.name, params(entry))"
         :aria-current="active(entry) ? 'page' : undefined" @click="emit('navigate')"
         :class="['block rounded-lg px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600', active(entry) ? 'bg-primary-50 text-primary-800 font-bold border-l-4 border-primary-500' : 'text-gray-700 hover:bg-gray-100']">

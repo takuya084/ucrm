@@ -13,14 +13,14 @@ onBeforeUnmount(() => { document.body.style.overflow = '' })
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 text-gray-900">
+  <div class="workspace-shell min-h-screen bg-gray-50 text-gray-900">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-white focus:p-3">本文へ移動</a>
-    <aside class="hidden lg:flex fixed inset-y-0 left-0 w-60 bg-white border-r border-gray-200 flex-col">
-      <Link :href="route('dashboard')" class="block border-b px-6 py-5 text-xl font-extrabold text-primary-700">ハグくむ</Link>
+    <aside class="workspace-sidebar hidden lg:flex fixed inset-y-0 left-0 w-60 bg-white border-r border-gray-200 flex-col">
+      <Link :href="route('dashboard')" class="workspace-brand block border-b px-6 py-5 text-xl font-extrabold text-primary-700"><span class="workspace-brand-mark" aria-hidden="true">H</span>ハグくむ</Link>
       <div class="overflow-y-auto flex-1"><WorkspaceNavigation /></div>
     </aside>
     <div class="lg:pl-60">
-      <div class="bg-white border-b px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      <div class="workspace-accountbar bg-white border-b px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
         <div class="min-w-0">
           <p class="text-sm font-semibold truncate">{{ $page.props.auth.facility?.name ?? '事業所業務' }}</p>
           <p class="text-xs text-gray-500">{{ $page.props.auth.staff_role === 'admin' ? '管理者' : $page.props.auth.staff_role === 'leader' ? '児発管' : '職員' }}</p>
@@ -36,7 +36,7 @@ onBeforeUnmount(() => { document.body.style.overflow = '' })
           <button ref="menuTrigger" type="button" @click="openMenu" aria-haspopup="dialog" aria-controls="workspace-menu" class="lg:hidden border border-gray-300 rounded-lg px-4 py-2 text-sm font-semibold">メニュー</button>
         </div>
       </div>
-      <header v-if="$slots.header" class="sticky top-0 z-20 bg-white border-b px-4 sm:px-6 py-4"><slot name="header" /></header>
+      <header v-if="$slots.header" class="workspace-page-header sticky top-0 z-20 bg-white border-b px-4 sm:px-6 py-4"><slot name="header" /></header>
       <main id="main-content" tabindex="-1" class="min-w-0">
         <div v-if="$page.props.errors?.billing" role="alert" class="bg-red-50 border border-red-300 text-red-900 p-4 text-sm whitespace-pre-line">
             {{ $page.props.errors.billing }}

@@ -38,7 +38,7 @@ const changeDate = () => {
 </script>
 
 <template>
-  <section aria-label="日別の業務" class="space-y-4">
+  <section aria-label="日別の業務" class="daily-workspace space-y-6">
     <div class="flex flex-wrap items-end gap-x-4 gap-y-2">
       <label class="text-sm font-medium text-gray-700">
         対象日
@@ -47,26 +47,32 @@ const changeDate = () => {
       <Link v-if="date !== calendarToday" :href="route('dashboard')" class="px-3 py-2 text-sm text-primary-700 underline">今日へ戻る</Link>
     </div>
 
+    <nav aria-label="この日の確認順" class="workspace-steps">
+      <a href="#daily-visits"><span class="workspace-step-number">01</span><span><strong>利用児童</strong><small>{{ visits.length }}人の予定・家庭の連絡</small></span><b aria-hidden="true">↓</b></a>
+      <a href="#transport-work"><span class="workspace-step-number">02</span><span><strong>スタッフ全員の送迎</strong><small>時刻・場所・担当</small></span><b aria-hidden="true">↓</b></a>
+      <a href="#activity-preparation"><span class="workspace-step-number">03</span><span><strong>療育準備</strong><small>活動・担当・準備物</small></span><b aria-hidden="true">↓</b></a>
+    </nav>
+
     <section aria-labelledby="daily-visits" class="overflow-hidden rounded-xl border bg-white">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
         <div>
-          <h3 id="daily-visits" class="font-semibold text-gray-900">利用児童 <span class="ml-1 text-primary-700">{{ visits.length }}人</span></h3>
+          <h3 id="daily-visits" class="workspace-section-title font-semibold text-gray-900">利用児童 <span class="ml-1 text-primary-700">{{ visits.length }}人</span></h3>
           <p class="mt-1 text-xs text-gray-600">{{ sourceLabels[attendanceSource] }}</p>
         </div>
         <Link :href="route('usage-records.index', { date })" class="text-sm font-medium text-primary-700 underline">出欠・送迎を開く</Link>
       </div>
 
       <p v-if="visits.length === 0" class="px-4 py-5 text-sm text-gray-700">選択日の利用児童は表示されていません。出欠・送迎画面で予定を確認できます。</p>
-      <ul v-else class="divide-y">
+      <ul v-else class="daily-visits-list divide-y">
         <li v-for="visit in visits" :key="visit.childId" class="grid gap-x-5 gap-y-2 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)]">
-          <Link :href="route('children.show', visit.childId)" class="break-words font-semibold text-primary-800 hover:underline">{{ visit.name }}</Link>
+          <Link :href="route('children.show', visit.childId)" class="workspace-child-name break-words font-semibold text-primary-800 hover:underline"><span class="workspace-avatar" aria-hidden="true">{{ visit.name.replace('【架空】', '').trim().slice(0, 1) }}</span>{{ visit.name }}</Link>
           <div class="text-sm text-gray-700">
-            <p v-if="visit.arrival || visit.departure">来所 {{ visit.arrival || '未登録' }} ／ 退所 {{ visit.departure || '未登録' }}</p>
+            <p v-if="visit.arrival || visit.departure" class="workspace-time"><span>来所 <b>{{ visit.arrival || '未登録' }}</b></span><span>退所 <b>{{ visit.departure || '未登録' }}</b></span></p>
             <p v-else>来所・退所時刻は未登録</p>
             <p v-if="visit.pickup || visit.dropoff" class="mt-1">送迎予約 {{ visit.pickup ? `迎え ${visit.pickup}` : '' }} {{ visit.dropoff ? `送り ${visit.dropoff}` : '' }}</p>
           </div>
           <div class="space-y-1 text-sm">
-            <p v-if="visit.allergy" class="break-words font-medium text-red-800">アレルギー　{{ visit.allergy }}</p>
+            <p v-if="visit.allergy" class="workspace-allergy break-words font-medium text-red-800">アレルギー　{{ visit.allergy }}</p>
             <Link v-if="visit.home" :href="route('contact-notes.index', { date }) + '#child-' + visit.childId"
               class="inline-block font-medium text-primary-700 underline">{{ visit.home }}</Link>
           </div>
