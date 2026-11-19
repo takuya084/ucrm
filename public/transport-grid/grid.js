@@ -232,7 +232,7 @@ export function mountTransportGrid(root, options) {
       input.onclick = event => { if (!event.shiftKey || !anchor) anchor = { row, col }; end = { row, col }; paintSelection() }
       input.onfocus = () => { if (!anchor) anchor = end = { row, col } }
       input.oninput = () => { rows[row][fields[col]] = input.value; input.classList.add('tg-dirty'); status() }
-      input.onchange = () => { const result = resolveCell(fields[col], input.value, rows[row], config); if (!result.error) { rows[row][fields[col]] = result.value; input.value = result.text } validate(); showErrors() }
+      input.onchange = () => { const result = resolveCell(fields[col], input.value, rows[row], config); if (!result.error) { rows[row][fields[col]] = result.value; input.value = result.text } validate(); showErrors(); status(); root.querySelectorAll(`[data-row="${row}"]`).forEach(control => control.classList.toggle('tg-dirty', dirty(rows[row]))) }
       input.onpaste = event => {
         event.preventDefault()
         try {
