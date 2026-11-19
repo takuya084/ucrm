@@ -64,7 +64,8 @@ export function bindCandidatePicker(input, values) {
   document.body.append(list)
   input.removeAttribute('list'); input.setAttribute('role', 'combobox')
   input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-controls', list.id)
-  button.setAttribute('aria-controls', list.id)
+  button.setAttribute('aria-controls', list.id); button.setAttribute('aria-haspopup', 'listbox')
+  list.setAttribute('aria-label', input.getAttribute('aria-label') + 'の候補')
   let items = [], index = -1
   const close = () => {
     list.hidden = true; input.setAttribute('aria-expanded', 'false'); button.setAttribute('aria-expanded', 'false')
@@ -110,12 +111,12 @@ export function bindCandidatePicker(input, values) {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault(); event.stopImmediatePropagation()
       if (list.hidden) open(true)
-      index = items.length ? (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length : -1; highlight()
+      index = !items.length ? -1 : index < 0 ? (event.key === 'ArrowDown' ? 0 : items.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; highlight()
     } else if (event.key === 'Enter' && !list.hidden && index >= 0) {
       event.preventDefault(); choose(items[index])
     } else if (event.key === 'Escape' || event.key === 'Tab') close()
   }
-  const outside = event => { if (event.target !== input && event.target !== button && !list.contains(event.target)) close() }
+  const outside = event => { if (!list.hidden && event.target !== input && event.target !== button && !list.contains(event.target)) close() }
   const blur = event => { if (event.relatedTarget !== button) close() }
   input.addEventListener('input', typed); input.addEventListener('keydown', key)
   input.addEventListener('blur', blur); document.addEventListener('pointerdown', outside)
