@@ -42,6 +42,7 @@ async function visit(page, path, heading) {
   if (heading) await expect(page.getByRole('heading', {name:heading,exact:true})).toBeVisible();
 }
 async function openModule(page, label) {
+  await expect(page.locator('.workspace-shell')).toBeVisible();
   const nav=page.getByRole('navigation',{name:'業務メニュー',exact:true}).filter({visible:true});
   if (!(await nav.isVisible())) await page.getByRole('button',{name:'メニュー',exact:true}).click();
   await nav.getByRole('link',{name:label,exact:true}).click();
@@ -469,6 +470,7 @@ test('daily work leads staff from family review to one saved record without losi
 
 test('candidate button shows every staff member without clearing current value; search, keyboard and saving work', async ({page}) => {
   await login(page)
+  await visit(page,'/transport?date=2026-07-01','送迎一覧')
   const { checkPicker } = await import('../picker-check.mjs')
   await checkPicker(page, expect)
 })
@@ -496,4 +498,25 @@ test('dashboard shows all staff transport read-only and editing has one sidebar 
   await openModule(page,'今日の業務');
   await expect(transport.getByRole('cell',{name:'架空職員a-staff',exact:true})).toBeVisible();
   await expect(transport.getByRole('button',{name:'担当変更',exact:true})).toHaveCount(0);
+});
+
+
+test('secondary export tools stay closed, open by keyboard, and retain input when closed', async ({page}) => {
+  await login(page);
+  await openModule(page,'記録・連絡帳');
+  const trigger=page.getByRole('button',{name:'年間PDF出力（記録の保存用）',exact:true});
+  await expect(trigger).toHaveAttribute('aria-expanded','false');
+  const year=page.getByLabel('出力する年',{exact:true});
+  await expect(year).not.toBeVisible();
+  await trigger.focus(); await page.keyboard.press('Enter');
+  await expect(trigger).toHaveAttribute('aria-expanded','true');
+  await expect(year).toBeVisible();
+  const value=await year.inputValue();
+  await trigger.click();
+  await expect(year).not.toBeVisible();
+  await expect(page.locator('#annual-contact-export')).toHaveAttribute('inert','');
+  await trigger.press('Enter');
+  await expect(year).toHaveValue(value);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  expect(await page.locator('#annual-contact-export').evaluate(el=>getComputedStyle(el).transitionDuration)).toBe('0s');
 });

@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { router, useForm } from '@inertiajs/vue3'
 
@@ -52,7 +53,7 @@ const edit = async (row) => {
   form.child_id = row.child_id
   form.direction = row.direction
   loadSelection()
-  editor.value.open = true
+  editor.value.setOpen(true)
   await nextTick()
   assigneeInput.value?.focus()
 }
@@ -66,12 +67,12 @@ const save = () => {
 }
 const refresh = (resetEditor = true) => router.reload({
   only: ['transportAssignments', 'transportStaff', 'transportVisits', 'transportState', 'localTransportCount'],
-  onSuccess: () => { if (resetEditor) { if (editor.value) editor.value.open = false; form.reset(); saved.value = false } },
+  onSuccess: () => { if (resetEditor) { if (editor.value) editor.value.setOpen(false); form.reset(); saved.value = false } },
 })
 let timer
 onMounted(() => {
   if (shared.value) timer = setInterval(() => {
-    if (document.visibilityState === 'visible' && !editor.value?.open && !form.processing) refresh(false)
+    if (document.visibilityState === 'visible' && !editor.value?.isOpen() && !form.processing) refresh(false)
   }, 30000)
 })
 onUnmounted(() => clearInterval(timer))
@@ -113,20 +114,19 @@ onUnmounted(() => clearInterval(timer))
       </table>
     </div>
 
-    <details v-if="canManage && syncState !== 'unavailable'" ref="editor" class="border-t">
-      <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-primary-700">送迎担当を割り当てる</summary>
+    <DisclosurePanel v-if="canManage && syncState !== 'unavailable'" id="local-transport-editor" ref="editor" title="送迎担当を割り当てる" class="border-0 border-t">
       <div class="space-y-4 px-4 pb-4">
         <p v-if="visits.length === 0" class="text-sm text-gray-700">この日の利用児童が表示されると担当を登録できます。</p>
         <template v-else>
           <form class="flex flex-wrap items-end gap-3 text-sm" @submit.prevent="save">
             <label v-if="!shared" class="space-y-1">児童
-              <select v-model="form.child_id" required :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
+              <select aria-label="児童" v-model="form.child_id" required :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
                 <option value="" disabled>選択してください</option>
                 <option v-for="visit in visits" :key="visit.childId" :value="visit.childId">{{ visit.name }}</option>
               </select>
             </label>
             <label v-else class="space-y-1">児童
-              <select v-model="form.reservation_id" required :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
+              <select aria-label="児童" v-model="form.reservation_id" required :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
                 <option value="" disabled>選択してください</option>
                 <option v-for="row in selections" :key="row.reservation_id" :value="row.reservation_id">{{ visitById.get(row.child_id)?.name }}（{{ time(row.scheduled_time) }}）</option>
               </select>
@@ -137,17 +137,17 @@ onUnmounted(() => clearInterval(timer))
               </select>
             </label>
             <label class="space-y-1">担当職員
-              <select ref="assigneeInput" v-model="form.staff_id" :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
+              <select aria-label="担当職員" ref="assigneeInput" v-model="form.staff_id" :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
                 <option :value="null">担当なし</option>
                 <option v-if="form.staff_id && !staff.some((person) => person.id === form.staff_id)" :value="form.staff_id" disabled>無効な職員</option>
                 <option v-for="person in staff" :key="person.id" :value="person.id">{{ person.name }}</option>
               </select>
             </label>
             <label class="space-y-1">時刻
-              <input v-model="form.scheduled_time" :disabled="shared" type="time" class="block rounded-md border-gray-300 text-sm" />
+              <input aria-label="時刻" v-model="form.scheduled_time" :disabled="shared" type="time" class="block rounded-md border-gray-300 text-sm" />
             </label>
             <label class="space-y-1">場所
-              <input v-model="form.location" :disabled="shared" type="text" maxlength="120" class="block max-w-full rounded-md border-gray-300 text-sm" />
+              <input aria-label="場所" v-model="form.location" :disabled="shared" type="text" maxlength="120" class="block max-w-full rounded-md border-gray-300 text-sm" />
             </label>
             <button type="submit" :disabled="(shared ? !form.reservation_id || !selections.some(row => row.reservation_id === form.reservation_id) : !form.child_id) || form.processing"
               class="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">保存</button>
@@ -159,6 +159,6 @@ onUnmounted(() => clearInterval(timer))
           </ul>
         </template>
       </div>
-    </details>
+    </DisclosurePanel>
   </section>
 </template>

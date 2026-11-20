@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { router } from '@inertiajs/vue3'
@@ -165,13 +166,12 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
         </div>
 
         <!-- 年間PDF出力（年末の保存運用。要配慮個人情報の一括出力のためリーダー以上のみ） -->
-        <div v-if="['admin', 'leader'].includes($page.props.auth.staff_role)" class="bg-white border border-gray-200 rounded-lg p-4">
-          <h3 class="text-sm font-semibold text-gray-700 mb-2">年間PDF出力（記録の保存用）</h3>
+        <DisclosurePanel v-if="['admin', 'leader'].includes($page.props.auth.staff_role)" id="annual-contact-export" title="年間PDF出力（記録の保存用）">
           <div class="flex items-center gap-3 flex-wrap">
-            <select v-model="exportYear" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
+            <select aria-label="出力する年" v-model="exportYear" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
               <option v-for="y in exportYears" :key="y" :value="y">{{ y }}年</option>
             </select>
-            <select v-model="exportChildId" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
+            <select aria-label="出力する児童" v-model="exportChildId" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
               <option :value="null">― 児童を選択 ―</option>
               <option v-for="c in children" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
@@ -191,7 +191,7 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
           <p class="text-xs text-gray-400 mt-2">
             指定した年の1月〜12月の連絡帳（未公開の下書き・家庭からの連絡を含む全記録）をPDFにまとめます。出力は監査ログに記録されます。
           </p>
-        </div>
+        </DisclosurePanel>
 
         <p class="text-xs text-gray-400">
           この一覧から児童を選び、支援記録・連絡帳を入力します。公開すると保護者アプリ（予約システム）に配信されます。

@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import { computed, ref, watch } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import ContactNoteStatus from '@/Components/ContactNoteStatus.vue'
@@ -123,8 +124,7 @@ const changeDate = () => {
       </ul>
     </section>
 
-    <details v-if="work.rows.length" class="rounded-xl border bg-white" :open="showAll" @toggle="showAll = $event.target.open">
-      <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-800">全児童の状況（{{ work.rows.length }}人）</summary>
+    <DisclosurePanel v-if="work.rows.length" id="all-child-status" v-model="showAll" :title="`全児童の状況（${work.rows.length}人）`">
       <ul v-if="showAll" class="divide-y border-t">
         <li v-for="row in work.rows" :key="row.child_id" class="space-y-2 p-4">
           <p class="break-words font-semibold text-gray-900">{{ row.child_name }}</p>
@@ -134,6 +134,6 @@ const changeDate = () => {
 
         </li>
       </ul>
-    </details>
+    </DisclosurePanel>
   </section>
 </template>

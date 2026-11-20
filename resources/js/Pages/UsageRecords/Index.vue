@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -412,46 +413,20 @@ const rowBg = (status) => ({
             </div>
           </div>
 
-          <!-- 児童追加パネル -->
           <div class="p-4 border-t bg-gray-50">
-            <div v-if="!showAddPanel" class="flex items-center justify-between">
-              <button
-                v-if="availableToAdd.length > 0"
-                type="button"
-                @click="showAddPanel = true"
-                class="text-sm text-primary-600 hover:text-primary-800 flex items-center gap-1"
-              >
-                <span class="text-lg leading-none">＋</span> 児童を追加
-              </button>
-              <span v-else class="text-xs text-gray-400">追加できる児童はいません</span>
-
-              <span v-if="saveStatus === 'saving'" class="text-xs text-gray-400">保存中...</span>
-              <span v-else-if="saveStatus === 'saved'" class="text-xs text-green-600 font-medium">✓ 保存完了</span>
-              <span v-else-if="saveStatus === 'error'" class="text-xs text-red-600 font-medium">保存失敗</span>
-            </div>
-
-            <div v-else class="flex items-center gap-3 flex-wrap">
-              <select
-                v-model="selectedChildId"
-                class="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-              >
-                <option value="">追加する児童を選択...</option>
-                <option v-for="c in availableToAdd" :key="c.id" :value="c.id">
-                  {{ c.name }}（{{ c.grade ?? '学年未登録' }}）
-                </option>
-              </select>
-              <button
-                type="button"
-                @click="addChild"
-                :disabled="!selectedChildId"
-                class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-40"
-              >追加</button>
-              <button
-                type="button"
-                @click="showAddPanel = false; selectedChildId = ''"
-                class="px-4 py-2 text-sm text-gray-500 border border-gray-300 rounded-md hover:bg-gray-100"
-              >キャンセル</button>
-            </div>
+            <p v-if="saveStatus === 'saving'" class="mb-2 text-xs text-gray-600">保存中...</p>
+            <p v-else-if="saveStatus === 'saved'" class="mb-2 text-xs text-green-700">✓ 保存完了</p>
+            <p v-else-if="saveStatus === 'error'" role="alert" class="mb-2 text-xs text-red-700">保存失敗</p>
+            <DisclosurePanel id="attendance-add-child" v-model="showAddPanel" title="児童を追加">
+              <p v-if="!availableToAdd.length" class="text-sm text-gray-600">追加できる児童はいません。</p>
+              <div v-else class="flex flex-wrap items-center gap-3">
+                <select aria-label="追加する児童" v-model="selectedChildId" class="max-w-full rounded-md border-gray-300 text-sm">
+                  <option value="">追加する児童を選択...</option>
+                  <option v-for="c in availableToAdd" :key="c.id" :value="c.id">{{ c.name }}（{{ c.grade ?? '学年未登録' }}）</option>
+                </select>
+                <button type="button" @click="addChild" :disabled="!selectedChildId" class="rounded-md bg-primary-500 px-4 py-2 text-sm text-white disabled:opacity-40">追加</button>
+              </div>
+            </DisclosurePanel>
           </div>
         </div>
       </div>

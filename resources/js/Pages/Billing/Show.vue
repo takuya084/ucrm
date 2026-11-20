@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -566,8 +567,7 @@ const nextAction = computed(() => {
         </div>
 
         <!-- 事業所の運営指標 -->
-        <details class="bg-white border border-gray-200 rounded-lg p-5">
-          <summary class="cursor-pointer text-sm font-semibold text-gray-700">事業所の運営指標</summary>
+        <DisclosurePanel id="billing-kpi" title="事業所の運営指標">
           <div class="mt-3 mb-3 text-right">
             <span class="text-[10px] text-gray-400">定員 {{ kpi.capacity_per_day ?? '—' }}名 × 営業 {{ kpi.business_days ?? '—' }}日</span>
           </div>
@@ -657,7 +657,7 @@ const nextAction = computed(() => {
               </span>
             </div>
           </div>
-        </details>
+        </DisclosurePanel>
       </div>
     </div>
   </BreezeAuthenticatedLayout>

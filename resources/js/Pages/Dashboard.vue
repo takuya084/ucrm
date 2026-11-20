@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head } from '@inertiajs/vue3'
 import DailyWorkBoard from '@/Components/DailyWorkBoard.vue'
@@ -259,8 +260,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
           </div>
         </section>
 
-        <details class="rounded-xl border bg-white">
-          <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-800">選択日の集計</summary>
+        <DisclosurePanel id="daily-statistics" title="選択日の集計">
           <div class="border-t p-4">
             <!-- 今日のサマリー -->
             <section>
@@ -288,7 +288,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             </section>
 
           </div>
-        </details>
+        </DisclosurePanel>
       </div>
     </div>
   </BreezeAuthenticatedLayout>

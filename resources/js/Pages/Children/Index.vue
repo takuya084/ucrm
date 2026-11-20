@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -81,21 +82,25 @@ const certExpiryClass = (dateStr) => {
                 class="bg-primary-500 text-white px-4 py-2 rounded-md text-sm hover:bg-primary-600"
               >検索</button>
               <Link
+                v-if="['admin','leader'].includes($page.props.auth.staff_role)"
+                :href="route('children.create')"
+                class="bg-green-500 text-white px-4 py-2 rounded-md text-sm hover:bg-green-600"
+              >＋ 新規登録</Link>
+            </div>
+            <DisclosurePanel v-if="['admin','leader'].includes($page.props.auth.staff_role)" id="child-bulk-tools" title="CSV一括登録・連携設定" class="mt-3">
+              <div class="flex flex-wrap gap-4">
+                <Link
                 v-if="$page.props.auth.staff_role === 'admin'"
                 :href="route('children.yoyaku-link')"
-                class="ml-auto text-sm text-primary-600 hover:underline"
+                class="text-sm text-primary-600 hover:underline"
               >p-yoyaku連携</Link>
               <Link
                 v-if="['admin','leader'].includes($page.props.auth.staff_role)"
                 :href="route('children.bulk')"
                 class="text-sm text-primary-600 hover:underline"
               >CSV一括登録</Link>
-              <Link
-                v-if="['admin','leader'].includes($page.props.auth.staff_role)"
-                :href="route('children.create')"
-                class="bg-green-500 text-white px-4 py-2 rounded-md text-sm hover:bg-green-600"
-              >＋ 新規登録</Link>
-            </div>
+              </div>
+            </DisclosurePanel>
 
             <!-- テーブル -->
             <div class="overflow-x-auto">

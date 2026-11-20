@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -162,8 +163,7 @@ const submitCsv = () => {
         </div>
 
         <!-- CSV紐付け: p-yoyaku→はぐくむ、または既存データ同士の突合 -->
-        <div class="p-6 bg-white border border-gray-200 rounded-lg">
-          <h3 class="text-lg font-semibold text-gray-900 mb-1">既存のp-yoyakuアカウントにCSVで紐付け</h3>
+        <DisclosurePanel id="csv-account-link" title="既存アカウントにCSVで紐付け">
           <p class="text-sm text-gray-500 mb-4">
             p-yoyaku側にすでに登録済みの利用者がいる場合（p-yoyakuが先行導入済み、または両方に別々に登録済みの場合）、
             誤結合を避けるためID/メールを明示指定したCSVで紐付けます。名前だけでの自動突合は行いません。
@@ -215,7 +215,7 @@ const submitCsv = () => {
               </button>
             </div>
           </form>
-        </div>
+        </DisclosurePanel>
       </div>
     </div>
   </BreezeAuthenticatedLayout>
