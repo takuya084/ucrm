@@ -385,10 +385,7 @@ const tabAlert = (key) => (key === 'cert' && certAlert.value) || (key === 'plan'
 
           <div class="bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-center">
             <span class="text-sm font-medium text-gray-700">この児童の問い合わせ</span>
-            <Link
-              :href="route('inquiries.create', { child_id: child.id })"
-              class="text-xs px-3 py-1 bg-primary-500 text-white rounded-md hover:bg-primary-600"
-            >＋ 問い合わせ登録</Link>
+            <span class="text-xs text-gray-600">登録・対応：メニュー「問い合わせ」</span>
           </div>
         </template>
 

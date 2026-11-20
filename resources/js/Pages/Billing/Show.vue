@@ -50,11 +50,6 @@ watch(() => props.period.id, () => {
   warnings.value = null
   checkError.value = null
 })
-const shiftReviewUrl = (date) => route('shifts.index', {
-  year: Number(date.slice(0, 4)),
-  billing_period: props.period.id,
-  billing_date: date,
-}) + `#shift-month-${Number(date.slice(5, 7))}`
 const checking = ref(false)
 const showOutputMenu = ref(false)
 const showProblemList = ref(false)
@@ -304,7 +299,7 @@ const nextAction = computed(() => {
               </span>
               <div>
                 <span>{{ w.message }}</span>
-                <Link v-if="w.date" :href="shiftReviewUrl(w.date)" class="ml-2 font-medium text-primary-700 underline">該当月のシフトを開く</Link>
+                <span v-if="w.date" class="ml-2 text-sm text-gray-700">確認先：メニュー「シフト」／ {{ w.date }}</span>
               </div>
             </li>
           </ul>
@@ -522,8 +517,7 @@ const nextAction = computed(() => {
             </button>
           </div>
           <p v-if="paymentDiff !== null && paymentDiff !== 0" class="mt-2 text-xs text-red-600">
-            差異があります。<Link :href="route('billing.returns.index')" class="underline">返戻管理</Link>・
-            <Link :href="route('billing.error-claims.index')" class="underline">過誤申立</Link>を確認してください。
+            差異があります。メニュー「返戻管理」「過誤申立」で対象月を確認してください。
           </p>
           <p v-else-if="period.status === 'submitted'" class="mt-2 text-xs text-gray-400">
             支払決定額が請求額と一致した場合、この月の請求は自動的に「完了」になります。
@@ -638,9 +632,7 @@ const nextAction = computed(() => {
               <div class="text-[10px] text-gray-500">経費</div>
               <div class="text-xl font-bold text-gray-700">{{ fmt(kpi.expenses ?? 0) }}円</div>
               <div class="text-[10px] text-gray-400 mt-1">
-                <Link :href="route('billing.expenses.index', { month: period.year_month })" class="text-primary-500 hover:underline">
-                  編集 →
-                </Link>
+                <span>入力先：メニュー「経費管理」</span>
               </div>
             </div>
             <div class="border rounded-lg p-3"

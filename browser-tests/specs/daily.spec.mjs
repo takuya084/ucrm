@@ -265,7 +265,7 @@ test('attendance save and support record survive navigation and reload', async (
   await page.getByRole('link',{name:'← 記録・連絡帳へ',exact:true}).click();
   await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01$/);
   await page.getByRole('link',{name:'記録・連絡帳を編集',exact:true}).click();
-  await expect(page.locator('body')).toContainText('架空の支援記録に追記しました');
+  await expect(page.getByPlaceholder('今日の行動・様子を記入してください')).toHaveValue('架空の支援記録に追記しました');
   const s=snapshot(); expect(s.usage).toHaveLength(1); expect(s.support).toHaveLength(1);
   expect(s.support[0].id).toBe(id);
   expect(s.usage[0].status).toBe('attended'); expect(s.usage[0].facility_id).toBe(seeded.facilities[0].id);

@@ -147,9 +147,7 @@ const overallStats = computed(() => {
         <!-- プログラムが見つからない場合 -->
         <div v-if="programs.length === 0" class="bg-white rounded-lg border border-gray-200 p-10 text-center text-gray-400">
           <p>このカテゴリには詳細項目が登録されたプログラムがありません。</p>
-          <Link :href="route('programs.index')" class="mt-3 inline-block text-sm text-primary-500 hover:underline">
-            プログラム管理で項目を追加 →
-          </Link>
+          <p class="mt-3 text-sm text-gray-600">メニュー「療育プログラム」で項目を追加してください。</p>
         </div>
 
         <template v-else>
