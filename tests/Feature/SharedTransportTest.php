@@ -51,7 +51,9 @@ class SharedTransportTest extends TestCase
             ->where('transportState', 'connected')->has('transportAssignments', 2)
             ->where('transportAssignments.0.staff_name', '送迎職員A')->where('transportAssignments.1.staff_name', '送迎職員B')
             ->where('transportVisits.0.name', '児童')->has('transportStaff', 2));
-        $this->put('/dashboard/transport-assignment', $this->input())->assertRedirect('/dashboard?date=2026-12-01');
+        $this->get('/transport?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('Transport/Index')->where('transportState', 'connected')->has('transportAssignments', 2)->has('transportStaff', 2));
+        $this->put('/dashboard/transport-assignment', $this->input())->assertRedirect('/transport?date=2026-12-01');
         Http::assertSent(fn ($request) => $request->method() === 'PUT'
             && $request->hasHeader('Authorization', 'Bearer facility-test-token')
             && $request['business_id'] === 7 && $request['reservation_id'] === 51 && $request['staff_id'] === 42 && $request['revision'] === 2);

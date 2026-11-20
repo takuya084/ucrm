@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import Authenticated from '@/Layouts/Authenticated.vue'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import { ref, watch } from 'vue'
@@ -10,6 +11,7 @@ const props = defineProps({
 
 const selectedDate = ref(props.date)
 const editing = ref(null)
+const showForm = ref(false)
 const form = useForm({
   activity_date: props.date, category: 'support', program_id: null,
   staff_id: null, title: '', starts_at: '', materials: '',
@@ -20,6 +22,7 @@ const reset = () => {
   form.reset()
   form.activity_date = props.date
   form.clearErrors()
+  showForm.value = false
 }
 
 watch(() => props.date, (date) => {
@@ -28,6 +31,7 @@ watch(() => props.date, (date) => {
 })
 
 const edit = (activity) => {
+  showForm.value = true
   editing.value = activity
   form.clearErrors()
   for (const field of Object.keys(form.data())) form[field] = activity[field] ?? null
@@ -35,7 +39,7 @@ const edit = (activity) => {
 }
 
 const save = () => {
-  const options = { preserveScroll: true, onSuccess: reset }
+  const options = { preserveScroll: true, onSuccess: reset, onError: () => { showForm.value = true } }
   if (editing.value) form.patch(route('daily-activities.update', editing.value.id), options)
   else form.post(route('daily-activities.store'), options)
 }
@@ -63,7 +67,7 @@ const remove = (activity) => {
           <input v-model="selectedDate" type="date" class="mt-1 block rounded-md border-gray-300"
             @change="selectedDate && router.get(route('daily-activities.index'), { date: selectedDate })" />
         </label>
-        <Link :href="route('programs.index')" class="py-2 text-sm text-primary-700 underline">登録済みプログラムを見る</Link>
+        <span class="py-2 text-xs text-gray-600">プログラムの登録・変更：メニュー「療育プログラム」</span>
       </div>
 
       <section class="rounded-xl border bg-white p-4" aria-labelledby="planned-activities">
@@ -84,8 +88,7 @@ const remove = (activity) => {
         </ul>
       </section>
 
-      <section id="activity-form" class="scroll-mt-4 rounded-xl border bg-white p-4" aria-labelledby="activity-form-title">
-        <h3 id="activity-form-title" class="font-semibold">{{ editing ? '予定を編集' : '予定を追加' }}</h3>
+      <DisclosurePanel id="activity-form" v-model="showForm" :title="editing ? '予定を編集' : '予定を追加'" class="scroll-mt-4">
         <form class="mt-3 space-y-3" @submit.prevent="save">
           <div class="grid gap-3 text-sm sm:grid-cols-2">
             <label>実施日<input v-model="form.activity_date" required type="date" class="mt-1 block w-full rounded-md border-gray-300" /></label>
@@ -123,10 +126,9 @@ const remove = (activity) => {
           <button type="submit" :disabled="form.processing" class="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">保存</button>
           <button v-if="editing" type="button" @click="reset" class="ml-3 text-sm text-gray-700 underline">編集をやめる</button>
         </form>
-      </section>
+      </DisclosurePanel>
 
-      <section class="rounded-xl border bg-white p-4" aria-labelledby="annual-events">
-        <h3 id="annual-events" class="font-semibold">{{ year }}年の行事</h3>
+      <DisclosurePanel id="annual-events" :title="`${year}年の行事（${annualEvents.length}件）`">
         <p v-if="!annualEvents.length" class="mt-3 text-sm text-gray-600">行事は登録されていません。</p>
         <ul v-else class="mt-2 divide-y">
           <li v-for="event in annualEvents" :key="event.id" class="flex flex-wrap justify-between gap-3 py-3 text-sm">
@@ -136,7 +138,7 @@ const remove = (activity) => {
             <span>{{ event.staff?.name || '担当未定' }}</span>
           </li>
         </ul>
-      </section>
+      </DisclosurePanel>
     </div>
   </Authenticated>
 </template>

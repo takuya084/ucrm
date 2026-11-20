@@ -41,6 +41,12 @@ async function visit(page, path, heading) {
   expect(r.status(), path).toBe(200);
   if (heading) await expect(page.getByRole('heading', {name:heading,exact:true})).toBeVisible();
 }
+async function openModule(page, label) {
+  await expect(page.locator('.workspace-shell')).toBeVisible();
+  const nav=page.getByRole('navigation',{name:'業務メニュー',exact:true}).filter({visible:true});
+  if (!(await nav.isVisible())) await page.getByRole('button',{name:'メニュー',exact:true}).click();
+  await nav.getByRole('link',{name:label,exact:true}).click();
+}
 function field(page, label, control='input') {
   return page.locator('form label').filter({hasText:new RegExp(`^${label}(?: \\*)?$`)}).locator('..').locator(control);
 }
@@ -227,6 +233,8 @@ test('attendance save and support record survive navigation and reload', async (
   await page.getByRole('button',{name:'このメンバーで確定',exact:true}).click();
   expect((await saved).status()).toBe(200);
   await page.reload();
+  await expect(page.locator('main').getByRole('link',{name:'記録・連絡帳を入力',exact:true})).toHaveCount(0);
+  await openModule(page,'記録・連絡帳');
   await page.getByRole('link',{name:'記録・連絡帳を入力',exact:true}).click();
   await page.getByPlaceholder('今日の行動・様子を記入してください').fill('架空の支援記録です');
   const message=page.getByPlaceholder('今日の様子を保護者向けの表現で記入してください（AI下書きも利用できます）');
@@ -255,10 +263,10 @@ test('attendance save and support record survive navigation and reload', async (
   await page.reload();
   await expect(page.getByPlaceholder('今日の行動・様子を記入してください')).toHaveValue('架空の支援記録に追記しました');
   await expect(message).toHaveValue('架空の保護者向けメッセージに追記しました');
-  await page.getByRole('link',{name:'← 出席管理へ',exact:true}).click();
-  await expect(page).toHaveURL(/\/usage-records\?date=2026-07-01$/);
-  await page.getByRole('link',{name:'記録を見る',exact:true}).click();
-  await expect(page.locator('body')).toContainText('架空の支援記録に追記しました');
+  await page.getByRole('link',{name:'← 記録・連絡帳へ',exact:true}).click();
+  await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01$/);
+  await page.getByRole('link',{name:'記録・連絡帳を編集',exact:true}).click();
+  await expect(page.getByPlaceholder('今日の行動・様子を記入してください')).toHaveValue('架空の支援記録に追記しました');
   const s=snapshot(); expect(s.usage).toHaveLength(1); expect(s.support).toHaveLength(1);
   expect(s.support[0].id).toBe(id);
   expect(s.usage[0].status).toBe('attended'); expect(s.usage[0].facility_id).toBe(seeded.facilities[0].id);
@@ -329,7 +337,7 @@ test('cancel deletion keeps child, confirm deletion soft-deletes only that child
 test('major admin pages render actual Vue without server or JavaScript failures', async ({page}) => {
   await login(page);
   for (const [path,heading] of [['/children','利用児童一覧'],['/staff','職員管理'],['/schools','学校管理']]) await visit(page,path,heading);
-  for (const path of ['/programs','/inquiries','/contact-notes','/shifts','/shift-labels','/external-facilities','/facility/edit','/billing','/billing/invoices','/billing/returns','/billing/error-claims','/billing/expenses','/billing/cap-management']) {
+  for (const path of ['/transport','/daily-activities','/programs','/inquiries','/contact-notes','/shifts','/shift-labels','/external-facilities','/facility/edit','/billing','/billing/invoices','/billing/returns','/billing/error-claims','/billing/expenses','/billing/cap-management']) {
     await visit(page,path); await expect(page.locator('main')).toBeVisible();
     await expect(page.locator('#app')).not.toBeEmpty();
     await expect(page.locator('.workspace-shell')).toBeVisible();
@@ -355,7 +363,7 @@ test('contact publication can be withdrawn and republished without deleting hist
   const own=data.notes.find(n=>n.child_id===ownChild().id);
   const foreign=data.notes.find(n=>n.facility_id!==own.facility_id);
   await login(page);
-  await visit(page,'/contact-notes?date=2026-07-01','連絡帳');
+  await visit(page,'/contact-notes?date=2026-07-01','記録・連絡帳');
   page.once('dialog',d=>d.dismiss());
   await page.getByRole('button',{name:'公開を取り下げる',exact:true}).click();
   expect(snapshot().notes.find(n=>n.id===own.id).status).toBe('published');
@@ -379,7 +387,7 @@ test('contact publication can be withdrawn and republished without deleting hist
 
 test('staff reviews the morning family entry before any support record is written',async({page})=>{
   fixture('morning-entry'); await login(page,'staff');
-  await visit(page,'/contact-notes?date=2026-07-01','連絡帳');
+  await visit(page,'/contact-notes?date=2026-07-01','記録・連絡帳');
   await expect(page.getByText('架空の利用前の体調連絡',{exact:true})).toBeVisible();
   await expect(page.getByText('体温：36.6',{exact:false})).toBeVisible();
   await expect(page.getByText('保護者確認印済み',{exact:false})).toHaveCount(0);
@@ -412,7 +420,8 @@ test('categorized navigation works with keyboard, preserves child section and da
   await page.reload();
   await expect(page.getByRole('heading',{name:'個別支援計画',exact:true})).toBeVisible();
   await visit(page,'/usage-records?date=2026-07-01','出席管理');
-  await page.getByRole('navigation',{name:'同じ日の業務',exact:true}).getByRole('link',{name:'記録・連絡帳',exact:true}).click();
+  await expect(page.getByRole('navigation',{name:'同じ日の業務',exact:true})).toHaveCount(0);
+  await openModule(page,'記録・連絡帳');
   await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01$/);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
@@ -431,8 +440,12 @@ test('daily work leads staff from family review to one saved record without losi
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await expect(page.locator('main')).not.toContainText(foreignChild().name);
   const row=page.getByRole('listitem',{name:ownChild().name+'の業務',exact:true});
-  await expect(row.getByRole('link',{name:'家庭の連絡を確認',exact:true})).toBeVisible();
-  await row.getByRole('link',{name:'支援記録を入力',exact:true}).click();
+  await expect(row).toContainText('家庭の連絡が未確認');
+  await expect(row).toContainText('連絡帳未入力');
+  await expect(row.getByRole('link')).toHaveCount(0);
+  await openModule(page,'記録・連絡帳');
+  await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01$/);
+  await page.getByRole('link',{name:'記録・連絡帳を入力',exact:true}).click();
   const behavior=page.getByPlaceholder('今日の行動・様子を記入してください');
   await behavior.fill('家庭の連絡を読みながら入力した架空の記録');
   const family=page.getByRole('region',{name:'家庭からの連絡',exact:true});
@@ -444,9 +457,12 @@ test('daily work leads staff from family review to one saved record without losi
   await expect(page).toHaveURL(/\/support-records\/\d+\/edit$/);
   await expect(page.getByRole('status')).toHaveText('支援記録を保存しました。');
   await visit(page,'/dashboard?date=2026-07-01','日別の業務');
-  await expect(row.getByRole('link',{name:'家庭の連絡を確認',exact:true})).toHaveCount(0);
-  await expect(row.getByRole('link',{name:'支援記録を入力',exact:true})).toHaveCount(0);
-  await row.getByRole('link',{name:'連絡帳を入力',exact:true}).click();
+  await expect(row).not.toContainText('家庭の連絡が未確認');
+  await expect(row).not.toContainText('支援記録未入力');
+  await expect(row).toContainText('連絡帳未入力');
+  await expect(row.getByRole('link')).toHaveCount(0);
+  await openModule(page,'記録・連絡帳');
+  await page.getByRole('link',{name:'記録・連絡帳を編集',exact:true}).click();
   await expect(behavior).toHaveValue('家庭の連絡を読みながら入力した架空の記録');
   expect(snapshot().support).toHaveLength(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
@@ -454,6 +470,53 @@ test('daily work leads staff from family review to one saved record without losi
 
 test('candidate button shows every staff member without clearing current value; search, keyboard and saving work', async ({page}) => {
   await login(page)
+  await visit(page,'/transport?date=2026-07-01','送迎一覧')
   const { checkPicker } = await import('../picker-check.mjs')
   await checkPicker(page, expect)
 })
+
+
+test('dashboard shows all staff transport read-only and editing has one sidebar entry', async ({page}) => {
+  fixture('morning-entry'); fixture('legacy-attendance-times');
+  await login(page);
+  await visit(page,'/dashboard?date=2026-07-01','日別の業務');
+  const transport=page.locator('#transport-work');
+  await expect(transport.getByText('入力・変更先：メニュー「送迎一覧」',{exact:true})).toBeVisible();
+  await expect(transport.getByText('送迎担当を割り当てる',{exact:true})).toHaveCount(0);
+  await expect(page.locator('main').getByRole('link').filter({hasText:/入力|編集|開く/})).toHaveCount(0);
+  await openModule(page,'送迎一覧');
+  await expect(page).toHaveURL(/\/transport\?date=2026-07-01$/);
+  await page.getByText('送迎担当を割り当てる',{exact:true}).click();
+  const form=page.locator('main form');
+  await form.getByLabel('児童',{exact:true}).selectOption(String(ownChild().id));
+  await form.getByLabel('担当職員',{exact:true}).selectOption(String(seeded.staff.find(s=>s.name==='架空職員a-staff').id));
+  await form.getByLabel('時刻',{exact:true}).fill('14:30');
+  await form.getByLabel('場所',{exact:true}).fill('学校');
+  await form.getByRole('button',{name:'保存',exact:true}).click();
+  await expect(page.getByRole('status')).toHaveText('送迎担当を更新しました。');
+  await expect(page).toHaveURL(/\/transport\?date=2026-07-01$/);
+  await openModule(page,'今日の業務');
+  await expect(transport.getByRole('cell',{name:'架空職員a-staff',exact:true})).toBeVisible();
+  await expect(transport.getByRole('button',{name:'担当変更',exact:true})).toHaveCount(0);
+});
+
+
+test('secondary export tools stay closed, open by keyboard, and retain input when closed', async ({page}) => {
+  await login(page);
+  await openModule(page,'記録・連絡帳');
+  const trigger=page.getByRole('button',{name:'年間PDF出力（記録の保存用）',exact:true});
+  await expect(trigger).toHaveAttribute('aria-expanded','false');
+  const year=page.getByLabel('出力する年',{exact:true});
+  await expect(year).not.toBeVisible();
+  await trigger.focus(); await page.keyboard.press('Enter');
+  await expect(trigger).toHaveAttribute('aria-expanded','true');
+  await expect(year).toBeVisible();
+  const value=await year.inputValue();
+  await trigger.click();
+  await expect(year).not.toBeVisible();
+  await expect(page.locator('#annual-contact-export')).toHaveAttribute('inert','');
+  await trigger.press('Enter');
+  await expect(year).toHaveValue(value);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  expect(await page.locator('#annual-contact-export').evaluate(el=>getComputedStyle(el).transitionDuration)).toBe('0s');
+});

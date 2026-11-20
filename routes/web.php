@@ -379,6 +379,9 @@ Route::middleware(['auth', 'verified', 'role:leader-or-above'])->group(function 
 });
 
 Route::get('/dashboard/transport-grid', [\App\Http\Controllers\TransportGridController::class, 'show'])->middleware(['auth', 'verified'])->name('dashboard.transport-grid');
+Route::get('/transport', [\App\Http\Controllers\TransportController::class, 'index'])
+    ->middleware(['auth', 'verified'])->name('transport.index');
+
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])->name('dashboard');
 

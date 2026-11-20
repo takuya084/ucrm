@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -91,14 +92,9 @@ const submitImport = () => {
             事業所で算定する加算・減算にチェックを入れてください。チェックされた項目のみ請求計算で適用されます。
             <br />現在 <strong>{{ enabledCount }}</strong> 件が有効です。
           </div>
-          <button @click="showImport = !showImport"
-            class="ml-4 px-3 py-1.5 text-xs border border-green-500 text-green-600 bg-white rounded-md hover:bg-green-50 whitespace-nowrap">
-            {{ showImport ? '閉じる' : 'マスターCSV取込' }}
-          </button>
         </div>
 
-        <div v-if="showImport" class="bg-white rounded-lg p-5 border border-green-200">
-          <h3 class="text-sm font-semibold text-gray-700 mb-2">サービスコードマスターCSV取込</h3>
+        <DisclosurePanel id="service-code-import" v-model="showImport" title="サービスコードマスターCSV取込">
           <p class="text-xs text-gray-500 mb-3 leading-relaxed">
             ヘッダ行必須。2行目以降は以下9列（9列目は空可）:<br>
             <code class="bg-gray-100 px-1">報酬改定日, サービス種別(houday|jidou|63|61), サービスコード, サービス内容名, 単位数, 単位種別(per_day|per_time|per_month), 区分(base|addition|subtraction|1|2|3), 有効開始日, 有効終了日</code><br>
@@ -117,7 +113,7 @@ const submitImport = () => {
               <li v-for="(e, i) in importErrors" :key="i">• {{ e }}</li>
             </ul>
           </div>
-        </div>
+        </DisclosurePanel>
 
         <div v-for="(categories, serviceType) in grouped" :key="serviceType"
           class="bg-white border border-gray-200 sm:rounded-lg overflow-hidden">

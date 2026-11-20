@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -84,8 +85,7 @@ const submit = () => {
         </div>
 
         <!-- CSV項目の説明 -->
-        <div class="p-6 bg-gray-50 border border-gray-200 rounded-lg">
-          <h3 class="text-base font-semibold text-gray-900 mb-3">CSVの項目</h3>
+        <DisclosurePanel id="child-csv-reference" title="CSVの項目・書き方">
           <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm text-left">
             <thead class="text-xs text-gray-500 uppercase border-b">
               <tr>
@@ -106,18 +106,17 @@ const submit = () => {
               <tr><td class="py-2 pr-4 font-mono">contract_status</td><td>任意（省略時 active）</td><td class="py-2">active / suspended / ended</td></tr>
             </tbody>
           </table></div>
-        </div>
+        </DisclosurePanel>
 
         <!-- 登録済み学校の一覧 -->
-        <div class="p-4 bg-white border rounded-lg">
-          <h4 class="font-semibold text-gray-800 mb-2">登録済みの学校</h4>
+        <DisclosurePanel id="child-csv-schools" title="登録済みの学校を確認">
           <p v-if="schools.length === 0" class="text-sm text-gray-500">
-            未登録です。<Link :href="route('schools.index')" class="text-blue-500 underline">学校を登録</Link>
+            未登録です。メニュー「学校」で登録してください。
           </p>
           <ul v-else class="text-sm text-gray-700 list-disc list-inside space-y-0.5">
             <li v-for="s in schools" :key="s.id">{{ s.name }}</li>
           </ul>
-        </div>
+        </DisclosurePanel>
 
         <!-- アップロードフォーム -->
         <div class="p-6 bg-white border border-gray-200 rounded-lg">

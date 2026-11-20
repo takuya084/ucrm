@@ -10,7 +10,9 @@ const item = (label, name, patterns, roles, params = {}) => ({ label, name, patt
 const groups = computed(() => [
   { label: 'ホーム', items: [item('今日の業務', 'dashboard', ['dashboard'])] },
   { label: '日々の業務', items: [
-    item('出欠・利用実績・送迎', 'usage-records.index', ['usage-records.*']),
+    item('出欠・利用実績', 'usage-records.index', ['usage-records.*']),
+    item('送迎一覧', 'transport.index', ['transport.*']),
+    item('療育予定・年間行事', 'daily-activities.index', ['daily-activities.*'], ['admin','leader']),
     item('記録・連絡帳', 'contact-notes.index', ['contact-notes.*', 'support-records.*']),
     item('療育の実施状況', 'program-progress.index', ['program-progress.*']),
     item('空き枠調整', 'vacancy-adjustment.index', ['vacancy-adjustment.*']),
@@ -22,7 +24,6 @@ const groups = computed(() => [
   ] },
   { label: '請求・会計', items: [
     item('月次請求', 'billing.index', ['billing.index', 'billing.show', 'billing.details.*'], ['admin','leader']),
-    item('前月請求の確認', 'billing.previous-month', ['billing.previous-month'], ['admin','leader']),
     item('実績記録票', 'billing.daily-records.index', ['billing.daily-records.*'], ['admin','leader']),
     item('上限管理', 'billing.cap-management.index', ['billing.cap-management.*'], ['admin','leader']),
     item('利用者請求', 'billing.invoices.index', ['billing.invoices.*'], ['admin','leader']),
@@ -44,7 +45,7 @@ const groups = computed(() => [
     item('加算・減算設定', 'billing.settings.service-codes', ['billing.settings.*'], ['admin','leader']),
   ] },
 ].map(g => ({ ...g, items: g.items.filter(i => !i.roles || i.roles.includes(role.value)) })).filter(g => g.items.length))
-const params = i => ({ ...(['dashboard','usage-records.index','contact-notes.index','program-progress.index'].includes(i.name) && day.value ? { date: day.value } : {}), ...i.params })
+const params = i => ({ ...(['dashboard','usage-records.index','contact-notes.index','program-progress.index','transport.index','daily-activities.index'].includes(i.name) && day.value ? { date: day.value } : {}), ...i.params })
 const active = i => {
   const section = new URL(page.url, 'http://workspace.local').searchParams.get('section')
   if (route().current('children.index')) return i.name === 'children.index' && (i.params.section ?? null) === section

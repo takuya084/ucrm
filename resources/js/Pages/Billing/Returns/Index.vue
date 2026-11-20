@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -109,9 +110,6 @@ const transition = (id, action, label) => {
         <h2 class="font-semibold text-xl text-gray-800">返戻管理</h2>
         <div class="flex gap-2">
           <Link :href="route('billing.index')" class="px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50">請求管理へ</Link>
-          <button @click="showImport = !showImport" class="px-4 py-1.5 text-xs border border-green-500 text-green-600 rounded-md hover:bg-green-50">
-            {{ showImport ? '閉じる' : 'CSV取込' }}
-          </button>
           <button @click="showForm = !showForm" class="px-4 py-1.5 text-xs bg-primary-500 text-white rounded-md hover:bg-primary-600">
             {{ showForm ? '閉じる' : '＋ 返戻登録' }}
           </button>
@@ -179,8 +177,7 @@ const transition = (id, action, label) => {
         </div>
 
         <!-- CSVインポート -->
-        <div v-if="showImport" class="bg-white rounded-lg p-5 border border-green-200">
-          <h3 class="text-sm font-semibold text-gray-700 mb-2">国保連返戻CSV取込</h3>
+        <DisclosurePanel id="claim-return-import" v-model="showImport" title="国保連返戻CSV取込">
           <p class="text-xs text-gray-500 mb-3 leading-relaxed">
             1行目はヘッダ行。2行目以降に以下の6列（カンマ区切り）：<br>
             <code class="bg-gray-100 px-1">受給者証番号, サービス提供年月(YYYYMM or YYYY-MM), 返戻コード, 返戻理由, 費用額, 受領日(YYYY-MM-DD or YYYYMMDD)</code><br>
@@ -199,7 +196,7 @@ const transition = (id, action, label) => {
               <li v-for="(e, i) in importErrors" :key="i">• {{ e }}</li>
             </ul>
           </div>
-        </div>
+        </DisclosurePanel>
 
         <!-- 返戻登録フォーム -->
         <div v-if="showForm" class="bg-white border border-gray-200 rounded-lg p-5">

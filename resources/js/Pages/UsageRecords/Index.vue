@@ -1,9 +1,9 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import ContactNoteStatus from '@/Components/ContactNoteStatus.vue'
-import QuickNav from '@/Components/QuickNav.vue'
 import { ref, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
@@ -232,7 +232,6 @@ const rowBg = (status) => ({
 
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
-        <QuickNav />
         <p class="text-sm text-gray-600">出欠・利用実績・送迎を記録します。家庭からの連絡や連絡帳は、児童ごとのリンクから確認できます。</p>
         <FlashMessage />
 
@@ -315,22 +314,13 @@ const rowBg = (status) => ({
                   >{{ opt.label }}</button>
                 </div>
 
-                <!-- 右端：連絡帳バッジ + 支援記録ボタン + 削除ボタン -->
+                <!-- 記録の状態のみ表示。入力はメニュー「記録・連絡帳」から。 -->
                 <div class="ml-auto flex items-center gap-2">
                   <div class="space-y-2">
                     <ContactNoteStatus :state="row.contact_note_state" />
-                    <Link :href="route('contact-notes.index', { date }) + '#child-' + row.child_id" class="text-xs text-primary-700 underline">{{ row.contact_note_state?.home }}</Link>
+                    <p class="text-xs text-gray-600">{{ row.contact_note_state?.home }}</p>
                   </div>
-                  <Link
-                    v-if="row.has_support_record"
-                    :href="route('support-records.show', row.support_record_id)"
-                    class="text-xs px-3 py-1.5 border border-primary-300 text-primary-600 rounded-md hover:bg-primary-50"
-                  >記録を見る</Link>
-                  <Link
-                    v-else-if="row.usage_record_id && row.status === 'attended'"
-                    :href="route('support-records.create', { usage_record_id: row.usage_record_id })"
-                    class="text-xs px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
-                  >記録・連絡帳を入力</Link>
+                  <span v-if="row.status === 'attended'" class="text-xs text-gray-600">支援記録 {{ row.has_support_record ? '入力済み' : '未入力' }}</span>
 
                   <!-- 削除ボタン -->
                   <button
@@ -423,46 +413,20 @@ const rowBg = (status) => ({
             </div>
           </div>
 
-          <!-- 児童追加パネル -->
           <div class="p-4 border-t bg-gray-50">
-            <div v-if="!showAddPanel" class="flex items-center justify-between">
-              <button
-                v-if="availableToAdd.length > 0"
-                type="button"
-                @click="showAddPanel = true"
-                class="text-sm text-primary-600 hover:text-primary-800 flex items-center gap-1"
-              >
-                <span class="text-lg leading-none">＋</span> 児童を追加
-              </button>
-              <span v-else class="text-xs text-gray-400">追加できる児童はいません</span>
-
-              <span v-if="saveStatus === 'saving'" class="text-xs text-gray-400">保存中...</span>
-              <span v-else-if="saveStatus === 'saved'" class="text-xs text-green-600 font-medium">✓ 保存完了</span>
-              <span v-else-if="saveStatus === 'error'" class="text-xs text-red-600 font-medium">保存失敗</span>
-            </div>
-
-            <div v-else class="flex items-center gap-3 flex-wrap">
-              <select
-                v-model="selectedChildId"
-                class="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-              >
-                <option value="">追加する児童を選択...</option>
-                <option v-for="c in availableToAdd" :key="c.id" :value="c.id">
-                  {{ c.name }}（{{ c.grade ?? '学年未登録' }}）
-                </option>
-              </select>
-              <button
-                type="button"
-                @click="addChild"
-                :disabled="!selectedChildId"
-                class="px-4 py-2 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-40"
-              >追加</button>
-              <button
-                type="button"
-                @click="showAddPanel = false; selectedChildId = ''"
-                class="px-4 py-2 text-sm text-gray-500 border border-gray-300 rounded-md hover:bg-gray-100"
-              >キャンセル</button>
-            </div>
+            <p v-if="saveStatus === 'saving'" class="mb-2 text-xs text-gray-600">保存中...</p>
+            <p v-else-if="saveStatus === 'saved'" class="mb-2 text-xs text-green-700">✓ 保存完了</p>
+            <p v-else-if="saveStatus === 'error'" role="alert" class="mb-2 text-xs text-red-700">保存失敗</p>
+            <DisclosurePanel id="attendance-add-child" v-model="showAddPanel" title="児童を追加">
+              <p v-if="!availableToAdd.length" class="text-sm text-gray-600">追加できる児童はいません。</p>
+              <div v-else class="flex flex-wrap items-center gap-3">
+                <select aria-label="追加する児童" v-model="selectedChildId" class="max-w-full rounded-md border-gray-300 text-sm">
+                  <option value="">追加する児童を選択...</option>
+                  <option v-for="c in availableToAdd" :key="c.id" :value="c.id">{{ c.name }}（{{ c.grade ?? '学年未登録' }}）</option>
+                </select>
+                <button type="button" @click="addChild" :disabled="!selectedChildId" class="rounded-md bg-primary-500 px-4 py-2 text-sm text-white disabled:opacity-40">追加</button>
+              </div>
+            </DisclosurePanel>
           </div>
         </div>
       </div>

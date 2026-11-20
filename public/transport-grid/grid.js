@@ -133,6 +133,8 @@ export function bindCandidatePicker(input, values) {
 export function mountTransportGrid(root, options) {
   let config, rows = [], original = new Map(), selected = new Set(), deleted = new Set(), errors = {}, anchor = null, end = null, busy = false, uncertain = false
   let message = '', disposed = false, pickers = []
+  const disclosures = { guide: false, tools: false }
+  const disclosure = (key, title, content) => `<div class="tg-disclosure"><button type="button" data-disclosure="${key}" aria-expanded="${disclosures[key]}" aria-controls="${uid}-${key}-panel" id="${uid}-${key}-trigger">${title}<span aria-hidden="true">⌄</span></button><div id="${uid}-${key}-panel" role="region" aria-labelledby="${uid}-${key}-trigger" data-disclosure-panel="${key}" class="tg-disclosure-panel ${disclosures[key] ? 'is-open' : ''}" aria-hidden="${!disclosures[key]}" ${disclosures[key] ? '' : 'inert'}><div class="tg-disclosure-content"><div class="tg-disclosure-body">${content}</div></div></div></div>`
   const clearPickers = () => { pickers.forEach(destroy => destroy()); pickers = [] }
   const editable = options.canManage !== false
   const uid = `tg-${Math.random().toString(36).slice(2)}`
@@ -174,18 +176,27 @@ export function mountTransportGrid(root, options) {
     clearPickers()
     root.innerHTML = `<section class="tg" aria-label="送迎一覧の一括編集">
       <div class="tg-toolbar"><strong>送迎一覧</strong><span data-count role="status"></span><button type="button" data-reload>最新の一覧を確認</button></div>
-      <details class="tg-guide"><summary>入力・コピペの使い方</summary><p class="tg-help">▼で全候補を表示。文字入力で絞り込み。Excelの複数セルを貼り付けできます。範囲コピーはShift＋クリックで選択します。</p></details>
+      ${disclosure('guide', '入力・コピペの使い方', '<p class="tg-help">▼で全候補を表示。文字入力で絞り込み。Excelの複数セルを貼り付けできます。範囲コピーはShift＋クリックで選択します。</p><p class="tg-help">時刻は設定範囲内の5分刻み、場所・担当は候補にあるものだけ保存できます。行の削除は当日の予約の取り消しです。</p>')}
       <p role="status" class="tg-message">${escape(message)}</p>
-      ${editable ? `<div class="tg-toolbar"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button><button type="button" data-add-all>未予約の児童をまとめて追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div>
-      <div class="tg-toolbar"><label>一括変更する列 <select data-bulk-field>${fields.map((field, i) => `<option value="${i}">${headings[i]}</option>`).join('')}</select></label><label>入力値 <span class="tg-picker"><input data-bulk-value aria-label="一括変更の入力値" list="${uid}-bulk" autocomplete="off"></span></label><datalist id="${uid}-bulk"></datalist><button type="button" data-apply>選択した児童に適用</button></div>` : ''}
+      ${editable ? disclosure('tools', '予約の追加・削除／一括変更', `<div class="tg-toolbar"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button><button type="button" data-add-all>未予約の児童をまとめて追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div>
+      <div class="tg-toolbar"><label>一括変更する列 <select data-bulk-field>${fields.map((field, i) => `<option value="${i}">${headings[i]}</option>`).join('')}</select></label><label>入力値 <span class="tg-picker"><input data-bulk-value aria-label="一括変更の入力値" list="${uid}-bulk" autocomplete="off"></span></label><datalist id="${uid}-bulk"></datalist><button type="button" data-apply>選択した児童に適用</button></div>`) : ''}
       <div class="tg-scroll"><table><thead><tr><th scope="col">選択${editable ? '<input type="checkbox" data-select-all aria-label="表示中の児童をすべて選択">' : ''}</th><th scope="col">児童</th>${headings.map(name => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody>${rows.map((row, i) => `<tr class="${deleted.has(row.user_id) ? 'tg-deleted' : ''}"><td><input type="checkbox" data-select="${row.user_id}" aria-label="${escape(row.name)}を選択" ${selected.has(row.user_id) ? 'checked' : ''} ${!editable ? 'disabled' : ''}></td><th scope="row">${escape(row.name)}${deleted.has(row.user_id) ? '<small>保存時に予約を削除</small>' : ''}</th>${fields.map((field, col) => {
         const error = errors[`${i}.${field}`]
         return `<td><div class="tg-picker"><input data-cell data-row="${i}" data-col="${col}" aria-label="${escape(row.name)} ${headings[col]}" aria-invalid="${!!error}" aria-describedby="${uid}-${i}-${col}-error" value="${escape(readText(row, field))}" list="${uid}-${field}" autocomplete="off" ${!editable || deleted.has(row.user_id) || busy || uncertain ? 'disabled' : ''} class="${dirty(row) ? 'tg-dirty' : ''}"></div><small id="${uid}-${i}-${col}-error">${escape(error || '')}</small></td>`
       }).join('')}</tr>`).join('')}</tbody></table></div>
       ${fields.map(field => `<datalist id="${uid}-${field}">${(field.endsWith('_time') ? config.times : field.endsWith('_location') ? Object.values(config.locations) : staffLabels(config.staff).map(person => person.label)).map(value => `<option value="${escape(value)}"></option>`).join('')}</datalist>`).join('')}
-      <p class="tg-help">時刻は設定範囲内の5分刻み、場所・担当は候補にあるものだけ保存できます。行の削除は当日の予約の取り消しです。</p>
       ${editable ? '<div class="tg-toolbar"><button type="button" data-save class="tg-primary">変更をまとめて保存</button></div>' : '<p>閲覧専用です。変更は管理者・児発管に依頼してください。</p>'}
     </section>`
+    root.querySelectorAll('[data-disclosure]').forEach(button => {
+      button.onclick = () => {
+        const key = button.dataset.disclosure
+        disclosures[key] = !disclosures[key]
+        const panel = root.querySelector(`[data-disclosure-panel="${key}"]`)
+        if (!disclosures[key]) { if (panel.contains(document.activeElement)) button.focus(); panel.querySelectorAll('input').forEach(input => input.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape', bubbles:true}))) }
+        button.setAttribute('aria-expanded', String(disclosures[key]))
+        panel.classList.toggle('is-open', disclosures[key]); panel.setAttribute('aria-hidden', String(!disclosures[key])); panel.inert = !disclosures[key]
+      }
+    })
     root.querySelector('[data-reload]').onclick = () => { if (!hasChanges() || confirm('未保存の入力を破棄して最新の一覧を読み込みますか？')) load() }
     if (!editable) return
     status(); paintSelection()

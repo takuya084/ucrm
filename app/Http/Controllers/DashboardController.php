@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Models\Child;
 use App\Models\UsageRecord;
-use App\Models\Staff;
 use App\Models\DailyActivityPlan;
 use App\Models\RecipientCertificate;
 use App\Models\MonitoringRecord;
@@ -18,7 +16,7 @@ use App\Services\DailyWorkService;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request, DailyWorkService $dailyWork, DailyAttendanceRoster $roster, \App\Services\SharedTransportBoard $transport)
+    public function index(Request $request, DailyWorkService $dailyWork, DailyAttendanceRoster $roster, \App\Services\DailyTransportOverview $transport)
     {
         $validated = $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
         $today = $validated['date'] ?? today()->toDateString();
@@ -43,33 +41,7 @@ class DashboardController extends Controller
             ])
             ->values();
 
-        $assignments = DB::table('daily_transport_assignments as assignments')
-            ->join('staff', 'staff.id', '=', 'assignments.staff_id')
-            ->where('assignments.facility_id', $facilityId)
-            ->where('staff.facility_id', $facilityId)
-            ->where('assignments.service_date', $today)
-            ->whereIn('assignments.child_id', $visits->pluck('childId'))
-            ->orderByRaw('CASE WHEN assignments.scheduled_time IS NULL THEN 1 ELSE 0 END')
-            ->orderBy('assignments.scheduled_time')
-            ->orderBy('assignments.id')
-            ->get([
-                'assignments.child_id', 'assignments.staff_id', 'assignments.direction',
-                'assignments.scheduled_time', 'assignments.location', 'staff.name as staff_name',
-            ]);
-        $transportStaff = $canManage
-            ? Staff::where('facility_id', $facilityId)->where('is_active', true)->orderBy('name')->get(['id', 'name'])
-            : [];
-
-        $sharedTransport = $transport->forDate($facilityId, $today);
-        $transportVisits = $visits;
-        $transportState = 'local';
-        $localTransportCount = DB::table('daily_transport_assignments')->where('facility_id', $facilityId)->whereDate('service_date', $today)->count();
-        if ($sharedTransport !== null) {
-            $assignments = $sharedTransport['assignments'];
-            $transportStaff = $canManage ? $sharedTransport['staff'] : [];
-            $transportVisits = $sharedTransport['visits'];
-            $transportState = $sharedTransport['state'];
-        }
+        $transportData = $transport->forDate($facilityId, $today, $visits, $canManage);
 
         // 今日の出席サマリー
         $todayAttended = UsageRecord::where('facility_id', $facilityId)
@@ -92,6 +64,7 @@ class DashboardController extends Controller
             ->count();
 
         $expiringCertificates = $monitoringDue = $pendingAgreements = $openInquiries = [];
+        $officeTasks = [];
         $billingPeriod = null;
         $billingMonth = today()->subMonthNoOverflow()->format('Y-m');
 
@@ -99,7 +72,6 @@ class DashboardController extends Controller
             // 受給者証の期限アラート（30日以内）
             $expiringCertificates = RecipientCertificate::where('status', 'active')
                 ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId))
-                ->whereDate('valid_to', '>=', today()->toDateString())
                 ->whereDate('valid_to', '<=', date('Y-m-d', strtotime('+30 days')))
                 ->with('child:id,name')
                 ->orderBy('valid_to')
@@ -124,12 +96,33 @@ class DashboardController extends Controller
                 ->where('year_month', $billingMonth)
                 ->first(['id', 'year_month', 'status']);
 
+            // 月をまたいだ未対応もホームに集約する。編集の入口は各メニューのみ。
+            $officeTasks = collect([
+                ['key' => 'invoices', 'label' => '利用者請求の未入金', 'menu' => '利用者請求',
+                    'model' => \App\Models\GuardianInvoice::class, 'field' => 'payment_status',
+                    'statuses' => ['unpaid', 'partial', 'overdue'], 'labels' => \App\Models\GuardianInvoice::PAYMENT_STATUS_LABELS, 'month' => 'year_month'],
+                ['key' => 'returns', 'label' => '未解決の返戻', 'menu' => '返戻管理',
+                    'model' => \App\Models\ClaimReturn::class, 'field' => 'status',
+                    'statuses' => ['returned', 'resubmitting', 'resubmitted'], 'labels' => \App\Models\ClaimReturn::STATUS_LABELS, 'month' => 'year_month'],
+                ['key' => 'claims', 'label' => '過誤申立の下書き・却下', 'menu' => '過誤申立',
+                    'model' => \App\Models\ErrorClaim::class, 'field' => 'status',
+                    'statuses' => ['draft', 'rejected'], 'labels' => \App\Models\ErrorClaim::STATUS_LABELS, 'month' => 'original_year_month'],
+            ])->map(fn ($task) => [
+                'key' => $task['key'], 'label' => $task['label'], 'menu' => $task['menu'],
+                'rows' => $task['model']::where('facility_id', $facilityId)
+                    ->whereHas('child', fn ($q) => $q->where('facility_id', $facilityId))
+                    ->whereIn($task['field'], $task['statuses'])->with('child:id,name')
+                    ->orderBy($task['month'])->orderBy('id')->get()->map(fn ($row) => [
+                        'id' => $row->id, 'child_name' => $row->child->name,
+                        'month' => $row->{$task['month']}, 'status' => $task['labels'][$row->{$task['field']}],
+                    ])->values(),
+            ])->values();
+
             // 問い合わせ：未対応
             $openInquiries = Inquiry::whereIn('status', ['open', 'in_progress'])
                 ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId))
                 ->with('child:id,name')
                 ->orderBy('created_at', 'desc')
-                ->limit(5)
                 ->get(['id', 'child_id', 'category', 'status', 'created_at']);
         }
 
@@ -140,11 +133,7 @@ class DashboardController extends Controller
             'canManage' => $canManage,
             'activityCategories' => DailyActivityPlan::CATEGORIES,
             'activities' => DailyActivityPlan::forDate($facilityId, $today),
-            'transportAssignments' => $assignments,
-            'transportStaff' => $transportStaff,
-            'transportVisits' => $transportVisits,
-            'transportState' => $transportState,
-            'localTransportCount' => $sharedTransport !== null ? $localTransportCount : 0,
+            ...$transportData,
             'calendarToday' => today()->toDateString(),
             'dailyWork' => $dailyWork->forDate($facilityId, $today),
             'todayStats' => [
@@ -161,6 +150,7 @@ class DashboardController extends Controller
             'openInquiries'       => $openInquiries,
             'billingMonth'        => $billingMonth,
             'billingPeriod'       => $billingPeriod,
+            'officeTasks'         => $officeTasks,
         ]);
     }
 }

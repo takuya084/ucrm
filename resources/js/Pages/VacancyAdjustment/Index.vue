@@ -121,10 +121,7 @@ const nextDay = () => {
                   {{ absentChildren.length }}名
                 </span>
               </h3>
-              <Link
-                :href="route('usage-records.index', { date })"
-                class="text-xs text-primary-500 hover:underline"
-              >出席管理を開く →</Link>
+              <span class="text-xs text-gray-600">出欠の変更：メニュー「出欠・利用実績」</span>
             </div>
 
             <div v-if="absentChildren.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">

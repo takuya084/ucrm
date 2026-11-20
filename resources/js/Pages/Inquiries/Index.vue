@@ -2,7 +2,6 @@
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
-import QuickNav from '@/Components/QuickNav.vue'
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 
@@ -46,7 +45,6 @@ const STATUS_COLOR = {
 
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
-        <QuickNav />
         <FlashMessage />
 
         <!-- フィルター -->

@@ -1,8 +1,8 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { router } from '@inertiajs/vue3'
-import QuickNav from '@/Components/QuickNav.vue'
 import ContactNoteStatus from '@/Components/ContactNoteStatus.vue'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import { computed, ref } from 'vue'
@@ -61,15 +61,14 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
 </script>
 
 <template>
-  <Head title="連絡帳" />
+  <Head title="記録・連絡帳" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">連絡帳</h2>
+      <h2 class="font-semibold text-xl text-gray-800">記録・連絡帳</h2>
     </template>
 
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
-        <QuickNav />
         <FlashMessage />
         <p class="text-sm text-gray-600">家庭からの連絡を確認し、記録・連絡帳を入力して保護者へ公開します。保存・公開・連携・確認印はそれぞれ別の状態です。</p>
 
@@ -79,8 +78,7 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
           <input v-model="selectedDate" type="date" @change="changeDate"
             class="border border-gray-300 rounded-md px-3 py-1.5 text-sm" />
           <button @click="moveDay(1)" class="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50">翌日 →</button>
-          <Link :href="route('usage-records.index', { date: selectedDate })"
-            class="ml-auto text-sm text-primary-600 hover:text-primary-800">出席管理へ →</Link>
+
         </div>
 
         <!-- サマリー -->
@@ -168,13 +166,12 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
         </div>
 
         <!-- 年間PDF出力（年末の保存運用。要配慮個人情報の一括出力のためリーダー以上のみ） -->
-        <div v-if="['admin', 'leader'].includes($page.props.auth.staff_role)" class="bg-white border border-gray-200 rounded-lg p-4">
-          <h3 class="text-sm font-semibold text-gray-700 mb-2">年間PDF出力（記録の保存用）</h3>
+        <DisclosurePanel v-if="['admin', 'leader'].includes($page.props.auth.staff_role)" id="annual-contact-export" title="年間PDF出力（記録の保存用）">
           <div class="flex items-center gap-3 flex-wrap">
-            <select v-model="exportYear" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
+            <select aria-label="出力する年" v-model="exportYear" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
               <option v-for="y in exportYears" :key="y" :value="y">{{ y }}年</option>
             </select>
-            <select v-model="exportChildId" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
+            <select aria-label="出力する児童" v-model="exportChildId" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
               <option :value="null">― 児童を選択 ―</option>
               <option v-for="c in children" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
@@ -194,10 +191,10 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
           <p class="text-xs text-gray-400 mt-2">
             指定した年の1月〜12月の連絡帳（未公開の下書き・家庭からの連絡を含む全記録）をPDFにまとめます。出力は監査ログに記録されます。
           </p>
-        </div>
+        </DisclosurePanel>
 
         <p class="text-xs text-gray-400">
-          連絡帳は支援記録の入力画面から記入します。公開すると保護者アプリ（予約システム）に配信されます。
+          この一覧から児童を選び、支援記録・連絡帳を入力します。公開すると保護者アプリ（予約システム）に配信されます。
         </p>
       </div>
     </div>

@@ -54,7 +54,7 @@ const calculate = () => {
 
         <!-- 毎月の流れ -->
         <nav aria-label="毎月の請求の流れ" class="workspace-steps">
-          <Link :href="route('usage-records.index')"><span class="workspace-step-number">01</span><span><strong>実績を確認</strong><small>出欠・送迎の入力もれ</small></span></Link>
+          <div class="flex items-center gap-3 p-4"><span class="workspace-step-number">01</span><span><strong>実績を確認</strong><small class="block text-gray-600">メニュー「出欠・利用実績」</small></span></div>
           <a href="#billing-calculation"><span class="workspace-step-number">02</span><span><strong>請求を計算</strong><small>対象月を選んで計算</small></span></a>
           <a href="#billing-periods"><span class="workspace-step-number">03</span><span><strong>詳細から出力へ</strong><small>内容確認 → 確定 → CSV出力</small></span></a>
         </nav>
@@ -72,24 +72,7 @@ const calculate = () => {
             </button>
           </div>
 
-          <!-- サブメニュー -->
-          <div class="mt-4 pt-4 border-t flex flex-wrap gap-2">
-            <Link :href="route('billing.daily-records.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
-              実績記録票
-            </Link>
-            <Link :href="route('billing.cap-management.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
-              上限管理
-            </Link>
-            <Link :href="route('billing.invoices.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
-              利用者請求
-            </Link>
-            <Link :href="route('billing.error-claims.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
-              過誤申立
-            </Link>
-            <Link :href="route('billing.returns.index')" class="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
-              返戻管理
-            </Link>
-          </div>
+
         </div>
 
         <!-- 請求期間一覧 -->

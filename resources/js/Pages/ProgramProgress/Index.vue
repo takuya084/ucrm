@@ -1,7 +1,6 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
-import QuickNav from '@/Components/QuickNav.vue'
 import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 
@@ -129,7 +128,6 @@ const overallStats = computed(() => {
     <div class="py-8">
       <div class="max-w-full mx-auto sm:px-6 lg:px-8 space-y-4">
 
-        <QuickNav />
 
         <!-- カテゴリタブ -->
         <div class="flex gap-2 flex-wrap">
@@ -149,9 +147,7 @@ const overallStats = computed(() => {
         <!-- プログラムが見つからない場合 -->
         <div v-if="programs.length === 0" class="bg-white rounded-lg border border-gray-200 p-10 text-center text-gray-400">
           <p>このカテゴリには詳細項目が登録されたプログラムがありません。</p>
-          <Link :href="route('programs.index')" class="mt-3 inline-block text-sm text-primary-500 hover:underline">
-            プログラム管理で項目を追加 →
-          </Link>
+          <p class="mt-3 text-sm text-gray-600">メニュー「療育プログラム」で項目を追加してください。</p>
         </div>
 
         <template v-else>

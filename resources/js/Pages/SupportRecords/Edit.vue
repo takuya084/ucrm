@@ -144,8 +144,8 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
   <BreezeAuthenticatedLayout>
     <template #header>
       <div class="flex flex-wrap items-center gap-4">
-        <Link :href="route('usage-records.index', { date: recordDate })" class="text-gray-400 hover:text-gray-600 text-sm">
-          ← 出席管理へ
+        <Link :href="route('contact-notes.index', { date: recordDate })" class="text-gray-400 hover:text-gray-600 text-sm">
+          ← 記録・連絡帳へ
         </Link>
         <Link :href="route('support-records.show', record.id)" class="text-gray-400 hover:text-gray-600 text-sm">
           ← 記録詳細へ

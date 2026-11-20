@@ -73,6 +73,7 @@ class PageSmokeTest extends TestCase
     {
         $pages = [
             '/dashboard',
+            '/transport',
             '/children',
             '/children/' . $this->child->id,
             '/usage-records',

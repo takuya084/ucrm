@@ -1,4 +1,5 @@
 <script setup>
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -251,10 +252,7 @@ const dailyCheck = computed(() => {
           <FlashMessage />
 
           <!-- 配置基準ルール -->
-          <details class="mb-3 text-sm border rounded-md">
-            <summary class="px-3 py-2 cursor-pointer text-gray-600 hover:bg-gray-50 select-none">
-              配置基準チェックのルール
-            </summary>
+          <DisclosurePanel id="staffing-rules" title="配置基準チェックのルール" class="mb-3">
             <div class="px-4 py-3 bg-gray-50 border-t text-gray-700 space-y-2">
               <div class="flex items-start gap-2">
                 <span class="text-green-600 font-bold mt-0.5">✓</span>
@@ -303,7 +301,7 @@ const dailyCheck = computed(() => {
 
               <p class="text-[11px] text-gray-400 mt-2">※ 備考欄の下に「利用児童数 / 必要職員数 / 配置職員数」が日ごとに表示されます。利用児童がいない日は非表示です。</p>
             </div>
-          </details>
+          </DisclosurePanel>
 
           <div class="overflow-x-auto">
             <table class="shift-table w-full text-xs border-collapse">
