@@ -3,7 +3,6 @@ import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
 import ContactNoteStatus from '@/Components/ContactNoteStatus.vue'
-import QuickNav from '@/Components/QuickNav.vue'
 import { ref, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
@@ -232,7 +231,6 @@ const rowBg = (status) => ({
 
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
-        <QuickNav />
         <p class="text-sm text-gray-600">出欠・利用実績・送迎を記録します。家庭からの連絡や連絡帳は、児童ごとのリンクから確認できます。</p>
         <FlashMessage />
 
@@ -315,22 +313,13 @@ const rowBg = (status) => ({
                   >{{ opt.label }}</button>
                 </div>
 
-                <!-- 右端：連絡帳バッジ + 支援記録ボタン + 削除ボタン -->
+                <!-- 記録の状態のみ表示。入力はメニュー「記録・連絡帳」から。 -->
                 <div class="ml-auto flex items-center gap-2">
                   <div class="space-y-2">
                     <ContactNoteStatus :state="row.contact_note_state" />
-                    <Link :href="route('contact-notes.index', { date }) + '#child-' + row.child_id" class="text-xs text-primary-700 underline">{{ row.contact_note_state?.home }}</Link>
+                    <p class="text-xs text-gray-600">{{ row.contact_note_state?.home }}</p>
                   </div>
-                  <Link
-                    v-if="row.has_support_record"
-                    :href="route('support-records.show', row.support_record_id)"
-                    class="text-xs px-3 py-1.5 border border-primary-300 text-primary-600 rounded-md hover:bg-primary-50"
-                  >記録を見る</Link>
-                  <Link
-                    v-else-if="row.usage_record_id && row.status === 'attended'"
-                    :href="route('support-records.create', { usage_record_id: row.usage_record_id })"
-                    class="text-xs px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
-                  >記録・連絡帳を入力</Link>
+                  <span v-if="row.status === 'attended'" class="text-xs text-gray-600">支援記録 {{ row.has_support_record ? '入力済み' : '未入力' }}</span>
 
                   <!-- 削除ボタン -->
                   <button

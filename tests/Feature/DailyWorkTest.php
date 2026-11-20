@@ -34,13 +34,14 @@ class DailyWorkTest extends TestCase
             ->where('attendanceSource', 'records')->has('visits', 1)
             ->where('visits.0.childId', $children[0]->id)
             ->where('canManage', false)->has('openInquiries', 0)
-            ->where('dailyWork.counts.home',2)->where('dailyWork.counts.record',1)->where('dailyWork.counts.draft',0)
+            ->where('dailyWork.counts.home',2)->where('dailyWork.counts.record',1)->where('dailyWork.counts.report',1)->where('dailyWork.counts.draft',0)
             ->where('dailyWork.rows.0.child_id',$children[0]->id)
-            ->where('dailyWork.rows.1.record','対象外')->where('dailyWork.rows.1.record_url',null)
+            ->where('dailyWork.rows.1.record','対象外')->missing('dailyWork.rows.1.record_url')
             ->where('billingPeriod',null));
         $this->get('/dashboard?date=2026-12-02')->assertOk()->assertInertia(fn (Assert $page) => $page
             ->has('dailyWork.rows',1)->where('dailyWork.counts.home',0));
         $this->get('/dashboard?date=bad-date')->assertSessionHasErrors('date');
+        $this->get('/transport?date=bad-date')->assertSessionHasErrors('date');
         $this->get('/contact-notes?date=bad-date')->assertSessionHasErrors('date');
     }
 
@@ -87,8 +88,8 @@ class DailyWorkTest extends TestCase
         $this->actingAs($worker)->put($path, $input)->assertForbidden();
         $this->actingAs($manager)->putJson($path, array_replace($input, ['staff_id' => $foreignStaff->id]))
             ->assertUnprocessable()->assertJsonValidationErrors('staff_id');
-        $this->put($path, $input)->assertRedirect('/dashboard?date='.$date);
-        $this->put($path, array_replace($input, ['scheduled_time' => '15:00']))->assertRedirect('/dashboard?date='.$date);
+        $this->put($path, $input)->assertRedirect('/transport?date='.$date);
+        $this->put($path, array_replace($input, ['scheduled_time' => '15:00']))->assertRedirect('/transport?date='.$date);
         $this->assertDatabaseCount('daily_transport_assignments', 1);
 
         $this->get('/dashboard?date='.$date)->assertOk()->assertInertia(fn (Assert $page) => $page
@@ -98,6 +99,9 @@ class DailyWorkTest extends TestCase
             ->where('transportAssignments.0.staff_name', '担当職員')
             ->where('transportAssignments.0.child_id', $child->id)
             ->where('transportAssignments.0.scheduled_time', fn ($time) => str_starts_with($time, '15:00')));
+        $this->get('/transport?date='.$date)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('Transport/Index')->where('date', $date)->where('canManage', false)
+            ->has('transportAssignments', 1)->has('transportStaff', 0));
         $this->get('/dashboard?date=2026-12-08')->assertOk()->assertInertia(fn (Assert $page) => $page->has('transportAssignments', 0));
 
         $colleague = User::factory()->create();
@@ -108,11 +112,11 @@ class DailyWorkTest extends TestCase
             ->where('transportAssignments.0.staff_name', '担当職員'));
 
         $this->actingAs($manager)->put($path, array_replace($input, ['staff_id' => null]))
-            ->assertRedirect('/dashboard?date='.$date);
+            ->assertRedirect('/transport?date='.$date);
         $this->assertDatabaseCount('daily_transport_assignments', 0);
     }
 
-    public function test_record_saved_without_contact_note_is_editable_from_daily_work(): void
+    public function test_dashboard_reports_missing_contact_note_and_canonical_list_offers_saved_record(): void
     {
         Queue::fake();
         $facility = Facility::create(['name'=>'事業所A','facility_code'=>'1310000001','service_type'=>'houday','capacity_per_day'=>10,'area_unit_price'=>10]);
@@ -122,7 +126,7 @@ class DailyWorkTest extends TestCase
         $usage = UsageRecord::create(['child_id'=>$child->id,'facility_id'=>$facility->id,'date'=>'2026-12-01','status'=>'attended']);
         $record = SupportRecord::create(['child_id'=>$child->id,'usage_record_id'=>$usage->id,'staff_id'=>$staff->id,'date'=>'2026-12-01','condition'=>'normal']);
         $this->actingAs($user)->get('/dashboard?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->where('dailyWork.counts.record',0)->where('dailyWork.counts.report',1)->where('dailyWork.rows.0.record_url',route('support-records.edit',$record)));
+            ->where('dailyWork.counts.record',0)->where('dailyWork.counts.report',1)->missing('dailyWork.rows.0.record_url')->missing('dailyWork.rows.0.note_url'));
         $this->get('/contact-notes?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page->where('rows.0.support_record_id',$record->id));
     }
 
@@ -159,6 +163,42 @@ class DailyWorkTest extends TestCase
         $this->get('/dashboard?date=2026-12-02')->assertOk()->assertInertia(fn (Assert $page) => $page->has('activities', 0));
         $this->actingAs($manager)->delete($path.'/'.$activity->id)->assertRedirect($path.'?date='.$date);
         $this->assertDatabaseMissing('daily_activity_plans', ['id' => $activity->id]);
+    }
+
+    public function test_home_collects_all_pending_office_work_but_hides_it_from_ordinary_staff(): void
+    {
+        Queue::fake();
+        $facility = Facility::create(['name' => '事業所A', 'facility_code' => '1310000001', 'service_type' => 'houday']);
+        $other = Facility::create(['name' => '事業所B', 'facility_code' => '1310000002', 'service_type' => 'houday']);
+        $manager = User::factory()->create();
+        Staff::create(['user_id' => $manager->id, 'facility_id' => $facility->id, 'name' => '児発管', 'role' => 'leader', 'is_active' => true]);
+        $worker = User::factory()->create();
+        Staff::create(['user_id' => $worker->id, 'facility_id' => $facility->id, 'name' => '職員', 'role' => 'staff', 'is_active' => true]);
+        foreach ([$facility, $other] as $f) {
+            $child = Child::create(['facility_id' => $f->id, 'name' => $f->name.'児童', 'contract_status' => 'active']);
+            $period = \App\Models\BillingPeriod::create(['facility_id' => $f->id, 'year_month' => '2026-05']);
+            $detail = \App\Models\BillingDetail::create(['billing_period_id' => $period->id, 'child_id' => $child->id, 'service_type' => 'houday']);
+            $guardian = \App\Models\Guardian::create(['name' => '保護者']);
+            foreach (['unpaid', 'partial', 'overdue', 'paid'] as $status) {
+                \App\Models\GuardianInvoice::create(['billing_detail_id' => $detail->id, 'guardian_id' => $guardian->id,
+                    'facility_id' => $f->id, 'child_id' => $child->id, 'year_month' => '2026-05', 'payment_status' => $status]);
+            }
+            foreach (['returned', 'resubmitting', 'resubmitted', 'resolved'] as $status) {
+                \App\Models\ClaimReturn::create(['facility_id' => $f->id, 'child_id' => $child->id, 'year_month' => '2026-05', 'status' => $status]);
+            }
+            foreach (['draft', 'rejected', 'accepted', 'submitted'] as $status) {
+                \App\Models\ErrorClaim::create(['billing_detail_id' => $detail->id, 'facility_id' => $f->id, 'child_id' => $child->id,
+                    'original_year_month' => '2026-05', 'claim_type' => 'full_cancel', 'reason' => 'テスト', 'status' => $status]);
+            }
+            for ($i = 0; $i < 7; $i++) {
+                \App\Models\Inquiry::create(['child_id' => $child->id, 'contacted_at' => now(), 'content' => 'テスト', 'status' => 'open']);
+            }
+        }
+        $this->actingAs($manager)->get('/dashboard')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('officeTasks', 3)->has('officeTasks.0.rows', 3)->has('officeTasks.1.rows', 3)->has('officeTasks.2.rows', 2)
+            ->where('officeTasks.0.rows.0.child_name', '事業所A児童')->has('openInquiries', 7));
+        $this->actingAs($worker)->get('/dashboard')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('officeTasks', 0)->has('openInquiries', 0)->where('billingPeriod', null));
     }
 
     public function test_status_never_treats_old_delivery_or_old_confirmation_as_current(): void

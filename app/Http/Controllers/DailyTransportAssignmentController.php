@@ -32,7 +32,7 @@ class DailyTransportAssignmentController extends Controller
             } catch (\RuntimeException $e) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['assignment' => $e->getMessage()]);
             }
-            return to_route('dashboard', ['date' => $input['service_date']]);
+            return to_route('transport.index', ['date' => $input['service_date']]);
         }
         $input = $request->validate([
             'service_date' => ['required', 'date_format:Y-m-d'],
@@ -66,6 +66,6 @@ class DailyTransportAssignmentController extends Controller
             DB::table('daily_transport_assignments')->where($key)->delete();
         }
 
-        return to_route('dashboard', ['date' => $input['service_date']]);
+        return to_route('transport.index', ['date' => $input['service_date']]);
     }
 }

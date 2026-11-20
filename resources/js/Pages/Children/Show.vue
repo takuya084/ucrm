@@ -397,7 +397,7 @@ const tabAlert = (key) => (key === 'cert' && certAlert.value) || (key === 'plan'
           <div class="bg-white border border-gray-200 rounded-lg p-6">
             <div class="flex justify-between items-center border-b pb-2 mb-4">
               <h3 class="text-base font-semibold text-gray-800">最近の利用記録</h3>
-              <Link :href="route('usage-records.index')" class="text-xs text-primary-600 hover:underline">出席管理へ →</Link>
+              <span class="text-xs text-gray-600">記録の確認・入力：メニュー「記録・連絡帳」</span>
             </div>
             <div v-if="child.usage_records?.length" class="space-y-1">
               <div
@@ -410,11 +410,7 @@ const tabAlert = (key) => (key === 'cert' && certAlert.value) || (key === 'plan'
                   {{ USAGE_STATUS[r.status]?.label ?? r.status }}
                 </span>
                 <span v-if="r.memo" class="text-gray-400 text-xs truncate">{{ r.memo }}</span>
-                <Link
-                  v-if="r.support_record"
-                  :href="route('support-records.show', r.support_record.id)"
-                  class="ml-auto shrink-0 text-xs px-2 py-0.5 border border-primary-200 text-primary-600 rounded-md hover:bg-primary-50"
-                >支援記録</Link>
+                <span v-if="r.support_record" class="ml-auto text-xs text-gray-600">支援記録 入力済み</span>
               </div>
             </div>
             <p v-else class="text-sm text-gray-400">利用記録がありません</p>

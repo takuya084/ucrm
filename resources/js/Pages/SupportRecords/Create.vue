@@ -145,8 +145,8 @@ const CONDITION_OPTIONS = [
   <BreezeAuthenticatedLayout>
     <template #header>
       <div class="flex flex-wrap items-center gap-4">
-        <Link :href="route('usage-records.index', { date })" class="text-gray-400 hover:text-gray-600 text-sm">
-          ← 出席管理へ
+        <Link :href="route('contact-notes.index', { date })" class="text-gray-400 hover:text-gray-600 text-sm">
+          ← 記録・連絡帳へ
         </Link>
         <h2 class="font-semibold text-xl text-gray-800">
           記録・連絡帳 — {{ child.name }}（{{ date?.slice(0, 10) }}）
@@ -372,7 +372,7 @@ const CONDITION_OPTIONS = [
             <div class="min-h-[1.5rem] text-sm text-gray-600">保存後もこの児童の記録・連絡帳を続けて編集できます。</div>
             <div class="flex justify-end gap-3 pt-4 border-t">
               <Link
-                :href="route('usage-records.index', { date })"
+                :href="route('contact-notes.index', { date })"
                 class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
               >キャンセル</Link>
               <button type="submit" :disabled="saving" class="px-6 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600 disabled:opacity-50">

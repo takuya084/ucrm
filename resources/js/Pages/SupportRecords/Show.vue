@@ -67,9 +67,9 @@ const CATEGORY_LABELS = {
             </div>
             <div class="flex items-center gap-3">
               <Link
-                :href="route('usage-records.index', { date: recordDate })"
+                :href="route('contact-notes.index', { date: recordDate })"
                 class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-              >← 出席管理に戻る</Link>
+              >← 記録・連絡帳に戻る</Link>
               <Link
                 :href="route('support-records.edit', record.id)"
                 class="px-4 py-2 text-sm text-white bg-primary-500 rounded-md hover:bg-primary-600"

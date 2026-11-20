@@ -1,7 +1,6 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
-import QuickNav from '@/Components/QuickNav.vue'
 import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 
@@ -129,7 +128,6 @@ const overallStats = computed(() => {
     <div class="py-8">
       <div class="max-w-full mx-auto sm:px-6 lg:px-8 space-y-4">
 
-        <QuickNav />
 
         <!-- カテゴリタブ -->
         <div class="flex gap-2 flex-wrap">

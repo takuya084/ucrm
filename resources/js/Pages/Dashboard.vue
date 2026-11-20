@@ -1,8 +1,7 @@
 <script setup>
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3'
 import DailyWorkBoard from '@/Components/DailyWorkBoard.vue'
-import SharedTransportGrid from '@/Components/SharedTransportGrid.vue'
 import DailyTransportBoard from '@/Components/DailyTransportBoard.vue'
 
 const props = defineProps({
@@ -27,6 +26,7 @@ const props = defineProps({
   openInquiries:         Array,
   billingMonth:          String,
   billingPeriod:         Object,
+  officeTasks: { type: Array, default: () => [] },
 })
 
 const daysUntil = (dateStr) => {
@@ -64,16 +64,19 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
     <div class="py-8">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+        <p class="text-sm text-gray-600">ここで未対応を把握し、入力・変更はサイドメニューから進みます。</p>
         <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday"
           :visits="visits" :attendance-source="attendanceSource">
           <template #after-visits>
-            <div id="transport-work" class="workspace-anchor"><SharedTransportGrid v-if="transportState !== 'local'" :key="'shared-' + date" :date="date" :can-manage="canManage" />
-            <DailyTransportBoard v-else :key="date" :date="date" :visits="transportVisits"
-              :can-manage="canManage" :assignments="transportAssignments" :staff="transportStaff" :sync-state="transportState" :local-count="localTransportCount" /></div>
+            <div id="transport-work" class="workspace-anchor space-y-2">
+              <p class="text-xs text-gray-600">入力・変更先：メニュー「送迎一覧」</p>
+              <DailyTransportBoard :key="date" :date="date" :visits="transportVisits"
+                :can-manage="false" :assignments="transportAssignments" :staff="[]" :sync-state="transportState" :local-count="localTransportCount" />
+            </div>
             <section id="activity-preparation" aria-labelledby="activity-preparation-heading" class="workspace-card scroll-mt-4 rounded-xl border bg-white">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
                 <h3 id="activity-preparation-heading" class="font-semibold text-gray-900">療育準備</h3>
-                <Link v-if="canManage" :href="route('daily-activities.index', { date })" class="text-sm font-medium text-primary-700 underline">療育予定・年間行事を編集</Link>
+                <span v-if="canManage" class="text-xs text-gray-600">入力先：メニュー「療育予定・年間行事」</span>
               </div>
               <p v-if="!activities.length" class="px-4 py-4 text-sm text-gray-700">この日の療育予定は登録されていません。</p>
               <ul v-else class="divide-y">
@@ -107,14 +110,14 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                   </h3>
                 </div>
                 <div v-if="expiringCertificates.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">
-                  期限切れ間近の受給者証はありません
+                  期限切れ・期限間近の受給者証はありません
                 </div>
                 <ul v-else class="divide-y">
                   <li v-for="cert in expiringCertificates" :key="cert.id" class="px-5 py-3 flex items-center justify-between">
                     <div>
-                      <Link :href="route('children.show', { child: cert.child_id, tab: 'cert' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                      <p class="text-sm font-medium text-gray-800">
                         {{ cert.child?.name }}
-                      </Link>
+                      </p>
                       <div class="text-xs text-gray-500">有効期限：{{ cert.valid_to }}</div>
                     </div>
                     <span
@@ -125,10 +128,11 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                           : 'bg-amber-100 text-amber-700'
                       ]"
                     >
-                      あと {{ daysUntil(cert.valid_to) }}日
+                      {{ daysUntil(cert.valid_to) < 0 ? `${Math.abs(daysUntil(cert.valid_to))}日超過` : `あと${daysUntil(cert.valid_to)}日` }}
                     </span>
                   </li>
                 </ul>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600">対応先：メニュー「受給者証・利用契約」</p>
               </div>
 
               <!-- モニタリング期限アラート -->
@@ -147,9 +151,9 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                 <ul v-else class="divide-y">
                   <li v-for="mon in monitoringDue" :key="mon.id" class="px-5 py-3 flex items-center justify-between">
                     <div>
-                      <Link :href="route('children.show', { child: mon.child_id, tab: 'plan' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                      <p class="text-sm font-medium text-gray-800">
                         {{ mon.child?.name }}
-                      </Link>
+                      </p>
                       <div class="text-xs text-gray-500">次回予定：{{ mon.next_review_date }}</div>
                     </div>
                     <span
@@ -166,6 +170,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     </span>
                   </li>
                 </ul>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600">対応先：メニュー「支援計画・モニタリング」</p>
               </div>
 
               <!-- 個別支援計画 同意待ち -->
@@ -184,14 +189,15 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                 <ul v-else class="divide-y">
                   <li v-for="plan in pendingAgreements" :key="plan.id" class="px-5 py-3 flex items-center justify-between">
                     <div>
-                      <Link :href="route('children.show', { child: plan.child_id, tab: 'plan' })" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                      <p class="text-sm font-medium text-gray-800">
                         {{ plan.child?.name }}
-                      </Link>
+                      </p>
                       <div class="text-xs text-gray-500">{{ plan.valid_from }} 〜 {{ plan.valid_to }}</div>
                     </div>
                     <span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">同意待ち</span>
                   </li>
                 </ul>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600">対応先：メニュー「支援計画・モニタリング」</p>
               </div>
 
               <!-- 未対応・対応中の問い合わせ -->
@@ -210,9 +216,9 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                 <ul v-else class="divide-y">
                   <li v-for="inq in openInquiries" :key="inq.id" class="px-5 py-3 flex items-center justify-between">
                     <div>
-                      <Link :href="route('inquiries.index')" class="text-sm font-medium text-gray-800 hover:text-primary-600">
+                      <p class="text-sm font-medium text-gray-800">
                         {{ inq.child?.name }}
-                      </Link>
+                      </p>
                       <div class="text-xs text-gray-500">{{ inq.category }} — {{ inq.created_at?.slice(0, 10) }}</div>
                     </div>
                     <span
@@ -225,6 +231,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     >{{ inq.status === 'open' ? '未対応' : '対応中' }}</span>
                   </li>
                 </ul>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600">対応先：メニュー「問い合わせ」</p>
               </div>
 
             </div>
@@ -234,21 +241,22 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
         <section v-if="canManage" id="office-work" aria-labelledby="office-heading" class="scroll-mt-4 space-y-3">
           <h3 id="office-heading" class="font-semibold text-gray-900">請求・集金</h3>
             <!-- 前月分 請求業務の状態 -->
-            <Link :href="billingPeriod ? route('billing.show', billingPeriod.id) : route('billing.index')"
-              class="block rounded-lg border px-4 py-3 transition hover:shadow"
-              :class="billingPeriod?.status === 'completed' ? 'bg-white border-gray-200' : isBillingWindow ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'">
-              <div class="flex items-center gap-3 flex-wrap text-sm">
-                <span class="font-semibold text-gray-700">{{ billingMonth }}分の国保連請求</span>
-                <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', billingGuide.cls]">{{ billingGuide.label }}</span>
-                <span class="text-gray-600">{{ billingGuide.text }}</span>
-                <span class="ml-auto text-xs text-primary-600">開く →</span>
-              </div>
-              <p v-if="isBillingWindow && billingPeriod?.status !== 'completed'" class="text-xs text-amber-700 mt-1">
-                毎月10日が国保連への請求締切です。
-              </p>
-            </Link>
-
-          <Link :href="route('billing.invoices.index')" class="inline-block text-sm font-medium text-primary-700 underline">利用者請求・入金状況を確認</Link>
+          <div class="rounded-lg border px-4 py-3" :class="isBillingWindow && billingPeriod?.status !== 'completed' ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'">
+            <div class="flex flex-wrap items-center gap-3 text-sm">
+              <span class="font-semibold text-gray-700">{{ billingMonth }}分の国保連請求</span>
+              <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', billingGuide.cls]">{{ billingGuide.label }}</span>
+              <span class="text-gray-600">{{ billingGuide.text }}</span>
+            </div>
+            <p class="mt-2 text-xs text-gray-600">対応先：メニュー「月次請求」</p>
+          </div>
+          <div v-for="task in officeTasks" :key="task.key" class="rounded-lg border bg-white px-4 py-3">
+            <h4 class="flex items-center gap-3 font-semibold text-gray-800">{{ task.label }}<span class="rounded-full bg-amber-50 px-2 py-1 text-sm text-amber-900">{{ task.rows.length }}件</span></h4>
+            <p v-if="!task.rows.length" class="mt-2 text-sm text-gray-600">該当する項目はありません。</p>
+            <ul v-else class="mt-2 divide-y">
+              <li v-for="row in task.rows" :key="row.id" class="flex flex-wrap justify-between gap-2 py-2 text-sm"><span>{{ row.child_name }} ／ {{ row.month }}</span><span>{{ row.status }}</span></li>
+            </ul>
+            <p class="mt-2 text-xs text-gray-600">対応先：メニュー「{{ task.menu }}」</p>
+          </div>
         </section>
 
         <details class="rounded-xl border bg-white">
