@@ -15,7 +15,6 @@ export async function request(url, method='GET', payload) {
 }
 export function mountAbsences(root, options) {
   const drafts=new Map()
-  let calendarDirty=false
   let data, dirty=false, busy=false, disposed=false, savedMessage=''
   const name=id=>data.children.find(c=>c.id===id)?.name || '登録済み児童'
   const optionsHtml=(list,value,empty='選択してください')=>`<option value="">${empty}</option>`+list.map(p=>`<option value="${escape(p.value ?? p.id)}" ${String(p.value ?? p.id)===String(value)?'selected':''}>${escape(p.label ?? p.name)}</option>`).join('')
@@ -47,17 +46,17 @@ export function mountAbsences(root, options) {
   }
   function render() {
     if(disposed)return
-    root.innerHTML=`<div class="ab-board"><div class="ab-toolbar"><strong>欠席連絡・相談記録</strong><button type="button" data-refresh>最新の一覧を確認</button></div><p data-global role="status">${escape(savedMessage)}</p>
-    <div class="ab-toolbar"><label>児童<select data-child-select>${optionsHtml(data.children.filter(c=>!data.rows.some(r=>r.child_id===c.id)),null)}</select></label><button type="button" data-add>欠席記録を追加</button></div>
+    root.innerHTML=`<div class="ab-board"><div class="ab-toolbar"><strong>欠席連絡・相談記録</strong><button type="button" class="ab-refresh" data-refresh>最新の状態に更新</button></div><p data-global role="status">${escape(savedMessage)}</p>
+    <div class="ab-toolbar ab-add-row"><label>児童<select data-child-select aria-label="児童">${optionsHtml(data.children.filter(c=>!data.rows.some(r=>r.child_id===c.id)),null)}</select></label><button type="button" data-add>欠席記録を追加</button></div>
     ${data.rows.length?data.rows.map(form).join(''):'<p>この日の欠席記録はありません。</p>'}
-    <details class="ab-calendar"><summary>営業日を設定・確認</summary><form data-calendar><p>定休日・臨時休業日を確認して保存してください。判定にはここの営業日を使用します。過去日の確認では当時の営業日に合わせてください。</p><div class="ab-weekdays">${['月','火','水','木','金','土','日'].map((day,i)=>`<label><input type="checkbox" name="weekday" value="${i+1}" ${data.calendar?.weekdays?.includes(i+1)?'checked':''} ${!data.can_confirm?'disabled':''}>${day}</label>`).join('')}</div><label>臨時休業日（1行に1日、YYYY-MM-DD）<textarea name="closed_dates" ${!data.can_confirm?'disabled':''}>${escape(data.calendar?.closed_dates?.join('\n') || '')}</textarea></label>${data.can_confirm?'<button type="submit">営業日を確認して保存</button>':''}<p data-error role="alert"></p></form></details>
-    <details class="ab-guide"><summary>判定の見方・記録項目</summary><p>前2営業日〜当日の連絡に加え、急病等・事前の予定・受入体制・状況確認と相談援助の記録を確認します。「算定候補」は自動請求ではありません。請求前に出欠・月回数・受給者証・実績記録票等を確認してください。次回予定が未定なら記録不足として残し、決まり次第追記できます。</p><p>同じ相談日時の複数日算定は防ぎます。別の日時であっても、同じ1回の相談を複数日に転記しないでください。通常月4回を超える特例は自動で可と判定しません。</p><p>営業日設定は両アプリ共通の欠席判定用です。予約受付の営業日設定は各事業所設定で管理します。</p><a href="https://www.cfa.go.jp/policies/shougaijishien/shisaku/r8hoshukaitei" target="_blank" rel="noopener noreferrer">こども家庭庁・令和8年度報酬改定</a></details></div>`
+    ${options.settingsUrl?`<p class="ab-settings-note">営業日の設定：<a href="${escape(options.settingsUrl)}">${escape(options.settingsLabel || '施設設定')}</a></p>`:''}
+    <details class="ab-guide"><summary>判定の見方・記録項目</summary><p>前2営業日〜当日の連絡に加え、急病等・事前の予定・受入体制・状況確認と相談援助の記録を確認します。「算定候補」は自動請求ではありません。請求前に出欠・月回数・受給者証・実績記録票等を確認してください。次回予定が未定なら記録不足として残し、決まり次第追記できます。</p><p>同じ相談日時の複数日算定は防ぎます。別の日時であっても、同じ1回の相談を複数日に転記しないでください。通常月4回を超える特例は自動で可と判定しません。</p><p>営業日は施設・事業所設定で確認できます。欠席判定用の営業日設定は両アプリで共通です。</p><a href="https://www.cfa.go.jp/policies/shougaijishien/shisaku/r8hoshukaitei" target="_blank" rel="noopener noreferrer">こども家庭庁・令和8年度報酬改定</a></details></div>`
     root.querySelector('[data-refresh]').onclick=()=>load(true)
     root.querySelector('[data-add]').onclick=()=>{const id=+root.querySelector('[data-child-select]').value;if(!id)return;const row={child_id:id,date:options.date,revision:0,payload:blanks()};data.rows.push(row);drafts.set(id,row);dirty=true;render()}
     root.querySelectorAll('form[data-child]').forEach(el=>{
       el.oninput=()=>{dirty=true;const row=data.rows.find(r=>r.child_id===+el.dataset.child);row.payload=collectForm(el);drafts.set(row.child_id,row)}
       el.onsubmit=async event=>{
-        event.preventDefault();if(busy)return;if(calendarDirty){el.querySelector('[data-error]').textContent='先に営業日設定を保存するか、最新の一覧で設定の入力を取り消してください。';return}
+        event.preventDefault();if(busy)return;
         const row=data.rows.find(r=>r.child_id===+el.dataset.child),payload=collectForm(el)
         payload.claim_confirmed=data.can_confirm?payload.claim_confirmed:false
         if(!payload.is_absent)payload.claim_confirmed=false
@@ -66,12 +65,42 @@ export function mountAbsences(root, options) {
         try{await options.save({date:options.date,child_id:row.child_id,revision:row.revision,payload});drafts.delete(row.child_id);dirty=drafts.size>0;savedMessage='保存しました。';await load(false,true)}catch(e){el.querySelector('[data-error]').textContent=e.message;dirty=true}finally{busy=false;thaw();if(button.isConnected)button.disabled=false}
       }
     })
-    root.querySelector('[data-calendar]').oninput=()=>{dirty=true;calendarDirty=true}
-    root.querySelector('[data-calendar]').onsubmit=async event=>{event.preventDefault();if(busy)return;const el=event.currentTarget;busy=true;const thaw=freeze(root)
-      try {await options.calendar({revision:data.calendar?.revision ?? 0,weekdays:[...el.querySelectorAll('[name=weekday]:checked')].map(n=>+n.value),closed_dates:el.elements.closed_dates.value.split(/\s+/).filter(Boolean),confirmed:true});calendarDirty=false;dirty=drafts.size>0;savedMessage='営業日を保存しました。';await load(false,true)}catch(e){el.querySelector('[data-error]').textContent=e.message}finally{busy=false;thaw()}}
+
   }
-  async function load(confirmDirty=false,preserveDrafts=false) {if(confirmDirty && dirty && !confirm('未保存の入力を破棄して最新の一覧を読み込みますか？'))return;try{const fresh=await options.load();if(disposed)return;if(preserveDrafts){for(const draft of drafts.values()){const i=fresh.rows.findIndex(row=>row.child_id===draft.child_id);if(i<0)fresh.rows.push(draft);else fresh.rows[i]=draft}}else {drafts.clear();calendarDirty=false}data=fresh;dirty=drafts.size>0;render()}catch(e){if(disposed)return;if(!data)root.innerHTML='<p role="alert"></p>';(root.querySelector('[data-global]')||root.querySelector('[role=alert]')).textContent=e.message}}
+  async function load(confirmDirty=false,preserveDrafts=false) {if(confirmDirty && dirty && !confirm('未保存の入力を破棄して最新の一覧を読み込みますか？'))return;root.setAttribute('aria-busy','true');const thaw=freeze(root);try{const fresh=await options.load();if(disposed)return;if(preserveDrafts){for(const draft of drafts.values()){const i=fresh.rows.findIndex(row=>row.child_id===draft.child_id);if(i<0)fresh.rows.push(draft);else fresh.rows[i]=draft}}else {drafts.clear()}data=fresh;dirty=drafts.size>0;render()}catch(e){if(disposed)return;if(!data)root.innerHTML='<p role="alert"></p>';(root.querySelector('[data-global]')||root.querySelector('[role=alert]')).textContent=e.message}finally{root.setAttribute('aria-busy','false');thaw()}}
   const before=event=>{if(dirty){event.preventDefault();event.returnValue=''}};window.addEventListener('beforeunload',before);load()
   return {destroy(){disposed=true;window.removeEventListener('beforeunload',before)},hasChanges:()=>dirty}
 }
-if(typeof document!=='undefined')document.querySelectorAll('[data-absence-board]').forEach(root=>{const business_id=+root.dataset.business,date=root.dataset.date;mountAbsences(root,{date,load:()=>request(root.dataset.url+'?'+new URLSearchParams({date,business_id})),save:p=>request(root.dataset.url,'PUT',{...p,business_id}),calendar:p=>request(root.dataset.calendar,'PUT',{...p,business_id})})})
+export function mountAbsenceCalendar(root, options) {
+  let calendar=null,dirty=false,busy=false,disposed=false,message=''
+  const weekdays=['月','火','水','木','金','土','日']
+  function render() {
+    if(disposed)return
+    root.innerHTML=`<section class="ab-board ab-calendar-settings" aria-label="欠席判定に使う営業日"><div class="ab-toolbar"><h3>欠席判定に使う営業日</h3><button type="button" class="ab-refresh" data-refresh>最新の状態に更新</button></div><p>営業曜日と臨時休業日を確認してください。欠席連絡・相談記録の判定に使用します。</p><p data-global role="status">${escape(message || (calendar?.confirmed?'確認済み':'未確認'))}</p><form data-calendar><div class="ab-weekdays">${weekdays.map((day,i)=>`<label class="ab-check"><input type="checkbox" name="weekday" value="${i+1}" ${calendar?.weekdays?.includes(i+1)?'checked':''}>${day}</label>`).join('')}</div><label>臨時休業日（1行に1日、YYYY-MM-DD）<textarea name="closed_dates" aria-label="臨時休業日（1行に1日、YYYY-MM-DD）">${escape(calendar?.closed_dates?.join('\n') || '')}</textarea></label><p data-error role="alert"></p><button type="submit">営業日を確認して保存</button></form></section>`
+    root.querySelector('[data-refresh]').onclick=()=>{if(!busy)load(true)}
+    const form=root.querySelector('[data-calendar]')
+    form.oninput=()=>{dirty=true}
+    form.onsubmit=async event=>{
+      event.preventDefault();if(busy)return
+      busy=true;const thaw=freeze(root)
+      try {
+        await options.save({revision:calendar?.revision ?? 0,weekdays:[...form.querySelectorAll('[name=weekday]:checked')].map(el=>+el.value),closed_dates:form.elements.closed_dates.value.split(/\s+/).filter(Boolean),confirmed:true})
+        dirty=false;message='営業日を保存しました。';await load()
+      } catch(error) {form.querySelector('[data-error]').textContent=error.message}
+      finally {busy=false;thaw()}
+    }
+  }
+  async function load(confirmDirty=false) {
+    if(confirmDirty && dirty && !confirm('未保存の営業日設定を破棄して最新の状態に更新しますか？'))return
+    const previousBusy=busy;busy=true;const thaw=freeze(root)
+    try {const data=await options.load();if(disposed)return;if(!data || !Object.hasOwn(data,'calendar'))throw new Error('営業日設定を読み込めません。');calendar=data.calendar;dirty=false;render()}
+    catch(error){if(disposed)return;if(!root.querySelector('[data-error]')){root.innerHTML='<p role="alert"></p><button type="button" class="ab-refresh" data-retry>再読み込み</button>';root.querySelector('[data-retry]').onclick=()=>load()};(root.querySelector('[data-error]')||root.querySelector('[role=alert]')).textContent=error.message}
+    finally {busy=previousBusy;thaw()}
+  }
+  const before=event=>{if(dirty){event.preventDefault();event.returnValue=''}};window.addEventListener('beforeunload',before);load()
+  return {destroy(){disposed=true;window.removeEventListener('beforeunload',before)},hasChanges:()=>dirty}
+}
+if(typeof document!=='undefined') {
+  document.querySelectorAll('[data-absence-board]').forEach(root=>{const business_id=+root.dataset.business,date=root.dataset.date;mountAbsences(root,{date,settingsUrl:root.dataset.settings,settingsLabel:root.dataset.settingsLabel,load:()=>request(root.dataset.url+'?'+new URLSearchParams({date,business_id})),save:p=>request(root.dataset.url,'PUT',{...p,business_id})})})
+  document.querySelectorAll('[data-absence-calendar]').forEach(root=>{mountAbsenceCalendar(root,{load:()=>request(root.dataset.url),save:p=>request(root.dataset.url,'PUT',p)})})
+}

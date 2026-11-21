@@ -90,7 +90,11 @@ class YoyakuApiService
         if ($response->status() === 422) throw \Illuminate\Validation\ValidationException::withMessages($response->json('errors') ?: ['absence'=>'入力内容を確認してください。']);
         abort_unless($response->successful(),503,'欠席連絡を取得・保存できません。両アプリの更新・連携設定を確認してください。');
         $data=$response->json();
-        if($method === 'GET') abort_unless(is_array($data) && ($data['business_id'] ?? null)===$payload['business_id'] && ($data['date'] ?? null)===$payload['date'] && is_array($data['rows'] ?? null) && is_array($data['children'] ?? null),503);
+        if($method === 'GET') {
+            abort_unless(is_array($data) && ($data['business_id'] ?? null)===$payload['business_id'],503);
+            if($calendar) abort_unless(array_key_exists('calendar',$data) && ($data['calendar']===null || is_array($data['calendar'])),503);
+            else abort_unless(($data['date'] ?? null)===$payload['date'] && is_array($data['rows'] ?? null) && is_array($data['children'] ?? null),503);
+        }
         else abort_unless(is_array($data) && ($data['ok'] ?? null) === true,503);
         return $data;
     }

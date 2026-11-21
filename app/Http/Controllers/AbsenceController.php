@@ -16,6 +16,12 @@ class AbsenceController extends Controller {
   else $register->save($facility->id,$r->user()->id,$input);
   return response()->json(['ok'=>true]);
  }
+ public function showCalendar(Request $r,AbsenceRegister $register,YoyakuApiService $api) {
+  abort_unless($this->canConfirm(),403);
+  $facility=Facility::findOrFail($this->facilityId());
+  $calendar=$facility->yoyaku_business_id ? $api->absences('GET',['business_id'=>(int)$facility->yoyaku_business_id],$facility->id,true)['calendar'] : $register->calendar($facility->id);
+  return response()->json(['calendar'=>$calendar])->header('Cache-Control','no-store');
+ }
  public function calendar(Request $r,AbsenceRegister $register,YoyakuApiService $api) {
   abort_unless($this->canConfirm(),403);
   $input=$r->validate(['revision'=>['required','integer','min:0'],'weekdays'=>['required','array','min:1','max:7'],'weekdays.*'=>['integer','between:1,7','distinct'],'closed_dates'=>['present','array','max:1000'],'closed_dates.*'=>['date_format:Y-m-d','distinct'],'confirmed'=>['required','accepted']]); $input['confirmed']=true;

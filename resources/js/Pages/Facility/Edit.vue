@@ -1,4 +1,5 @@
 <script setup>
+import AbsenceCalendarSettings from '@/Components/AbsenceCalendarSettings.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
@@ -184,6 +185,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
           </form>
         </div>
+        <AbsenceCalendarSettings />
       </div>
     </div>
   </BreezeAuthenticatedLayout>

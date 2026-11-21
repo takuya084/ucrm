@@ -1,13 +1,14 @@
 <script setup>
 import {ref,onMounted,onBeforeUnmount,watch} from 'vue'
-import {Head,router} from '@inertiajs/vue3'
+import {Head,router,usePage} from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import {mountAbsences,request} from '../../../../public/absence-board/board.js'
 import '../../../../public/absence-board/board.css'
 const props=defineProps({date:String})
+const page=usePage()
 const selectedDate=ref(props.date),root=ref(null)
 let board,removeListener
-const mountBoard=()=>{board?.destroy();board=mountAbsences(root.value,{date:props.date,load:()=>request(route('absences.data',{date:props.date})),save:p=>request(route('absences.data'),'PUT',p),calendar:p=>request(route('absences.calendar'),'PUT',p)})}
+const mountBoard=()=>{board?.destroy();board=mountAbsences(root.value,{date:props.date,load:()=>request(route('absences.data',{date:props.date})),save:p=>request(route('absences.data'),'PUT',p),settingsUrl:page.props.auth.staff_role==='admin'?route('facility.edit')+'#absence-calendar':null})}
 onMounted(()=>{mountBoard();removeListener=router.on('before',event=>{if(board.hasChanges()&&!confirm('未保存の欠席記録があります。このページを離れますか？'))event.preventDefault()})})
 watch(()=>props.date, date=>{selectedDate.value=date;mountBoard()})
 onBeforeUnmount(()=>{board?.destroy();removeListener?.()})
