@@ -1,4 +1,5 @@
 <script setup>
+import MenuDestination from '@/Components/MenuDestination.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
@@ -147,7 +148,7 @@ const overallStats = computed(() => {
         <!-- プログラムが見つからない場合 -->
         <div v-if="programs.length === 0" class="bg-white rounded-lg border border-gray-200 p-10 text-center text-gray-400">
           <p>このカテゴリには詳細項目が登録されたプログラムがありません。</p>
-          <p class="mt-3 text-sm text-gray-600">メニュー「療育プログラム」で項目を追加してください。</p>
+          <p class="mt-3 text-sm text-gray-600"><MenuDestination prefix="メニュー" label="療育プログラム" :href="route('programs.index')" />で項目を追加してください。</p>
         </div>
 
         <template v-else>

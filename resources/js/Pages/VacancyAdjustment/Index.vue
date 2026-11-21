@@ -1,4 +1,5 @@
 <script setup>
+import MenuDestination from '@/Components/MenuDestination.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { ref } from 'vue'
@@ -121,7 +122,7 @@ const nextDay = () => {
                   {{ absentChildren.length }}名
                 </span>
               </h3>
-              <span class="text-xs text-gray-600">出欠の変更：メニュー「出欠・利用実績」</span>
+              <span class="text-xs text-gray-600"><MenuDestination prefix="出欠の変更：メニュー" label="出欠・利用実績" :href="route('usage-records.index', { date })" /></span>
             </div>
 
             <div v-if="absentChildren.length === 0" class="px-5 py-8 text-center text-sm text-gray-400">

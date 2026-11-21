@@ -34,7 +34,7 @@ async function login(page, role='admin', tenant='a') {
     ? page.waitForResponse(r=>new URL(r.url()).pathname==='/dashboard' && r.status()===403) : null;
   await page.getByRole('button', {name:'ログイン', exact:true}).click();
   if (blocked) { await blocked; return; }
-  await expect(page.getByRole('heading', {name:'今日の業務', exact:true})).toBeVisible();
+  await expect(page.getByRole('heading', {name:'業務内容確認', exact:true})).toBeVisible();
 }
 async function visit(page, path, heading) {
   const r = await page.goto(path);
@@ -434,17 +434,20 @@ test('daily work leads staff from family review to one saved record without losi
   await expect(nav.getByRole('heading',{name:'請求・会計',exact:true})).toHaveCount(0);
   await expect(nav.getByRole('link',{name:'施設設定',exact:true})).toHaveCount(0);
   if(isMobile) await page.getByRole('button',{name:'閉じる',exact:true}).click();
-  await visit(page,'/dashboard?date=2026-07-01','日別の業務');
+  await visit(page,'/dashboard?date=2026-07-01','業務内容確認');
   await expect(page.getByRole('navigation', {name:'この日の確認順',exact:true})).toBeVisible();
   await expect(page.locator('.workspace-shell')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await expect(page.locator('main')).not.toContainText(foreignChild().name);
-  const row=page.getByRole('listitem',{name:ownChild().name+'の業務',exact:true});
-  await expect(row).toContainText('家庭の連絡が未確認');
-  await expect(row).toContainText('連絡帳未入力');
-  await expect(row.getByRole('link')).toHaveCount(0);
-  await openModule(page,'記録・連絡帳');
-  await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01$/);
+  const home=page.locator('main');
+  await expect(home.getByRole('heading',{name:'未対応業務',exact:true})).toBeVisible();
+  await expect(home.getByRole('heading',{name:'対応が必要な児童',exact:true})).toHaveCount(0);
+  await expect(home.getByText('児童別の状況',{exact:true})).toHaveCount(0);
+  await expect(home.getByRole('button',{name:/全児童の状況/})).toHaveCount(0);
+  await expect(home.getByRole('link',{name:'家庭の連絡が未確認 1人',exact:true})).toBeVisible();
+  await home.getByRole('link',{name:'支援記録未入力 1人',exact:true}).click();
+  await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01&task=record$/);
+  await expect(page.getByRole('status')).toContainText('支援記録未入力');
   await page.getByRole('link',{name:'記録・連絡帳を入力',exact:true}).click();
   const behavior=page.getByPlaceholder('今日の行動・様子を記入してください');
   await behavior.fill('家庭の連絡を読みながら入力した架空の記録');
@@ -456,12 +459,11 @@ test('daily work leads staff from family review to one saved record without losi
   await page.getByRole('button',{name:'記録を保存',exact:true}).click();
   await expect(page).toHaveURL(/\/support-records\/\d+\/edit$/);
   await expect(page.getByRole('status')).toHaveText('支援記録を保存しました。');
-  await visit(page,'/dashboard?date=2026-07-01','日別の業務');
-  await expect(row).not.toContainText('家庭の連絡が未確認');
-  await expect(row).not.toContainText('支援記録未入力');
-  await expect(row).toContainText('連絡帳未入力');
-  await expect(row.getByRole('link')).toHaveCount(0);
-  await openModule(page,'記録・連絡帳');
+  await visit(page,'/dashboard?date=2026-07-01','業務内容確認');
+  await expect(home.getByRole('link',{name:'家庭の連絡が未確認 0人',exact:true})).toBeVisible();
+  await expect(home.getByRole('link',{name:'支援記録未入力 0人',exact:true})).toBeVisible();
+  await home.getByRole('link',{name:'連絡帳未入力 1人',exact:true}).click();
+  await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01&task=report$/);
   await page.getByRole('link',{name:'記録・連絡帳を編集',exact:true}).click();
   await expect(behavior).toHaveValue('家庭の連絡を読みながら入力した架空の記録');
   expect(snapshot().support).toHaveLength(1);
@@ -479,11 +481,12 @@ test('candidate button shows every staff member without clearing current value; 
 test('dashboard shows all staff transport read-only and editing has one sidebar entry', async ({page}) => {
   fixture('morning-entry'); fixture('legacy-attendance-times');
   await login(page);
-  await visit(page,'/dashboard?date=2026-07-01','日別の業務');
+  await visit(page,'/dashboard?date=2026-07-01','業務内容確認');
   const transport=page.locator('#transport-work');
   await expect(transport.getByText('入力・変更先：メニュー「送迎一覧」',{exact:true})).toBeVisible();
   await expect(transport.getByText('送迎担当を割り当てる',{exact:true})).toHaveCount(0);
-  await expect(page.locator('main').getByRole('link').filter({hasText:/入力|編集|開く/})).toHaveCount(0);
+  await expect(page.locator('main a[href*="/support-records/"]')).toHaveCount(0);
+  await expect(transport.getByRole('link',{name:'送迎一覧',exact:true})).toBeVisible();
   await openModule(page,'送迎一覧');
   await expect(page).toHaveURL(/\/transport\?date=2026-07-01$/);
   await page.getByText('送迎担当を割り当てる',{exact:true}).click();
@@ -495,9 +498,13 @@ test('dashboard shows all staff transport read-only and editing has one sidebar 
   await form.getByRole('button',{name:'保存',exact:true}).click();
   await expect(page.getByRole('status')).toHaveText('送迎担当を更新しました。');
   await expect(page).toHaveURL(/\/transport\?date=2026-07-01$/);
-  await openModule(page,'今日の業務');
+  await openModule(page,'業務内容確認');
   await expect(transport.getByRole('cell',{name:'架空職員a-staff',exact:true})).toBeVisible();
   await expect(transport.getByRole('button',{name:'担当変更',exact:true})).toHaveCount(0);
+  const headerBox=await transport.locator('.transport-section-header').boundingBox();
+  const tableBox=await transport.locator('table').boundingBox();
+  expect(tableBox.y-headerBox.y-headerBox.height).toBeGreaterThanOrEqual(12);
+  await expect(transport).not.toContainText('p-yoyakuと共通の担当です');
 });
 
 
@@ -519,4 +526,48 @@ test('secondary export tools stay closed, open by keyboard, and retain input whe
   await expect(year).toHaveValue(value);
   await page.emulateMedia({reducedMotion:'reduce'});
   expect(await page.locator('#annual-contact-export').evaluate(el=>getComputedStyle(el).transitionDuration)).toBe('0s');
+});
+
+
+test('overview names, menu guidance, no-op allergy notes and role sections stay clear', async ({page,isMobile}) => {
+  fixture('no-special-notes');
+  await login(page);
+  await visit(page,'/dashboard?date=2026-07-01','業務内容確認');
+  await expect(page.locator('.workspace-brand-mark')).toHaveCount(0);
+  await expect(page.locator('main')).not.toContainText('ここで未対応を把握し');
+  await expect(page.locator('main')).not.toContainText('保存済みの出欠');
+  await expect(page.locator('#daily-visits').locator('..')).toContainText('利用児童');
+  const visits=page.getByRole('region',{name:/^利用児童/});
+  await expect(visits).not.toContainText('特記事項なし');
+  await expect(visits).toContainText('卵アレルギー');
+  for (const [id,heading] of [['staff-work','職員の確認事項'],['management-work','管理者・児発管の確認事項'],['office-work','事務の確認事項']]) {
+    await expect(page.locator('#'+id).getByRole('heading',{name:heading,exact:true})).toBeVisible();
+  }
+  const colors=await page.locator('.workspace-role-header').evaluateAll(nodes=>nodes.map(node=>getComputedStyle(node).backgroundColor));
+  expect(new Set(colors).size).toBe(3);
+  await visits.getByRole('link',{name:'出欠・利用実績',exact:true}).click();
+  await expect(page).toHaveURL(/\/usage-records\?date=2026-07-01$/);
+  await expect(page.getByRole('article',{name:ownChild().name+'の出席記録',exact:true})).not.toContainText('特記事項なし');
+  await expect(page.getByRole('group',{name:ownChild().name+'の利用時間',exact:true})).toBeVisible();
+  await expect(page.getByRole('group',{name:ownChild().name+'の送迎・請求',exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await openModule(page,'業務内容確認');
+  await expect(page.getByRole('heading',{name:'業務内容確認',exact:true})).toBeVisible();
+  if(isMobile) await expect(page.getByRole('dialog',{name:'メニュー',exact:true})).not.toBeVisible();
+});
+
+test('activity edit and delete align and the editor retains its content', async ({page}) => {
+  fixture('daily-activity');
+  await login(page);
+  await visit(page,'/daily-activities?date=2026-07-01','療育予定・年間行事');
+  const actions=page.locator('.workspace-row-actions').first();
+  const edit=actions.getByRole('link',{name:'編集',exact:true});
+  const remove=actions.getByRole('button',{name:'削除',exact:true});
+  const e=await edit.boundingBox(), d=await remove.boundingBox();
+  expect(Math.abs(e.y-d.y)).toBeLessThan(1);expect(Math.abs(e.height-d.height)).toBeLessThan(1);
+  expect(d.x).toBeGreaterThan(e.x+e.width);
+  await edit.click();
+  await expect(page.getByRole('button',{name:'予定を編集',exact:true})).toHaveAttribute('aria-expanded','true');
+  await expect(page.getByPlaceholder('プログラム選択時は省略可')).toHaveValue('架空の読み聞かせ');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });

@@ -8,7 +8,7 @@ const role = computed(() => page.props.auth.staff_role)
 const day = computed(() => page.props.date ?? page.props.recordDate ?? page.props.todayStats?.date)
 const item = (label, name, patterns, roles, params = {}) => ({ label, name, patterns, roles, params })
 const groups = computed(() => [
-  { label: 'ホーム', items: [item('今日の業務', 'dashboard', ['dashboard'])] },
+  { label: 'ホーム', items: [item('業務内容確認', 'dashboard', ['dashboard'])] },
   { label: '日々の業務', items: [
     item('出欠・利用実績', 'usage-records.index', ['usage-records.*']),
     item('送迎一覧', 'transport.index', ['transport.*']),

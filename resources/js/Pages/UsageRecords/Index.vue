@@ -1,4 +1,6 @@
 <script setup>
+import MenuDestination from '@/Components/MenuDestination.vue'
+import { allergyNotice } from '@/lib/notice.mjs'
 import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
@@ -180,12 +182,6 @@ const changeStatus = (row, newStatus) => {
   autoSave()
 }
 
-const rowBg = (status) => ({
-  attended:      'bg-white',
-  absent_notice: 'bg-amber-50',
-  absent:        'bg-red-50',
-  cancel:        'bg-gray-50',
-})[status] ?? 'bg-white'
 </script>
 
 <template>
@@ -279,138 +275,85 @@ const rowBg = (status) => ({
             <p class="text-xs mt-1">「＋ 児童を追加」から手動で追加できます</p>
           </div>
 
-          <div v-else class="divide-y">
-            <div
-              v-for="row in sortedRecords"
-              :key="row.child_id"
-              :class="['p-4 transition-colors', rowBg(row.status)]"
-            >
-              <!-- 上段：名前 + ステータス + 削除ボタン -->
-              <div class="flex items-center gap-3 flex-wrap">
-                <!-- 児童名 -->
-                <div class="w-36">
-                  <Link :href="route('children.show', row.child_id)"
-                    class="font-medium text-gray-900 hover:text-primary-600 text-sm">
-                    {{ row.child_name }}
-                  </Link>
-                  <div class="text-xs text-gray-400">{{ row.school_name ?? '学校未登録' }}</div>
-                  <div v-if="row.allergy_note"
-                    class="mt-0.5 px-1.5 py-0.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md">
-                    ⚠ {{ row.allergy_note }}
+          <div v-else class="attendance-entries">
+            <article v-for="row in sortedRecords" :key="row.child_id" class="attendance-entry" :data-attendance-status="row.status" :aria-label="row.child_name + 'の出席記録'">
+              <header class="attendance-entry-header">
+                <div class="attendance-person">
+                  <span class="workspace-avatar" aria-hidden="true">{{ row.child_name.replace('【架空】', '').trim().slice(0, 1) }}</span>
+                  <div class="min-w-0">
+                    <Link :href="route('children.show', row.child_id)" class="font-semibold text-gray-900 hover:text-primary-600">{{ row.child_name }}</Link>
+                    <p class="text-xs text-gray-500">{{ row.school_name ?? '学校未登録' }}</p>
                   </div>
                 </div>
-
-                <!-- ステータス選択 -->
-                <div class="flex gap-1 flex-wrap">
-                  <button
-                    v-for="opt in STATUS_OPTIONS"
-                    :key="opt.value"
-                    type="button"
-                    @click="changeStatus(row, opt.value)"
-                    :class="[
-                      'px-3 py-1.5 text-xs border rounded-full font-medium transition-all',
-                      row.status === opt.value ? opt.color : 'border-gray-200 text-gray-400 bg-white hover:bg-gray-50'
-                    ]"
-                  >{{ opt.label }}</button>
+                <div class="attendance-status-choices" role="group" :aria-label="row.child_name + 'の出欠'">
+                  <button v-for="opt in STATUS_OPTIONS" :key="opt.value" type="button" @click="changeStatus(row, opt.value)"
+                    :aria-pressed="row.status === opt.value" :class="['rounded-full border px-3 py-2 text-sm font-semibold transition-colors', row.status === opt.value ? opt.color : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50']">{{ opt.label }}</button>
                 </div>
+                <button v-if="!row.has_support_record" type="button" @click="removeRow(row)" class="attendance-remove" title="この日のリストから削除" :aria-label="row.child_name + 'をこの日のリストから削除'">×</button>
+                <span v-else class="attendance-remove opacity-30" title="支援記録があるため削除できません（キャンセルに変更してください）" aria-hidden="true">×</span>
+              </header>
+              <p v-if="allergyNotice(row.allergy_note)" class="workspace-allergy mx-4 mt-3 text-sm font-medium text-red-800">アレルギー　{{ allergyNotice(row.allergy_note) }}</p>
 
-                <!-- 記録の状態のみ表示。入力はメニュー「記録・連絡帳」から。 -->
-                <div class="ml-auto flex items-center gap-2">
-                  <div class="space-y-2">
-                    <ContactNoteStatus :state="row.contact_note_state" />
-                    <p class="text-xs text-gray-600">{{ row.contact_note_state?.home }}</p>
+              <div v-if="row.status !== 'attended'" class="p-4">
+                <label class="block text-sm text-gray-700">欠席理由
+                  <input v-model="row.absent_reason" type="text" placeholder="欠席理由（例：体調不良）" class="mt-1 w-full rounded-md border-gray-300 px-3 py-2 text-sm" @change="autoSave" />
+                </label>
+              </div>
+              <div v-else class="attendance-entry-fields">
+                <div class="attendance-field-group" role="group" :aria-label="row.child_name + 'の利用時間'">
+                  <h4 class="attendance-field-title">利用時間</h4>
+                  <div class="grid grid-cols-2 gap-3">
+                    <label class="text-sm text-gray-600">来所
+                      <select v-model="row.check_in_time" :aria-label="`${row.child_name}の来所時刻`" class="mt-1 block w-full rounded-md border-gray-300 text-base tabular-nums" @change="autoSave">
+                        <option value="">未設定</option>
+                        <option v-if="row.check_in_time && !timeSlots.includes(row.check_in_time)" :value="row.check_in_time">{{ row.check_in_time }}（既存値）</option>
+                        <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
+                      </select>
+                    </label>
+                    <label class="text-sm text-gray-600">退所
+                      <select v-model="row.check_out_time" :aria-label="`${row.child_name}の退所時刻`" class="mt-1 block w-full rounded-md border-gray-300 text-base tabular-nums" @change="autoSave">
+                        <option value="">未設定</option>
+                        <option v-if="row.check_out_time && !timeSlots.includes(row.check_out_time)" :value="row.check_out_time">{{ row.check_out_time }}（既存値）</option>
+                        <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
+                      </select>
+                    </label>
                   </div>
-                  <span v-if="row.status === 'attended'" class="text-xs text-gray-600">支援記録 {{ row.has_support_record ? '入力済み' : '未入力' }}</span>
-
-                  <!-- 削除ボタン -->
-                  <button
-                    v-if="!row.has_support_record"
-                    type="button"
-                    @click="removeRow(row)"
-                    class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                    title="この日のリストから削除"
-                  >×</button>
-                  <span
-                    v-else
-                    class="w-7 h-7 flex items-center justify-center rounded-full text-gray-200 cursor-not-allowed"
-                    title="支援記録があるため削除できません（キャンセルに変更してください）"
-                  >×</span>
+                  <div class="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                    <label class="attendance-check"><input v-model="row.is_school_day" type="checkbox" @change="autoSave" />学校日</label>
+                    <select v-model="row.service_type" :aria-label="row.child_name + 'のサービス種別'" class="max-w-full rounded-md border-gray-300 text-sm" @change="autoSave">
+                      <option value="">種別自動</option><option value="houday">放デイ</option><option value="jidou">児発</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="attendance-field-group" role="group" :aria-label="row.child_name + 'の送迎・請求'">
+                  <h4 class="attendance-field-title">送迎・請求</h4>
+                  <div v-if="row.pickup_required" class="space-y-3">
+                    <p v-if="row.yoyaku_pickup_time || row.yoyaku_dropoff_time" class="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                      <span v-if="row.yoyaku_pickup_time" class="mr-3">迎え {{ row.yoyaku_pickup_time }} {{ locationLabel(row.yoyaku_pickup_location) }}</span>
+                      <span v-if="row.yoyaku_dropoff_time">送り {{ row.yoyaku_dropoff_time }} {{ locationLabel(row.yoyaku_dropoff_location) }}</span>
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                      <label class="attendance-check"><input v-model="row.pickup_done" type="checkbox" @change="autoSave" />迎え完了</label>
+                      <label class="attendance-check"><input v-model="row.dropoff_done" type="checkbox" @change="autoSave" />送り完了</label>
+                    </div>
+                  </div>
+                  <p v-else class="text-sm text-gray-500">送迎対象外</p>
+                  <label class="attendance-check mt-3"><input v-model="row.billing_target" type="checkbox" @change="autoSave" />請求対象</label>
+                </div>
+                <div class="attendance-field-group">
+                  <h4 class="attendance-field-title">メモ</h4>
+                  <input v-model="row.memo" type="text" :aria-label="row.child_name + 'のメモ'" placeholder="メモ" class="w-full rounded-md border-gray-300 px-3 py-2 text-sm" @change="autoSave" />
                 </div>
               </div>
-
-              <!-- 欠席理由 -->
-              <div v-if="row.status !== 'attended'" class="mt-2 flex gap-3 items-center">
-                <input
-                  v-model="row.absent_reason"
-                  type="text"
-                  placeholder="欠席理由（例：体調不良）"
-                  class="flex-1 border border-gray-300 rounded-md px-2 py-1 text-xs"
-                  @change="autoSave"
-                />
-              </div>
-
-              <!-- 来所・退所時間 + 学校日フラグ（出席時のみ） -->
-              <div v-if="row.status === 'attended'" class="mt-2 flex gap-3 items-center flex-wrap text-xs text-gray-600">
-                <label class="flex items-center gap-1">
-                  来所
-                  <select v-model="row.check_in_time" :aria-label="`${row.child_name}の来所時刻`" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-28" @change="autoSave">
-                    <option value="">未設定</option>
-                    <option v-if="row.check_in_time && !timeSlots.includes(row.check_in_time)" :value="row.check_in_time">{{ row.check_in_time }}（既存値）</option>
-                    <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
-                  </select>
-                </label>
-                <label class="flex items-center gap-1">
-                  退所
-                  <select v-model="row.check_out_time" :aria-label="`${row.child_name}の退所時刻`" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs w-28" @change="autoSave">
-                    <option value="">未設定</option>
-                    <option v-if="row.check_out_time && !timeSlots.includes(row.check_out_time)" :value="row.check_out_time">{{ row.check_out_time }}（既存値）</option>
-                    <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
-                  </select>
-                </label>
-                <label class="flex items-center gap-1 cursor-pointer">
-                  <input v-model="row.is_school_day" type="checkbox" class="w-3 h-3" @change="autoSave" />学校日
-                </label>
-                <select v-model="row.service_type" class="border border-gray-300 rounded-md px-1.5 py-1 text-xs" @change="autoSave">
-                  <option value="">種別自動</option>
-                  <option value="houday">放デイ</option>
-                  <option value="jidou">児発</option>
-                </select>
-                <input
-                  v-model="row.memo"
-                  type="text"
-                  placeholder="メモ"
-                  class="flex-1 min-w-[10rem] border border-gray-300 rounded-md px-2 py-1 text-xs"
-                  @change="autoSave"
-                />
-              </div>
-
-              <!-- 送迎チェック（出席時のみ） -->
-              <div v-if="row.status === 'attended' && row.pickup_required" class="mt-2 space-y-1">
-                <!-- 送迎予約情報（houkago-plus連携時のみ） -->
-                <div v-if="row.yoyaku_pickup_time || row.yoyaku_dropoff_time"
-                  class="flex gap-4 text-xs text-blue-600 bg-blue-50 rounded-md px-2 py-1">
-                  <span v-if="row.yoyaku_pickup_time">
-                    迎え {{ row.yoyaku_pickup_time }}
-                    <span v-if="row.yoyaku_pickup_location">／{{ locationLabel(row.yoyaku_pickup_location) }}</span>
-                  </span>
-                  <span v-if="row.yoyaku_dropoff_time">
-                    送り {{ row.yoyaku_dropoff_time }}
-                    <span v-if="row.yoyaku_dropoff_location">／{{ locationLabel(row.yoyaku_dropoff_location) }}</span>
-                  </span>
+              <footer class="attendance-record-state">
+                <div class="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                  <span class="font-semibold">記録・連絡帳</span><ContactNoteStatus :state="row.contact_note_state" />
+                  <span v-if="row.contact_note_home_entry">{{ row.contact_note_state?.home }}</span>
+                  <span v-if="row.status === 'attended'">支援記録 {{ row.has_support_record ? '入力済み' : '未入力' }}</span>
                 </div>
-                <div class="flex gap-4 text-xs text-gray-600">
-                  <label class="flex items-center gap-1 cursor-pointer">
-                    <input v-model="row.pickup_done" type="checkbox" class="w-3 h-3" @change="autoSave" />迎え完了
-                  </label>
-                  <label class="flex items-center gap-1 cursor-pointer">
-                    <input v-model="row.dropoff_done" type="checkbox" class="w-3 h-3" @change="autoSave" />送り完了
-                  </label>
-                  <label class="flex items-center gap-1 cursor-pointer">
-                    <input v-model="row.billing_target" type="checkbox" class="w-3 h-3" @change="autoSave" />請求対象
-                  </label>
-                </div>
-              </div>
-            </div>
+                <MenuDestination label="記録・連絡帳" :href="route('contact-notes.index', { date })" />
+              </footer>
+            </article>
           </div>
 
           <div class="p-4 border-t bg-gray-50">

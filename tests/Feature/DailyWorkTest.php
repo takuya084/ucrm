@@ -201,6 +201,41 @@ class DailyWorkTest extends TestCase
             ->has('officeTasks', 0)->has('openInquiries', 0)->where('billingPeriod', null));
     }
 
+    public function test_pending_links_filter_the_canonical_record_list_by_same_day_and_facility(): void
+    {
+        Queue::fake();
+        $facility = Facility::create(['name' => '事業所A', 'facility_code' => '1310000001', 'service_type' => 'houday']);
+        $other = Facility::create(['name' => '事業所B', 'facility_code' => '1310000002', 'service_type' => 'houday']);
+        $user = User::factory()->create();
+        $staff = Staff::create(['user_id' => $user->id, 'facility_id' => $facility->id, 'name' => '職員', 'role' => 'staff', 'is_active' => true]);
+        $children = [];
+        foreach ([$facility, $facility, $facility, $facility, $other] as $index => $f) {
+            $child = Child::create(['facility_id' => $f->id, 'name' => '児童'.$index, 'contract_status' => 'active']);
+            $children[$index] = $child;
+            $usage = UsageRecord::create(['facility_id' => $f->id, 'child_id' => $child->id, 'date' => '2026-12-01', 'status' => $index === 3 ? 'cancel' : 'attended']);
+            if (in_array($index, [1,2], true)) {
+                SupportRecord::create(['child_id' => $child->id, 'usage_record_id' => $usage->id, 'staff_id' => $staff->id, 'date' => '2026-12-01', 'condition' => 'normal']);
+            }
+            if ($index > 0) {
+                ContactNote::create(['facility_id' => $f->id, 'child_id' => $child->id, 'date' => '2026-12-01',
+                    'guardian_submitted_at' => now(), 'guardian_comment' => '家庭からの連絡',
+                    'guardian_message' => $index === 3 ? null : '施設からの連絡', 'status' => $index === 2 ? 'published' : 'draft']);
+            }
+        }
+        $this->actingAs($user);
+        $expected = ['home' => [1,2,3], 'record' => [0], 'report' => [0], 'draft' => [1], 'delivery' => [2]];
+        foreach ($expected as $task => $indexes) {
+            $ids = array_map(fn ($index) => $children[$index]->id, $indexes);
+            $this->get('/contact-notes?date=2026-12-01&task='.$task)->assertOk()->assertInertia(fn (Assert $page) => $page
+                ->component('ContactNotes/Index')->where('selectedTask', $task)->has('rows', count($ids))
+                ->where('rows', fn ($rows) => $rows->pluck('child_id')->all() === $ids));
+        }
+        $this->get('/contact-notes?date=2026-12-02&task=record')->assertOk()->assertInertia(fn (Assert $page) => $page->has('rows', 0));
+        $this->get('/contact-notes?date=2026-12-01&task=not-a-task')->assertSessionHasErrors('task');
+        $this->get('/contact-notes?date=2026-12-01')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('selectedTask', null)->has('rows', 4));
+    }
+
     public function test_status_never_treats_old_delivery_or_old_confirmation_as_current(): void
     {
         $note = new ContactNote(['status'=>'published','guardian_message'=>'新しい公開内容']);

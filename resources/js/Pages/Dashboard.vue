@@ -1,4 +1,5 @@
 <script setup>
+import MenuDestination from '@/Components/MenuDestination.vue'
 import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head } from '@inertiajs/vue3'
@@ -30,6 +31,8 @@ const props = defineProps({
   officeTasks: { type: Array, default: () => [] },
 })
 
+const officeRoutes = { invoices: 'billing.invoices.index', returns: 'billing.returns.index', claims: 'billing.error-claims.index' }
+
 const daysUntil = (dateStr) => {
   const diff = Math.ceil((new Date(dateStr) - new Date()) / 86400000)
   return diff
@@ -50,14 +53,15 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
 </script>
 
 <template>
-  <Head title="今日の業務" />
+  <Head title="業務内容確認" />
   <BreezeAuthenticatedLayout>
     <template #header>
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-semibold text-xl text-gray-800">{{ date === calendarToday ? '今日の業務' : '日別の業務' }}</h2>
+        <h2 class="font-semibold text-xl text-gray-800">業務内容確認</h2>
         <nav v-if="canManage" aria-label="担当別の業務" class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-          <a href="#management-work" class="workspace-jump">管理者・児発管の確認事項</a>
-          <a href="#office-work" class="workspace-jump">請求・集金</a>
+          <a href="#staff-work" class="workspace-jump workspace-jump-staff">職員の確認事項</a>
+          <a href="#management-work" class="workspace-jump workspace-jump-management">管理者・児発管の確認事項</a>
+          <a href="#office-work" class="workspace-jump workspace-jump-office">事務の確認事項</a>
         </nav>
       </div>
     </template>
@@ -65,19 +69,22 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
     <div class="py-8">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-        <p class="text-sm text-gray-600">ここで未対応を把握し、入力・変更はサイドメニューから進みます。</p>
+        <section id="staff-work" aria-labelledby="staff-heading" class="workspace-role-area workspace-role-staff">
+          <div class="workspace-role-header"><h3 id="staff-heading" class="workspace-section-title">職員の確認事項</h3></div>
+          <div class="space-y-6 p-4">
         <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday"
-          :visits="visits" :attendance-source="attendanceSource">
+          :visits="visits">
           <template #after-visits>
             <div id="transport-work" class="workspace-anchor space-y-2">
-              <p class="text-xs text-gray-600">入力・変更先：メニュー「送迎一覧」</p>
               <DailyTransportBoard :key="date" :date="date" :visits="transportVisits"
-                :can-manage="false" :assignments="transportAssignments" :staff="[]" :sync-state="transportState" :local-count="localTransportCount" />
+                :can-manage="false" :assignments="transportAssignments" :staff="[]" :sync-state="transportState" :local-count="localTransportCount">
+                <template #header-actions><MenuDestination prefix="入力・変更先：メニュー" label="送迎一覧" :href="route('transport.index', { date })" /></template>
+              </DailyTransportBoard>
             </div>
             <section id="activity-preparation" aria-labelledby="activity-preparation-heading" class="workspace-card scroll-mt-4 rounded-xl border bg-white">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-                <h3 id="activity-preparation-heading" class="font-semibold text-gray-900">療育準備</h3>
-                <span v-if="canManage" class="text-xs text-gray-600">入力先：メニュー「療育予定・年間行事」</span>
+                <h3 id="activity-preparation-heading" class="workspace-section-title text-gray-900">療育準備</h3>
+                <MenuDestination v-if="canManage" label="療育予定・年間行事" :href="route('daily-activities.index', { date })" />
               </div>
               <p v-if="!activities.length" class="px-4 py-4 text-sm text-gray-700">この日の療育予定は登録されていません。</p>
               <ul v-else class="divide-y">
@@ -93,9 +100,11 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
             </section>
           </template>
         </DailyWorkBoard>
+          </div>
+        </section>
 
-        <section v-if="canManage" id="management-work" aria-labelledby="management-heading" class="workspace-card scroll-mt-4 rounded-xl border bg-white">
-          <h3 id="management-heading" class="border-b px-4 py-3 font-semibold text-gray-900">管理者・児発管の確認事項</h3>
+        <section v-if="canManage" id="management-work" aria-labelledby="management-heading" class="workspace-role-area workspace-role-management scroll-mt-4">
+          <div class="workspace-role-header"><h3 id="management-heading" class="workspace-section-title">管理者・児発管の確認事項</h3></div>
           <div class="space-y-6 p-4">
             <!-- アラートセクション -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -103,7 +112,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
               <!-- 受給者証 期限アラート -->
               <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div class="px-5 py-3 border-b flex items-center justify-between">
-                  <h3 class="text-sm font-semibold text-gray-700">
+                  <h3 class="workspace-section-title text-sm text-gray-700">
                     受給者証 期限アラート
                     <span v-if="expiringCertificates.length" class="ml-2 px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
                       {{ expiringCertificates.length }}件
@@ -133,13 +142,13 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     </span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600">対応先：メニュー「受給者証・利用契約」</p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="受給者証・利用契約" :href="route('children.index', { section: 'cert' })" /></p>
               </div>
 
               <!-- モニタリング期限アラート -->
               <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div class="px-5 py-3 border-b flex items-center justify-between">
-                  <h3 class="text-sm font-semibold text-gray-700">
+                  <h3 class="workspace-section-title text-sm text-gray-700">
                     モニタリング 実施アラート
                     <span v-if="monitoringDue.length" class="ml-2 px-2 py-0.5 bg-orange-100 text-orange-600 text-xs rounded-full">
                       {{ monitoringDue.length }}件
@@ -171,13 +180,13 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     </span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600">対応先：メニュー「支援計画・モニタリング」</p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="支援計画・モニタリング" :href="route('children.index', { section: 'plan' })" /></p>
               </div>
 
               <!-- 個別支援計画 同意待ち -->
               <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div class="px-5 py-3 border-b">
-                  <h3 class="text-sm font-semibold text-gray-700">
+                  <h3 class="workspace-section-title text-sm text-gray-700">
                     個別支援計画 同意待ち
                     <span v-if="pendingAgreements.length" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">
                       {{ pendingAgreements.length }}件
@@ -198,13 +207,13 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     <span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">同意待ち</span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600">対応先：メニュー「支援計画・モニタリング」</p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="支援計画・モニタリング" :href="route('children.index', { section: 'plan' })" /></p>
               </div>
 
               <!-- 未対応・対応中の問い合わせ -->
               <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div class="px-5 py-3 border-b">
-                  <h3 class="text-sm font-semibold text-gray-700">
+                  <h3 class="workspace-section-title text-sm text-gray-700">
                     対応が必要な問い合わせ
                     <span v-if="openInquiries.length" class="ml-2 px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full">
                       {{ openInquiries.length }}件
@@ -232,15 +241,16 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     >{{ inq.status === 'open' ? '未対応' : '対応中' }}</span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600">対応先：メニュー「問い合わせ」</p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="問い合わせ" :href="route('inquiries.index')" /></p>
               </div>
 
             </div>
           </div>
         </section>
 
-        <section v-if="canManage" id="office-work" aria-labelledby="office-heading" class="scroll-mt-4 space-y-3">
-          <h3 id="office-heading" class="font-semibold text-gray-900">請求・集金</h3>
+        <section v-if="canManage" id="office-work" aria-labelledby="office-heading" class="workspace-role-area workspace-role-office scroll-mt-4">
+          <div class="workspace-role-header"><h3 id="office-heading" class="workspace-section-title">事務の確認事項</h3><span class="text-sm">請求・集金</span></div>
+          <div class="space-y-3 p-4">
             <!-- 前月分 請求業務の状態 -->
           <div class="rounded-lg border px-4 py-3" :class="isBillingWindow && billingPeriod?.status !== 'completed' ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'">
             <div class="flex flex-wrap items-center gap-3 text-sm">
@@ -248,15 +258,16 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
               <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', billingGuide.cls]">{{ billingGuide.label }}</span>
               <span class="text-gray-600">{{ billingGuide.text }}</span>
             </div>
-            <p class="mt-2 text-xs text-gray-600">対応先：メニュー「月次請求」</p>
+            <p class="mt-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="月次請求" :href="route('billing.index', { month: billingMonth })" /></p>
           </div>
           <div v-for="task in officeTasks" :key="task.key" class="rounded-lg border bg-white px-4 py-3">
-            <h4 class="flex items-center gap-3 font-semibold text-gray-800">{{ task.label }}<span class="rounded-full bg-amber-50 px-2 py-1 text-sm text-amber-900">{{ task.rows.length }}件</span></h4>
+            <h4 class="workspace-section-title flex items-center gap-3 font-semibold text-gray-800">{{ task.label }}<span class="rounded-full bg-amber-50 px-2 py-1 text-sm text-amber-900">{{ task.rows.length }}件</span></h4>
             <p v-if="!task.rows.length" class="mt-2 text-sm text-gray-600">該当する項目はありません。</p>
             <ul v-else class="mt-2 divide-y">
               <li v-for="row in task.rows" :key="row.id" class="flex flex-wrap justify-between gap-2 py-2 text-sm"><span>{{ row.child_name }} ／ {{ row.month }}</span><span>{{ row.status }}</span></li>
             </ul>
-            <p class="mt-2 text-xs text-gray-600">対応先：メニュー「{{ task.menu }}」</p>
+            <p class="mt-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" :label="task.menu" :href="route(officeRoutes[task.key])" /></p>
+          </div>
           </div>
         </section>
 
