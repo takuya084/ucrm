@@ -597,10 +597,10 @@ test('absence contacts keep drafts, appear before visits and are reversible with
   const summaryY=await summary.boundingBox(), visitsY=await page.locator('#daily-visits').boundingBox(), transportY=await page.locator('#staff-transport').boundingBox(), activityY=await page.locator('#activity-preparation').boundingBox();
   expect(summaryY.y).toBeLessThan(visitsY.y);expect(visitsY.y).toBeLessThan(transportY.y);expect(transportY.y).toBeLessThan(activityY.y);
   await visit(page,'/absences?date=2026-07-01','欠席連絡・相談記録');
-  await board.locator('.ab-record summary').click();
+  await board.locator('.ab-record > summary').click();
   await form.getByLabel('欠席として記録する（解除すると欠席取消。記録は保持）',{exact:true}).uncheck();
   await form.getByRole('button',{name:'この記録を保存',exact:true}).click();
   await expect(board.getByRole('status')).toHaveText('保存しました。');
-  await expect(board.locator('.ab-record summary')).toContainText('欠席取消');
+  await expect(board.locator('.ab-record > summary')).toContainText('欠席取消');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
