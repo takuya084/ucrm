@@ -29,10 +29,13 @@ class AbsenceRegisterTest extends TestCase {
  public function test_linked_record_is_read_and_written_at_the_same_remote_endpoint(): void {
   [$tenant,$actor,$child]=$this->fixture(); $tenant->update(['yoyaku_business_id'=>99,'yoyaku_api_token'=>'fixture-token']);$child->update(['yoyaku_user_id'=>77]);
   config(['services.houkago_plus.base_url'=>'https://p.example.test']);
-  \Illuminate\Support\Facades\Http::fake(['https://p.example.test/api/absences/data*'=>fn($request)=>$request->method()==='PUT' ? \Illuminate\Support\Facades\Http::response(['ok'=>true],200) : \Illuminate\Support\Facades\Http::response(['business_id'=>99,'date'=>'2026-05-07','children'=>[['id'=>77,'name'=>'連携児童']],'staff'=>[],'rows'=>[['child_id'=>77,'revision'=>1,'payload'=>['is_absent'=>true,'reason'=>'発熱'],'assessment'=>['status'=>'記録不足','eligible_candidate'=>false]]],'calendar'=>null],200)]);
+  \Illuminate\Support\Facades\Http::fake(['https://p.example.test/api/absences/data*'=>fn($request)=>$request->method()==='PUT' ? \Illuminate\Support\Facades\Http::response(['ok'=>true],200) : \Illuminate\Support\Facades\Http::response(['business_id'=>99,'date'=>'2026-05-07','children'=>[['id'=>77,'name'=>'連携児童']],'staff'=>[],'rows'=>[['child_id'=>77,'revision'=>1,'payload'=>['is_absent'=>true,'reason'=>'発熱'],'assessment'=>['status'=>'記録不足','eligible_candidate'=>false]]],'calendar'=>null,'can_confirm'=>true],200)]);
   $this->actingAs($actor)->getJson('/absences/data?date=2026-05-07')->assertOk()->assertJsonPath('rows.0.local_child_id',$child->id);
   $this->assertDatabaseCount('absence_notices',0);
   $this->putJson('/absences/data',['date'=>'2026-05-07','child_id'=>77,'revision'=>1,'payload'=>['is_absent'=>true,'reason'=>'回復待ち']])->assertOk();
+  \App\Models\Staff::where('user_id',$actor->id)->update(['role'=>'staff']);$actor->unsetRelation('staff');
+  $this->getJson('/absences/data?date=2026-05-07')->assertOk()->assertJsonPath('can_confirm',false);
+  $this->putJson('/absences/data',['date'=>'2026-05-07','child_id'=>77,'revision'=>1,'payload'=>['is_absent'=>true,'claim_confirmed'=>true]])->assertForbidden();
   \Illuminate\Support\Facades\Http::assertSent(fn($req)=>$req->method()==='PUT' && $req['business_id']===99 && $req['child_id']===77 && $req->hasHeader('Authorization','Bearer fixture-token'));
  }
  public function test_absence_projection_removes_visit_without_writing_attendance_on_get(): void {

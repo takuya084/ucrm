@@ -8,7 +8,7 @@ use Inertia\Inertia;
 class AbsenceController extends Controller {
  private function canConfirm(): bool { return in_array(auth()->user()->staff?->role,['admin','leader'],true); }
  public function index(Request $r) { $date=$r->validate(['date'=>['nullable','date_format:Y-m-d']])['date'] ?? today()->toDateString(); return Inertia::render('Absences/Index',['date'=>$date]); }
- public function show(Request $r,AbsenceBoard $board) { $date=$r->validate(['date'=>['required','date_format:Y-m-d']])['date']; return response()->json($board->read($this->facilityId(),$date)+['can_confirm'=>$this->canConfirm()])->header('Cache-Control','no-store'); }
+ public function show(Request $r,AbsenceBoard $board) { $date=$r->validate(['date'=>['required','date_format:Y-m-d']])['date']; return response()->json(array_replace($board->read($this->facilityId(),$date),['can_confirm'=>$this->canConfirm()]))->header('Cache-Control','no-store'); }
  public function update(SaveAbsenceRequest $r,AbsenceRegister $register,YoyakuApiService $api) {
   $input=$r->validated(); abort_if(($input['payload']['claim_confirmed'] ?? false) && !$this->canConfirm(),403);
   $facility=Facility::findOrFail($this->facilityId());
