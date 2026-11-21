@@ -20,8 +20,6 @@ const groups = computed(() => [
   ] },
   { label: '児童・支援', items: [
     item('児童一覧・過去の記録', 'children.index', ['children.*', 'assessments.*', 'support-plans.*', 'monitoring-records.*']),
-    item('支援計画・モニタリング', 'children.index', [], null, { section: 'plan' }),
-    item('受給者証・利用契約', 'children.index', [], null, { section: 'cert' }),
   ] },
   { label: '請求・会計', items: [
     item('月次請求', 'billing.index', ['billing.index', 'billing.show', 'billing.details.*'], ['admin','leader']),
@@ -48,8 +46,6 @@ const groups = computed(() => [
 ].map(g => ({ ...g, items: g.items.filter(i => !i.roles || i.roles.includes(role.value)) })).filter(g => g.items.length))
 const params = i => ({ ...(['dashboard','usage-records.index','absences.index','contact-notes.index','program-progress.index','transport.index','daily-activities.index'].includes(i.name) && day.value ? { date: day.value } : {}), ...i.params })
 const active = i => {
-  const section = new URL(page.url, 'http://workspace.local').searchParams.get('section')
-  if (route().current('children.index')) return i.name === 'children.index' && (i.params.section ?? null) === section
   return i.patterns.some(p => route().current(p))
 }
 </script>

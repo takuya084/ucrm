@@ -143,7 +143,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     </span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="受給者証・利用契約" :href="route('children.index', { section: 'cert' })" /></p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="児童一覧・過去の記録" :href="route('children.index')" /></p>
               </div>
 
               <!-- モニタリング期限アラート -->
@@ -181,7 +181,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     </span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="支援計画・モニタリング" :href="route('children.index', { section: 'plan' })" /></p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="児童一覧・過去の記録" :href="route('children.index')" /></p>
               </div>
 
               <!-- 個別支援計画 同意待ち -->
@@ -208,7 +208,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     <span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">同意待ち</span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="支援計画・モニタリング" :href="route('children.index', { section: 'plan' })" /></p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="児童一覧・過去の記録" :href="route('children.index')" /></p>
               </div>
 
               <!-- 未対応・対応中の問い合わせ -->
