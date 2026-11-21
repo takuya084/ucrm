@@ -589,7 +589,7 @@ test('absence contacts keep drafts, appear before visits and are reversible with
   const refresh=board.getByRole('button',{name:'最新の状態に更新',exact:true});
   await expect(refresh).toHaveCSS('border-top-width','0px');
   await expect(refresh).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
-  await refresh.click();await expect(board.locator('[data-child-select]')).toBeVisible();
+  await refresh.click();await expect(board.locator('..')).toHaveAttribute('aria-busy','false');await expect(board.locator('[data-child-select]')).toBeVisible();
   const selector=await board.locator('[data-child-select]').boundingBox(),add=await board.getByRole('button',{name:'欠席記録を追加',exact:true}).boundingBox();
   expect(Math.abs(selector.y-add.y)).toBeLessThan(1);expect(Math.abs(selector.height-add.height)).toBeLessThan(1);
   await board.getByRole('link',{name:'施設設定',exact:true}).click();
