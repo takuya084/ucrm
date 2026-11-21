@@ -41,6 +41,11 @@ class DashboardController extends Controller
             ])
             ->values();
 
+        $absenceData=app(\App\Services\AbsenceBoard::class)->overview($facilityId,$today);
+        $absences=$attendance['rows']->filter(fn($row)=>in_array($row['status'],['absent','absent_notice','cancel'],true))->map(fn($row)=>[
+            'child_id'=>$row['child_id'],'name'=>$row['child_name'],'reason'=>$row['absent_reason'] ?? '',
+            'notice'=>$row['absence_notice'] ?? null,
+        ])->values();
         $transportData = $transport->forDate($facilityId, $today, $visits, $canManage);
 
         // 今日の出席サマリー
@@ -135,6 +140,8 @@ class DashboardController extends Controller
             'activities' => DailyActivityPlan::forDate($facilityId, $today),
             ...$transportData,
             'calendarToday' => today()->toDateString(),
+            'absences'=>$absences, 'absenceAvailable'=>$absenceData['available'],
+            'attendanceSummary'=>['attended'=>$visits->count(),'saved'=>$attendance['hasRecords']],
             'dailyWork' => $dailyWork->forDate($facilityId, $today),
             'todayStats' => [
                 'attended'    => $todayAttended,

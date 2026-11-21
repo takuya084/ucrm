@@ -19,6 +19,7 @@ class DailyTransportAssignmentController extends Controller
                 'revision' => ['required', 'integer', 'min:0'],
                 'direction' => ['required', Rule::in(['pickup', 'dropoff'])],
                 'staff_id' => ['present', 'nullable', 'integer', 'min:1'],
+                'assistant_staff_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             ]);
             try {
                 $api->assignTransport([
@@ -28,6 +29,7 @@ class DailyTransportAssignmentController extends Controller
                     'revision' => $input['revision'],
                     'direction' => $input['direction'],
                     'staff_id' => $input['staff_id'],
+                    ...array_intersect_key($input, ['assistant_staff_id' => true]),
                 ], $facilityId);
             } catch (\RuntimeException $e) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['assignment' => $e->getMessage()]);
@@ -41,6 +43,7 @@ class DailyTransportAssignmentController extends Controller
             'direction' => ['required', Rule::in(['pickup', 'dropoff'])],
             'staff_id' => ['present', 'nullable', 'integer', Rule::exists('staff', 'id')
                 ->where('facility_id', $facilityId)->where('is_active', true)],
+            'assistant_staff_id' => ['nullable', 'integer', Rule::exists('staff', 'id')->where('facility_id', $facilityId)->where('is_active', true), 'different:staff_id', 'prohibited_without:staff_id'],
             'scheduled_time' => ['nullable', 'date_format:H:i'],
             'location' => ['nullable', 'string', 'max:120'],
         ]);
@@ -56,12 +59,13 @@ class DailyTransportAssignmentController extends Controller
             DB::table('daily_transport_assignments')->upsert([
                 $key + [
                     'staff_id' => $input['staff_id'],
+                    'assistant_staff_id' => $input['assistant_staff_id'] ?? null,
                     'scheduled_time' => $input['scheduled_time'] ?? null,
                     'location' => $input['location'] ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ],
-            ], array_keys($key), ['staff_id', 'scheduled_time', 'location', 'updated_at']);
+            ], array_keys($key), ['staff_id', 'assistant_staff_id', 'scheduled_time', 'location', 'updated_at']);
         } else {
             DB::table('daily_transport_assignments')->where($key)->delete();
         }

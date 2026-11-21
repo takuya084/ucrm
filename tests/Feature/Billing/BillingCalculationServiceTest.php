@@ -15,7 +15,7 @@ use Tests\TestCase;
 
 class BillingCalculationServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, \Tests\ConfirmsAbsenceFixture;
 
     private const YEAR_MONTH = '2026-05';
 
@@ -89,7 +89,7 @@ class BillingCalculationServiceTest extends TestCase
 
     private function createUsageRecord(string $date, string $status = 'attended', bool $pickup = false): UsageRecord
     {
-        return UsageRecord::create([
+        $record = UsageRecord::create([
             'child_id'       => $this->child->id,
             'facility_id'    => $this->facility->id,
             'date'           => $date,
@@ -98,6 +98,8 @@ class BillingCalculationServiceTest extends TestCase
             'pickup_done'    => $pickup,
             'billing_target' => true,
         ]);
+        if ($status === 'absent_notice') $this->confirmAbsence($record);
+        return $record;
     }
 
     private function service(): BillingCalculationService
@@ -296,4 +298,12 @@ class BillingCalculationServiceTest extends TestCase
         $detail = $second->billingDetails->firstWhere('child_id', $this->child->id);
         $this->assertSame(2, $detail->total_days);
     }
+ public function test_absence_status_alone_does_not_generate_an_addition(): void {
+  $this->createUsageRecord('2026-05-07','absent_notice');
+  \Illuminate\Support\Facades\DB::table('absence_notices')->delete();
+  $period=$this->service()->calculateMonthlyBilling($this->facility->id,self::YEAR_MONTH);
+  $detail=$period->billingDetails->firstWhere('child_id',$this->child->id);
+  $this->assertFalse($detail->billingDetailLines()->where('service_code','636300')->exists());
+ }
+
 }

@@ -169,7 +169,7 @@ class ServiceCodeResolver
 
         // 欠席時対応加算: 連絡ありの欠席のみ
         if (isset($conditions['absent_with_notice']) && $conditions['absent_with_notice']) {
-            return $record->status === 'absent_notice';
+            return app(AbsenceBillingEligibility::class)->allows($record);
         }
 
         // 欠席時対応加算以外の加算は出席日のみ算定（欠席日への算定は過請求となる）

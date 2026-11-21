@@ -1,0 +1,13 @@
+<?php
+namespace Tests\Unit;
+use App\Services\AbsenceRules;
+use PHPUnit\Framework\TestCase;
+class AbsenceRulesTest extends TestCase {
+ private function complete(): array {return ['is_absent'=>true,'contacted_at'=>'2026-05-01T10:00','reason'=>'発熱','contact_method'=>'tel','caller'=>'母','receiver_staff_id'=>1,'consultant_staff_id'=>2,'consultant_role'=>'児童指導員','child_condition'=>'38度、食欲なし','support_content'=>'水分摂取と受診状況を確認。回復後の利用を調整','next_date'=>'2026-05-08','was_planned'=>true,'sudden'=>true,'service_available'=>true,'consultation_done'=>true];}
+ private function calendar(): array{return ['confirmed'=>true,'weekdays'=>[1,2,3,4,5],'closed_dates'=>['2026-05-04','2026-05-05','2026-05-06']];}
+ public function test_business_days_cross_weekends_and_holidays(): void {$a=(new AbsenceRules)->assess($this->complete(),'2026-05-07',$this->calendar());$this->assertSame('2026-04-30',$a['earliest_contact_date']);$this->assertTrue($a['eligible_candidate']);}
+ public function test_too_early_after_day_and_same_day(): void {foreach(['2026-04-29T12:00','2026-05-08T08:00'] as $d){$a=(new AbsenceRules)->assess(array_replace($this->complete(),['contacted_at'=>$d]),'2026-05-07',$this->calendar());$this->assertSame('対象外',$a['status']);}$this->assertTrue((new AbsenceRules)->assess(array_replace($this->complete(),['contacted_at'=>'2026-05-07T09:00']),'2026-05-07',$this->calendar())['eligible_candidate']);}
+ public function test_contact_alone_never_qualifies(): void {$a=(new AbsenceRules)->assess(['contacted_at'=>'2026-05-07T09:00'],'2026-05-07',$this->calendar());$this->assertFalse($a['eligible_candidate']);$this->assertContains('相談援助の内容',$a['missing']);}
+ public function test_planned_holiday_no_consultation_reused_and_monthly_limit(): void {foreach(['was_planned','sudden','service_available','consultation_done'] as $key)$this->assertSame('対象外',(new AbsenceRules)->assess(array_replace($this->complete(),[$key=>false]),'2026-05-07',$this->calendar())['status']);$this->assertSame('要確認',(new AbsenceRules)->assess($this->complete(),'2026-05-07',$this->calendar(),4)['status']);$this->assertSame('対象外',(new AbsenceRules)->assess($this->complete(),'2026-05-07',$this->calendar(),0,true)['status']);$this->assertSame('要確認',(new AbsenceRules)->assess($this->complete(),'2026-05-07',null)['status']);}
+ public function test_cancel_preserves_record_and_special_case_is_reviewed(): void {$this->assertSame('欠席取消',(new AbsenceRules)->assess(array_replace($this->complete(),['is_absent'=>false]),'2026-05-07',$this->calendar())['status']);$this->assertSame('要確認',(new AbsenceRules)->assess(array_replace($this->complete(),['special_case'=>true]),'2026-05-07',$this->calendar())['status']);}
+}

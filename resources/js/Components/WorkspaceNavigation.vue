@@ -11,6 +11,7 @@ const groups = computed(() => [
   { label: 'ホーム', items: [item('業務内容確認', 'dashboard', ['dashboard'])] },
   { label: '日々の業務', items: [
     item('出欠・利用実績', 'usage-records.index', ['usage-records.*']),
+    item('欠席連絡・相談記録', 'absences.index', ['absences.*']),
     item('送迎一覧', 'transport.index', ['transport.*']),
     item('療育予定・年間行事', 'daily-activities.index', ['daily-activities.*'], ['admin','leader']),
     item('記録・連絡帳', 'contact-notes.index', ['contact-notes.*', 'support-records.*']),
@@ -45,7 +46,7 @@ const groups = computed(() => [
     item('加算・減算設定', 'billing.settings.service-codes', ['billing.settings.*'], ['admin','leader']),
   ] },
 ].map(g => ({ ...g, items: g.items.filter(i => !i.roles || i.roles.includes(role.value)) })).filter(g => g.items.length))
-const params = i => ({ ...(['dashboard','usage-records.index','contact-notes.index','program-progress.index','transport.index','daily-activities.index'].includes(i.name) && day.value ? { date: day.value } : {}), ...i.params })
+const params = i => ({ ...(['dashboard','usage-records.index','absences.index','contact-notes.index','program-progress.index','transport.index','daily-activities.index'].includes(i.name) && day.value ? { date: day.value } : {}), ...i.params })
 const active = i => {
   const section = new URL(page.url, 'http://workspace.local').searchParams.get('section')
   if (route().current('children.index')) return i.name === 'children.index' && (i.params.section ?? null) === section

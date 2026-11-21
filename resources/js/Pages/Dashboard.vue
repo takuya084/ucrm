@@ -1,12 +1,13 @@
 <script setup>
 import MenuDestination from '@/Components/MenuDestination.vue'
-import DisclosurePanel from '@/Components/DisclosurePanel.vue'
+
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head } from '@inertiajs/vue3'
 import DailyWorkBoard from '@/Components/DailyWorkBoard.vue'
 import DailyTransportBoard from '@/Components/DailyTransportBoard.vue'
 
 const props = defineProps({
+  absences: Array, absenceAvailable: Boolean, attendanceSummary: Object,
   dailyWork: Object,
   visits: Array,
   attendanceSource: String,
@@ -73,7 +74,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
           <div class="workspace-role-header"><h3 id="staff-heading" class="workspace-section-title">職員の確認事項</h3></div>
           <div class="space-y-6 p-4">
         <DailyWorkBoard :work="dailyWork" :date="date" :calendar-today="calendarToday"
-          :visits="visits">
+          :visits="visits" :absences="absences" :absence-available="absenceAvailable" :active-children="activeChildren" :attendance-summary="attendanceSummary">
           <template #after-visits>
             <div id="transport-work" class="workspace-anchor space-y-2">
               <DailyTransportBoard :key="date" :date="date" :visits="transportVisits"
@@ -271,35 +272,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
           </div>
         </section>
 
-        <DisclosurePanel id="daily-statistics" title="選択日の集計">
-          <div class="border-t p-4">
-            <!-- 今日のサマリー -->
-            <section>
-              <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                選択日の状況（{{ todayStats.date }}）
-              </h3>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div class="bg-white rounded-lg border border-gray-200 p-5 text-center">
-                  <div class="text-3xl font-bold text-gray-800">{{ activeChildren }}</div>
-                  <div class="text-xs text-gray-500 mt-1">契約中の児童</div>
-                </div>
-                <div class="bg-green-50 rounded-lg shadow-sm p-5 text-center">
-                  <div class="text-3xl font-bold text-green-700">{{ todayStats.attended }}</div>
-                  <div class="text-xs text-gray-500 mt-1">出席</div>
-                </div>
-                <div class="bg-amber-50 rounded-lg shadow-sm p-5 text-center">
-                  <div class="text-3xl font-bold text-amber-700">{{ todayStats.absent }}</div>
-                  <div class="text-xs text-gray-500 mt-1">欠席</div>
-                </div>
-                <div class="bg-primary-50 rounded-lg shadow-sm p-5 text-center">
-                  <div class="text-3xl font-bold text-primary-700">{{ todayStats.withSupport }}</div>
-                  <div class="text-xs text-gray-500 mt-1">支援記録済</div>
-                </div>
-              </div>
-            </section>
 
-          </div>
-        </DisclosurePanel>
       </div>
     </div>
   </BreezeAuthenticatedLayout>

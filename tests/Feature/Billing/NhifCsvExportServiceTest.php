@@ -22,7 +22,7 @@ use Tests\TestCase;
  */
 class NhifCsvExportServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, \Tests\ConfirmsAbsenceFixture;
 
     private const YEAR_MONTH = '2026-05';
 
@@ -138,7 +138,7 @@ class NhifCsvExportServiceTest extends TestCase
 
     private function createUsage(string $date, string $status = 'attended', bool $pickup = false, bool $dropoff = false): UsageRecord
     {
-        return UsageRecord::create([
+        $record = UsageRecord::create([
             'child_id'       => $this->child->id,
             'facility_id'    => $this->facility->id,
             'date'           => $date,
@@ -150,6 +150,8 @@ class NhifCsvExportServiceTest extends TestCase
             'dropoff_done'   => $dropoff,
             'billing_target' => true,
         ]);
+        if ($status === 'absent_notice') $this->confirmAbsence($record);
+        return $record;
     }
 
     public function test_請求書明細書CSVがファイル構造仕様に準拠している(): void

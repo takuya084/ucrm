@@ -187,7 +187,7 @@ const changeStatus = (row, newStatus) => {
 <template>
   <Head title="出席管理" />
   <BreezeAuthenticatedLayout>
-    <template #header>
+    <template #header><MenuDestination label="欠席連絡・相談記録" :href="route('absences.index', {date})" />
       <div class="flex items-center gap-3 flex-wrap">
         <h2 class="font-semibold text-xl text-gray-800">出席管理</h2>
 

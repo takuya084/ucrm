@@ -26,6 +26,7 @@ const form = useForm({
   revision: 0,
   direction: 'pickup',
   staff_id: null,
+  assistant_staff_id: null,
   scheduled_time: '',
   location: '',
 })
@@ -42,6 +43,7 @@ const loadSelection = () => {
   const pickup = form.direction === 'pickup'
   const reservationLocation = pickup ? visit?.pickupLocation : visit?.dropoffLocation
   form.staff_id = assigned?.staff_id ?? null
+  form.assistant_staff_id = assigned?.assistant_staff_id ?? null
   form.scheduled_time = time(assigned ? assigned.scheduled_time : pickup ? visit?.pickup : visit?.dropoff)
   form.location = assigned ? assigned.location ?? '' : locations[reservationLocation] ?? reservationLocation ?? ''
 }
@@ -81,7 +83,7 @@ onUnmounted(() => clearInterval(timer))
 <template>
   <section aria-labelledby="staff-transport" class="rounded-xl border bg-white">
     <div class="transport-section-header flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-      <h3 id="staff-transport" class="workspace-section-title text-gray-900">スタッフ全員の送迎</h3>
+      <h3 id="staff-transport" class="workspace-section-title text-gray-900">送迎</h3>
       <div class="transport-header-actions flex flex-wrap items-center gap-x-6 gap-y-3">
       <button v-if="shared" type="button" @click="refresh" class="text-sm text-primary-700 underline">最新の担当を確認</button>
       <slot name="header-actions" />
@@ -105,7 +107,7 @@ onUnmounted(() => clearInterval(timer))
           <tr v-for="row in assignments" :key="`${row.child_id}-${row.direction}`">
             <td class="px-4 py-3 whitespace-nowrap">{{ time(row.scheduled_time) || '時刻未登録' }}・{{ directions[row.direction] }}</td>
             <td class="px-4 py-3">{{ visitById.get(row.child_id)?.name }}</td>
-            <td class="px-4 py-3 font-medium">{{ row.staff_name || '未割り当て' }}</td>
+            <td class="px-4 py-3 font-medium"><span class="block">{{ row.staff_name || '未割り当て' }}</span><span v-if="row.assistant_staff_name" class="mt-1 block">{{ row.assistant_staff_name }}</span></td>
             <td class="break-words px-4 py-3 text-gray-700">{{ row.location || '場所未登録' }}</td>
             <td v-if="canManage" class="px-4 py-3">
               <button type="button" :disabled="form.processing" @click="edit(row)"
@@ -143,6 +145,12 @@ onUnmounted(() => clearInterval(timer))
                 <option :value="null">担当なし</option>
                 <option v-if="form.staff_id && !staff.some((person) => person.id === form.staff_id)" :value="form.staff_id" disabled>無効な職員</option>
                 <option v-for="person in staff" :key="person.id" :value="person.id">{{ person.name }}</option>
+              </select>
+            </label>
+            <label class="space-y-1">担当職員2（任意）
+              <select aria-label="担当職員2" v-model="form.assistant_staff_id" :disabled="form.processing" class="block max-w-full rounded-md border-gray-300 text-sm">
+                <option :value="null">担当なし</option>
+                <option v-for="person in staff.filter(person => person.id !== form.staff_id)" :key="person.id" :value="person.id">{{ person.name }}</option>
               </select>
             </label>
             <label class="space-y-1">時刻
