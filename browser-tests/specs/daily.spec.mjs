@@ -91,7 +91,7 @@ test('login rejects wrong password, permits real login and logout', async ({page
 
 test('register child through form, persist dates, school and weekly schedule', async ({page}) => {
   await login(page);
-  await visit(page,'/children','利用児童一覧');
+  await visit(page,'/children','児童の記録');
   await page.getByRole('link',{name:'＋ 新規登録',exact:true}).click();
   await page.getByPlaceholder('例：山田 太郎').fill('架空新規児童');
   await page.getByPlaceholder('例：ヤマダ タロウ').fill('カクウシンキジドウ');
@@ -136,7 +136,7 @@ test('invalid child form reports errors and writes no child', async ({page}) => 
 });
 
 test('child search, contract filter and school choices stay within the facility', async ({page}) => {
-  await login(page); await visit(page,'/children','利用児童一覧');
+  await login(page); await visit(page,'/children','児童の記録');
   await expect(page.locator('tbody')).not.toContainText('架空児童b');
   await page.getByPlaceholder('名前・カナで検索').fill('架空児童a-ended');
   await page.getByRole('button',{name:'検索',exact:true}).click();
@@ -182,7 +182,7 @@ test('leader can edit own child but cannot open staff management', async ({page}
 });
 
 test('ordinary staff can read but cannot create edit or delete a child', async ({page}) => {
-  await login(page,'staff'); await visit(page,'/children','利用児童一覧');
+  await login(page,'staff'); await visit(page,'/children','児童の記録');
   await expect(page.getByRole('link',{name:'＋ 新規登録',exact:true})).toHaveCount(0);
   await page.getByRole('link',{name:ownChild().name,exact:true}).click();
   await expect(page.getByRole('button',{name:'削除',exact:true})).toHaveCount(0);
@@ -213,7 +213,7 @@ test('admin deactivation blocks an already logged-in staff member on next reques
   await isolate(other);
   try {
     const staffPage=await other.newPage(); await login(staffPage,'staff');
-    await visit(staffPage,'/children','利用児童一覧');
+    await visit(staffPage,'/children','児童の記録');
     await login(page);
     const member=seeded.staff.find(s=>s.name==='架空職員a-staff');
     await visit(page,`/staff/${member.id}/edit`,'職員編集');
@@ -336,7 +336,7 @@ test('cancel deletion keeps child, confirm deletion soft-deletes only that child
 
 test('major admin pages render actual Vue without server or JavaScript failures', async ({page}) => {
   await login(page);
-  for (const [path,heading] of [['/children','利用児童一覧'],['/staff','職員管理'],['/schools','学校管理']]) await visit(page,path,heading);
+  for (const [path,heading] of [['/children','児童の記録'],['/staff','職員管理'],['/schools','学校管理']]) await visit(page,path,heading);
   for (const path of ['/transport','/daily-activities','/programs','/inquiries','/contact-notes','/shifts','/shift-labels','/external-facilities','/facility/edit','/billing','/billing/invoices','/billing/returns','/billing/error-claims','/billing/expenses','/billing/cap-management']) {
     await visit(page,path); await expect(page.locator('main')).toBeVisible();
     await expect(page.locator('#app')).not.toBeEmpty();
@@ -415,11 +415,11 @@ test('categorized navigation has one child entry, preserves tabs and date', asyn
   await expect(nav.getByRole('link',{name:'支援計画・モニタリング',exact:true})).toHaveCount(0);
   await expect(nav.getByRole('link',{name:'受給者証・利用契約',exact:true})).toHaveCount(0);
   await expect(nav.locator('a[href*="/children"]')).toHaveCount(1);
-  await nav.getByRole('link',{name:'児童一覧・過去の記録',exact:true}).click();
+  await nav.getByRole('link',{name:'児童の記録',exact:true}).click();
   await expect(page).toHaveURL(/\/children$/);
   const childNav=page.getByRole('navigation',{name:'業務メニュー',exact:true}).filter({visible:true});
   if(!await childNav.isVisible()) await page.getByRole('button',{name:'メニュー',exact:true}).click();
-  await expect(childNav.getByRole('link',{name:'児童一覧・過去の記録',exact:true})).toHaveAttribute('aria-current','page');
+  await expect(childNav.getByRole('link',{name:'児童の記録',exact:true})).toHaveAttribute('aria-current','page');
   if(isMobile) await page.getByRole('button',{name:'閉じる',exact:true}).click();
   await page.getByRole('link',{name:ownChild().name,exact:true}).click();
   await page.getByRole('button',{name:/^計画・記録/}).click();
