@@ -43,7 +43,7 @@ class DashboardController extends Controller
 
         $absenceData=app(\App\Services\AbsenceBoard::class)->overview($facilityId,$today);
         $absences=$attendance['rows']->filter(fn($row)=>in_array($row['status'],['absent','absent_notice','cancel'],true))->map(fn($row)=>[
-            'child_id'=>$row['child_id'],'name'=>$row['child_name'],'reason'=>$row['absent_reason'] ?? '',
+            'child_id'=>$row['child_id'],'status'=>UsageRecord::STATUS_LABELS[$row['status']] ?? $row['status'],'name'=>$row['child_name'],'reason'=>$row['absent_reason'] ?? '',
             'notice'=>$row['absence_notice'] ?? null,
         ])->values();
         $transportData = $transport->forDate($facilityId, $today, $visits, $canManage);

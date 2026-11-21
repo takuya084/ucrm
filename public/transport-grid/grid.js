@@ -39,6 +39,7 @@ export function resolveCell(field, text, row, config) {
     ? Object.entries(config.locations).map(([value, label]) => ({ value, label }))
     : staffLabels(config.staff)
   let matches = options.filter(option => option.label.normalize('NFKC') === value || String(option.value) === value)
+  if (field.endsWith('_location') && value === '学校(名称未登録)' && !row.school_name) matches = options.filter(option => option.value === 'school')
   if (field.endsWith('_location') && row.location_aliases?.[text.trim()]) matches = options.filter(option => option.value === row.location_aliases[text.trim()])
   if (matches.length === 1) return { value: matches[0].value, text: matches[0].value === 'school' && row.school_name ? row.school_name : matches[0].label, error: '' }
   return { value, text, error: field.endsWith('_location') ? '候補にある場所を選択してください。登録済みの学校・方面名も貼り付けできます。' : '候補にある職員を選択してください。' }

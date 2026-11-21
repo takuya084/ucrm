@@ -16,7 +16,7 @@ class DailyTransportOverview
             ->join('staff', 'staff.id', '=', 'assignments.staff_id')
             ->leftJoin('staff as assistant', fn ($join) => $join->on('assistant.id', '=', 'assignments.assistant_staff_id')->where('assistant.facility_id', $facilityId))
             ->leftJoin('children', 'children.id', '=', 'assignments.child_id')
-            ->leftJoin('schools', 'schools.id', '=', 'children.school_id')
+            ->leftJoin('schools', fn($join)=>$join->on('schools.id','=','children.school_id')->where('schools.facility_id',$facilityId))
             ->where('assignments.facility_id', $facilityId)
             ->where('staff.facility_id', $facilityId)
             ->where('assignments.service_date', $date)

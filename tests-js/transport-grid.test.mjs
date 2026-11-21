@@ -55,3 +55,5 @@ test('requests use the current XSRF cookie after login instead of a stale head m
 })
 
 test("second assignee and school-name paste retain registered values",()=>{assert.equal(resolveCell("pickup_assistant_staff_id", "職員A", {}, {times:[],locations:{school:"学校"},staff:[{id:2,name:"職員A"}]}).value,2);assert.equal(resolveCell("pickup_location","第一小学校",{school_name:"第一小学校",location_aliases:{"第一小学校":"school"}},{times:[],locations:{school:"学校"},staff:[]}).text,"第一小学校")})
+
+test('missing-school display remains a valid unchanged location when saving a time edit',()=>{assert.equal(resolveCell('pickup_location','学校（名称未登録）',{school_name:null},{times:[],locations:{school:'学校'},staff:[]}).value,'school')})

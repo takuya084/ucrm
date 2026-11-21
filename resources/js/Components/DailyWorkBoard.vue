@@ -34,7 +34,7 @@ const changeDate = () => { if (selectedDate.value) router.get(route('dashboard')
         <p v-if="!absences.length" class="mt-2 text-sm text-gray-600">欠席の登録はありません。</p>
         <ul v-else class="mt-2 divide-y">
           <li v-for="child in absences" :key="child.child_id" class="py-3 text-sm">
-            <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1"><strong>{{ child.name }}</strong><span>{{ child.reason || '理由未記録' }}</span><span v-if="child.notice" class="rounded-full bg-amber-50 px-2 py-1 text-amber-900">{{ child.notice.assessment.status }}</span></div>
+            <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1"><strong>{{ child.name }}</strong><span class="text-gray-600">{{ child.status }}</span><span>{{ child.reason || '理由未記録' }}</span><span v-if="child.notice" class="rounded-full bg-amber-50 px-2 py-1 text-amber-900">{{ child.notice.assessment.status }}</span></div>
             <p v-if="child.notice" class="mt-1 break-words text-gray-600">連絡 {{ child.notice.payload.contacted_at?.replace('T',' ') || '日時未記録' }} ／ {{ ({tel:'電話',line:'LINE',app:'アプリ',in_person:'対面',email:'メール',other:'その他'})[child.notice.payload.contact_method] || '手段未記録' }} ／ {{ child.notice.payload.caller || '連絡者未記録' }} ／ 受付 {{ child.notice.payload.receiver_name || '未記録' }}</p>
           </li>
         </ul>

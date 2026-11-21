@@ -6,6 +6,7 @@ import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
+  absenceAvailable: {type:Boolean,default:true},
   date:           String,
   dayName:        String,
   stats:          Object,
@@ -74,6 +75,7 @@ const nextDay = () => {
         </div>
       </div>
     </template>
+    <p v-if="!absenceAvailable" role="alert" class="mx-4 my-3 rounded-lg bg-red-50 p-3 text-red-800">欠席連絡を取得できないため、空き枠は確定できません。連携状態を確認してください。</p>
 
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">

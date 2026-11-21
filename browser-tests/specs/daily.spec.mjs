@@ -571,3 +571,36 @@ test('activity edit and delete align and the editor retains its content', async 
   await expect(page.getByPlaceholder('プログラム選択時は省略可')).toHaveValue('架空の読み聞かせ');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
+
+
+test('absence contacts keep drafts, appear before visits and are reversible with audit retention', async ({page}) => {
+  fixture('morning-entry');
+  await login(page);
+  await visit(page,'/absences?date=2026-07-01','欠席連絡・相談記録');
+  const board=page.locator('.ab-board');
+  await board.locator('[data-child-select]').selectOption(String(ownChild().id));
+  await board.getByRole('button',{name:'欠席記録を追加',exact:true}).click();
+  const form=board.locator('form[data-child]');
+  await form.getByLabel('欠席理由',{exact:true}).fill('発熱のため自宅で休養');
+  await form.getByLabel('連絡日時（日本時間）',{exact:true}).fill('2026-07-01T09:00');
+  await form.getByLabel('連絡手段',{exact:true}).selectOption('line');
+  await form.getByLabel('連絡者（母・父など）',{exact:true}).fill('母');
+  await form.getByRole('button',{name:'この記録を保存',exact:true}).click();
+  await expect(board.getByRole('status')).toHaveText('保存しました。');
+  await expect(board.locator('summary').first()).toContainText('記録不足');
+  await visit(page,'/dashboard?date=2026-07-01','業務内容確認');
+  const summary=page.getByRole('region',{name:'出欠の概要',exact:true});
+  await expect(summary).toContainText(ownChild().name);
+  await expect(summary).toContainText('発熱のため自宅で休養');
+  await expect(summary).toContainText('LINE');
+  await expect(page.locator('section[aria-labelledby="daily-visits"]').getByText(ownChild().name,{exact:true})).toHaveCount(0);
+  const summaryY=await summary.boundingBox(), visitsY=await page.locator('#daily-visits').boundingBox(), transportY=await page.locator('#staff-transport').boundingBox(), activityY=await page.locator('#activity-preparation').boundingBox();
+  expect(summaryY.y).toBeLessThan(visitsY.y);expect(visitsY.y).toBeLessThan(transportY.y);expect(transportY.y).toBeLessThan(activityY.y);
+  await visit(page,'/absences?date=2026-07-01','欠席連絡・相談記録');
+  await board.locator('.ab-record summary').click();
+  await form.getByLabel('欠席として記録する（解除すると欠席取消。記録は保持）',{exact:true}).uncheck();
+  await form.getByRole('button',{name:'この記録を保存',exact:true}).click();
+  await expect(board.getByRole('status')).toHaveText('保存しました。');
+  await expect(board.locator('.ab-record summary')).toContainText('欠席取消');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});

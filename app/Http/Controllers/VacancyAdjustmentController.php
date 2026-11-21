@@ -87,6 +87,7 @@ class VacancyAdjustmentController extends Controller
             ->values();
 
         return Inertia::render('VacancyAdjustment/Index', [
+            'absenceAvailable'=>$roster['absenceAvailable'],
             'date'           => $date,
             'dayName'        => $this->dayName($dayOfWeek),
             'stats'          => [
