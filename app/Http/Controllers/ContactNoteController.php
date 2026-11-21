@@ -20,10 +20,13 @@ class ContactNoteController extends Controller
      * 連絡帳一覧（日付ベース）。
      * 当日の出席児童と連絡帳の状態（未作成/下書き/公開済み/既読/家庭側記入）を一覧する。
      */
-    public function index(Request $request)
+    public function index(Request $request, \App\Services\DailyWorkService $dailyWork)
     {
         $facilityId = $this->facilityId();
-        $validated = $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
+        $validated = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'task' => ['nullable', Rule::in(array_keys(\App\Services\DailyWorkService::TASK_LABELS))],
+        ]);
         $date = $validated['date'] ?? today()->format('Y-m-d');
 
         $usageRecords = UsageRecord::where('facility_id', $facilityId)
@@ -63,6 +66,13 @@ class ContactNoteController extends Controller
             ]);
         }
 
+        $task = $validated['task'] ?? null;
+        if ($task) {
+            $pendingIds = $dailyWork->forDate($facilityId, $date)['rows']
+                ->filter(fn ($row) => $row['tasks'][$task])->pluck('child_id');
+            $rows = $rows->whereIn('child_id', $pendingIds);
+        }
+
         // 年間PDF出力用: 連絡帳が存在する年と契約中の児童一覧
         // （本番MySQLとテストSQLiteで年抽出の関数が異なる）
         $yearExpr = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite'
@@ -85,6 +95,8 @@ class ContactNoteController extends Controller
 
         return Inertia::render('ContactNotes/Index', [
             'date'         => $date,
+            'selectedTask' => $task,
+            'taskLabels' => \App\Services\DailyWorkService::TASK_LABELS,
             'rows'         => $rows->sortBy('child_name')->values(),
             'statusLabels' => ContactNote::STATUS_LABELS,
             'exportYears'  => $years,

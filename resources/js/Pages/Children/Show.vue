@@ -1,4 +1,5 @@
 <script setup>
+import MenuDestination from '@/Components/MenuDestination.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -385,7 +386,7 @@ const tabAlert = (key) => (key === 'cert' && certAlert.value) || (key === 'plan'
 
           <div class="bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-center">
             <span class="text-sm font-medium text-gray-700">この児童の問い合わせ</span>
-            <span class="text-xs text-gray-600">登録・対応：メニュー「問い合わせ」</span>
+            <span class="text-xs text-gray-600"><MenuDestination prefix="登録・対応：メニュー" label="問い合わせ" :href="route('inquiries.index')" /></span>
           </div>
         </template>
 
@@ -394,7 +395,7 @@ const tabAlert = (key) => (key === 'cert' && certAlert.value) || (key === 'plan'
           <div class="bg-white border border-gray-200 rounded-lg p-6">
             <div class="flex justify-between items-center border-b pb-2 mb-4">
               <h3 class="text-base font-semibold text-gray-800">最近の利用記録</h3>
-              <span class="text-xs text-gray-600">記録の確認・入力：メニュー「記録・連絡帳」</span>
+              <span class="text-xs text-gray-600"><MenuDestination prefix="記録の確認・入力：メニュー" label="記録・連絡帳" :href="route('contact-notes.index')" /></span>
             </div>
             <div v-if="child.usage_records?.length" class="space-y-1">
               <div

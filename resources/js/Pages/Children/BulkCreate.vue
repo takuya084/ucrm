@@ -1,4 +1,5 @@
 <script setup>
+import MenuDestination from '@/Components/MenuDestination.vue'
 import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
@@ -111,7 +112,7 @@ const submit = () => {
         <!-- 登録済み学校の一覧 -->
         <DisclosurePanel id="child-csv-schools" title="登録済みの学校を確認">
           <p v-if="schools.length === 0" class="text-sm text-gray-500">
-            未登録です。メニュー「学校」で登録してください。
+            未登録です。<MenuDestination prefix="メニュー" label="学校" :href="route('schools.index')" />で登録してください。
           </p>
           <ul v-else class="text-sm text-gray-700 list-disc list-inside space-y-0.5">
             <li v-for="s in schools" :key="s.id">{{ s.name }}</li>

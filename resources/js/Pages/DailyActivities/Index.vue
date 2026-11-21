@@ -1,4 +1,5 @@
 <script setup>
+import MenuDestination from '@/Components/MenuDestination.vue'
 import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import Authenticated from '@/Layouts/Authenticated.vue'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
@@ -57,7 +58,7 @@ const remove = (activity) => {
     <template #header>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-xl font-semibold">療育予定・年間行事</h2>
-        <Link :href="route('dashboard', { date }) + '#activity-preparation'" class="text-sm text-primary-700 underline">日別の業務へ戻る</Link>
+        <Link :href="route('dashboard', { date }) + '#activity-preparation'" class="text-sm text-primary-700 underline">業務内容確認へ戻る</Link>
       </div>
     </template>
 
@@ -67,7 +68,7 @@ const remove = (activity) => {
           <input v-model="selectedDate" type="date" class="mt-1 block rounded-md border-gray-300"
             @change="selectedDate && router.get(route('daily-activities.index'), { date: selectedDate })" />
         </label>
-        <span class="py-2 text-xs text-gray-600">プログラムの登録・変更：メニュー「療育プログラム」</span>
+        <span class="py-2 text-xs text-gray-600"><MenuDestination prefix="プログラムの登録・変更：メニュー" label="療育プログラム" :href="route('programs.index')" /></span>
       </div>
 
       <section class="rounded-xl border bg-white p-4" aria-labelledby="planned-activities">
@@ -80,9 +81,9 @@ const remove = (activity) => {
               <p class="mt-1 text-gray-700">{{ activity.starts_at?.slice(0, 5) || '時刻未定' }} ／ {{ activity.staff?.name || '担当未定' }}</p>
               <p v-if="activity.materials" class="mt-1 whitespace-pre-wrap break-words text-gray-700">準備物　{{ activity.materials }}</p>
             </div>
-            <div class="flex gap-3">
-              <a href="#activity-form" @click="edit(activity)" class="text-primary-700 underline">編集</a>
-              <button type="button" @click="remove(activity)" class="text-red-700 underline">削除</button>
+            <div class="workspace-row-actions">
+              <a href="#activity-form" @click="edit(activity)" class="workspace-inline-action text-primary-700">編集</a>
+              <button type="button" @click="remove(activity)" class="workspace-inline-action text-red-700">削除</button>
             </div>
           </li>
         </ul>

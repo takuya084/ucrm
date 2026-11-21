@@ -9,6 +9,8 @@ import { computed, ref } from 'vue'
 
 const props = defineProps({
   date:         String,
+  selectedTask: String,
+  taskLabels: Object,
   rows:         Array,
   statusLabels: Object,
   exportYears:  Array,
@@ -30,7 +32,7 @@ const exportZipUrl = computed(() =>
 
 const selectedDate = ref(props.date)
 const changeDate = () => {
-  router.visit(route('contact-notes.index', { date: selectedDate.value }))
+  router.visit(route('contact-notes.index', { date: selectedDate.value, ...(props.selectedTask ? { task: props.selectedTask } : {}) }))
 }
 const moveDay = (diff) => {
   const d = new Date(selectedDate.value)
@@ -81,6 +83,11 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
 
         </div>
 
+        <div v-if="selectedTask" role="status" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm">
+          <span><strong>{{ taskLabels[selectedTask] }}</strong> ／ {{ rows.length }}人</span>
+          <Link :href="route('contact-notes.index', { date })" class="font-semibold text-primary-700 underline">全件表示</Link>
+        </div>
+
         <!-- サマリー -->
         <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div class="bg-white rounded-lg border border-gray-200 p-3 text-center">
@@ -108,7 +115,7 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
         <!-- 一覧 -->
         <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div v-if="rows.length === 0" class="py-12 text-center text-gray-400">
-            この日の対象児童がいません
+            {{ selectedTask ? '該当する未対応業務はありません' : 'この日の対象児童がいません' }}
           </div>
           <div v-else class="divide-y">
             <div v-for="row in rows" :key="row.child_id" :id="'child-' + row.child_id" class="scroll-mt-4 p-4 flex items-center gap-3 flex-wrap">

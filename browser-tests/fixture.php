@@ -47,6 +47,16 @@ if ($command === 'reset') {
         \App\Models\ContactNote::create(['facility_id'=>$child->facility_id,'child_id'=>$child->id,'date'=>'2026-07-01',
             'status'=>'published','published_at'=>now(),'guardian_message'=>'架空の公開連絡帳','guardian_comment'=>'架空の家庭返信']);
     }
+} elseif ($command === 'no-special-notes') {
+    $own=Child::where('name','架空児童a-active')->firstOrFail();
+    $own->update(['allergy_note'=>'【架空】特記事項なし']);
+    Child::create(['facility_id'=>$own->facility_id,'name'=>'注意児童','name_kana'=>'チュウイ','contract_status'=>'active','allergy_note'=>'卵アレルギー']);
+    foreach (Child::where('facility_id',$own->facility_id)->where('contract_status','active')->get() as $child) {
+        UsageRecord::create(['facility_id'=>$child->facility_id,'child_id'=>$child->id,'date'=>'2026-07-01','status'=>'attended']);
+    }
+} elseif ($command === 'daily-activity') {
+    $facility=Facility::where('name','架空事業所a')->firstOrFail();
+    \App\Models\DailyActivityPlan::create(['facility_id'=>$facility->id,'activity_date'=>'2026-07-01','category'=>'support','title'=>'架空の読み聞かせ','materials'=>'絵本']);
 } elseif ($command !== 'snapshot') {
     throw new RuntimeException('fixture_command_refused');
 }

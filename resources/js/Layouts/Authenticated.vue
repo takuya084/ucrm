@@ -16,7 +16,7 @@ onBeforeUnmount(() => { document.body.style.overflow = '' })
   <div class="workspace-shell min-h-screen bg-gray-50 text-gray-900">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-white focus:p-3">本文へ移動</a>
     <aside class="workspace-sidebar hidden lg:flex fixed inset-y-0 left-0 w-60 bg-white border-r border-gray-200 flex-col">
-      <Link :href="route('dashboard')" class="workspace-brand block border-b px-6 py-5 text-xl font-extrabold text-primary-700"><span class="workspace-brand-mark" aria-hidden="true">H</span>ハグくむ</Link>
+      <Link :href="route('dashboard')" class="workspace-brand block border-b px-6 py-5 text-xl font-extrabold text-primary-700">ハグくむ</Link>
       <div class="overflow-y-auto flex-1"><WorkspaceNavigation /></div>
     </aside>
     <div class="lg:pl-60">

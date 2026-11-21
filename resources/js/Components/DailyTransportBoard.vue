@@ -80,15 +80,17 @@ onUnmounted(() => clearInterval(timer))
 
 <template>
   <section aria-labelledby="staff-transport" class="rounded-xl border bg-white">
-    <div class="flex items-center justify-between gap-3 border-b px-4 py-3">
-      <h3 id="staff-transport" class="font-semibold text-gray-900">スタッフ全員の送迎</h3>
+    <div class="transport-section-header flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+      <h3 id="staff-transport" class="workspace-section-title text-gray-900">スタッフ全員の送迎</h3>
+      <div class="transport-header-actions flex flex-wrap items-center gap-x-6 gap-y-3">
       <button v-if="shared" type="button" @click="refresh" class="text-sm text-primary-700 underline">最新の担当を確認</button>
+      <slot name="header-actions" />
+      </div>
     </div>
-    <p v-if="syncState === 'connected'" class="px-4 pt-3 text-sm text-gray-600">p-yoyakuと共通の担当です。変更は両方に反映されます。</p>
     <p v-if="syncState === 'unavailable'" role="alert" class="px-4 py-3 text-sm text-red-700">p-yoyakuの送迎情報を取得できません。接続・連携設定とp-yoyakuの更新状況を確認し、再読み込みしてください。</p>
     <p v-if="localCount" class="px-4 pt-3 text-sm text-amber-800">UCRMだけに保存した担当が{{ localCount }}件あります。共通の一覧で担当を選び直してください。</p>
     <p v-if="assignments.length === 0 && syncState !== 'unavailable'" class="px-4 py-4 text-sm text-gray-700">この日の送迎担当は登録されていません。</p>
-    <div v-else-if="assignments.length" class="overflow-x-auto">
+    <div v-else-if="assignments.length" class="transport-table-wrap overflow-x-auto">
       <table class="w-full text-left text-sm">
         <thead class="bg-gray-50 text-gray-700">
           <tr>

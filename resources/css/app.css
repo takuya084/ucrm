@@ -7,7 +7,6 @@
   .workspace-shell { font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; line-height: 1.65; background: #f5f7fb; color: #1e293b; }
   .workspace-sidebar { box-shadow: 3px 0 18px rgb(15 23 42 / .025); }
   .workspace-brand { display: flex; align-items: center; gap: .65rem; letter-spacing: .035em; }
-  .workspace-brand-mark { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: .7rem; background: #0066cc; color: white; font-size: 1rem; }
   .workspace-accountbar { color: #475569; }
   .workspace-page-header { padding-top: 1.4rem; padding-bottom: 1.4rem; box-shadow: 0 3px 12px rgb(15 23 42 / .025); }
   .workspace-page-header h2 { font-size: clamp(1.3rem, 2.1vw, 1.65rem); font-weight: 800; letter-spacing: .015em; line-height: 1.4; }
@@ -71,4 +70,43 @@
   .workspace-shell #main-content :is(section, div, details).bg-white.border > h3 { padding-top: 1rem; padding-bottom: 1rem; }
   .workspace-shell #main-content table:not(.tg table) :is(th, td) { padding-top: .8rem; padding-bottom: .8rem; }
   @media print { .workspace-table-scroll { overflow: visible; } }
+}
+
+@layer components {
+  .workspace-section-title::before { flex: 0 0 .25rem; background: var(--workspace-section-accent, #0d7ee8); }
+  .workspace-role-area { border: 1px solid var(--workspace-role-border); border-radius: 1rem; background: var(--workspace-role-surface); overflow: hidden; }
+  .workspace-role-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; padding: 1rem; border-bottom: 1px solid var(--workspace-role-border); color: var(--workspace-section-accent); background: var(--workspace-role-heading); }
+  .workspace-role-header .workspace-section-title { margin: 0; }
+  .workspace-role-staff { --workspace-section-accent: #0066cc; --workspace-role-border: #bfdbfe; --workspace-role-surface: #f5faff; --workspace-role-heading: #e8f2ff; }
+  .workspace-role-management { --workspace-section-accent: #6d28d9; --workspace-role-border: #ddd6fe; --workspace-role-surface: #faf8ff; --workspace-role-heading: #f0eaff; }
+  .workspace-role-office { --workspace-section-accent: #92400e; --workspace-role-border: #fde68a; --workspace-role-surface: #fffdf5; --workspace-role-heading: #fef3c7; }
+  .workspace-jump-management { background: #f0eaff; color: #6d28d9; }
+  .workspace-jump-office { background: #fef3c7; color: #92400e; }
+  .workspace-menu-destination { font-size: .75rem; color: #64748b; line-height: 1.8; }
+  .workspace-task-card { display: block; border: 1px solid transparent; transition: border-color .15s, box-shadow .15s; }
+  .workspace-task-card:hover { border-color: #93c5fd; box-shadow: 0 2px 8px rgb(0 102 204 / .08); }
+  .transport-table-wrap { margin: 1rem; border: 1px solid #e2e8f0; border-radius: .75rem; }
+  .workspace-row-actions { display: flex; align-items: center; align-self: center; gap: .5rem; flex-shrink: 0; }
+  .workspace-inline-action { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 2.5rem; margin: 0; padding: 0 .8rem; border: 1px solid currentColor; border-radius: .6rem; line-height: 1; font-size: .875rem; font-weight: 600; white-space: nowrap; text-decoration: none; background: white; }
+  .workspace-inline-action:hover { background: #f8fafc; }
+}
+
+@layer components {
+  .attendance-entries { padding: 1rem; display: grid; gap: 1rem; background: #f8fafc; }
+  .attendance-entry { min-width: 0; border: 1px solid #e2e8f0; border-left: 4px solid #cbd5e1; border-radius: .85rem; background: white; overflow: hidden; }
+  .attendance-entry[data-attendance-status=attended] { border-left-color: #16a34a; }
+  .attendance-entry[data-attendance-status=absent], .attendance-entry[data-attendance-status=absent_notice] { border-left-color: #d97706; }
+  .attendance-entry-header { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; padding: 1rem; border-bottom: 1px solid #eef2f7; }
+  .attendance-person { display: flex; align-items: center; gap: .7rem; min-width: 0; flex: 1 1 12rem; }
+  .attendance-status-choices { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+  .attendance-remove { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; color: #64748b; font-size: 1.25rem; }
+  button.attendance-remove:hover { color: #b91c1c; background: #fef2f2; }
+  .attendance-entry-fields { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); gap: .85rem; padding: 1rem; }
+  .attendance-field-group { min-width: 0; border: 1px solid #e2e8f0; border-radius: .75rem; padding: .85rem; background: #fbfdff; }
+  .attendance-field-title { margin-bottom: .65rem; font-size: .8rem; font-weight: 700; color: #475569; }
+  .attendance-check { display: inline-flex; align-items: center; gap: .45rem; min-height: 2.25rem; font-size: .875rem; color: #334155; cursor: pointer; }
+  .attendance-check input { width: 1rem; height: 1rem; border-radius: .25rem; }
+  .attendance-record-state { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .7rem 1rem; padding: .8rem 1rem; border-top: 1px solid #eef2f7; background: #f8fafc; }
+  @media (max-width: 1100px) { .attendance-entry-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .attendance-field-group:last-child { grid-column: 1 / -1; } }
+  @media (max-width: 640px) { .attendance-entries { padding: .65rem; } .attendance-entry-fields { grid-template-columns: minmax(0, 1fr); padding: .75rem; } .attendance-entry-header { padding: .75rem; } .attendance-status-choices { order: 3; flex-basis: 100%; } }
 }

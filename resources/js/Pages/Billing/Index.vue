@@ -1,4 +1,5 @@
 <script setup>
+import MenuDestination from '@/Components/MenuDestination.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import FlashMessage from '@/Components/FlashMessage.vue'
@@ -54,7 +55,7 @@ const calculate = () => {
 
         <!-- 毎月の流れ -->
         <nav aria-label="毎月の請求の流れ" class="workspace-steps">
-          <div class="flex items-center gap-3 p-4"><span class="workspace-step-number">01</span><span><strong>実績を確認</strong><small class="block text-gray-600">メニュー「出欠・利用実績」</small></span></div>
+          <div class="flex items-center gap-3 p-4"><span class="workspace-step-number">01</span><span><strong>実績を確認</strong><small class="block text-gray-600"><MenuDestination prefix="メニュー" label="出欠・利用実績" :href="route('usage-records.index')" /></small></span></div>
           <a href="#billing-calculation"><span class="workspace-step-number">02</span><span><strong>請求を計算</strong><small>対象月を選んで計算</small></span></a>
           <a href="#billing-periods"><span class="workspace-step-number">03</span><span><strong>詳細から出力へ</strong><small>内容確認 → 確定 → CSV出力</small></span></a>
         </nav>
