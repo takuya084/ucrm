@@ -56,7 +56,9 @@ if ($command === 'reset') {
     }
 } elseif ($command === 'daily-activity') {
     $facility=Facility::where('name','架空事業所a')->firstOrFail();
-    \App\Models\DailyActivityPlan::create(['facility_id'=>$facility->id,'activity_date'=>'2026-07-01','category'=>'support','title'=>'架空の読み聞かせ','materials'=>'絵本']);
+    $activity = new \App\Models\DailyActivityPlan(['activity_date'=>'2026-07-01','category'=>'support','title'=>'架空の読み聞かせ','materials'=>'絵本']);
+    $activity->facility_id = $facility->id;
+    $activity->save();
 } elseif ($command !== 'snapshot') {
     throw new RuntimeException('fixture_command_refused');
 }
