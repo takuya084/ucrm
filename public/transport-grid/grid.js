@@ -1,6 +1,6 @@
 // Shared without modification by p-yoyaku and UCRM.
-export const fields = ['pickup_time', 'pickup_location', 'pickup_staff_id', 'dropoff_time', 'dropoff_location', 'dropoff_staff_id']
-export const headings = ['迎え時刻', '迎え場所', '迎え担当', '送り時刻', '送り場所', '送り担当']
+export const fields = ['pickup_time', 'pickup_location', 'pickup_staff_id', 'dropoff_time', 'dropoff_location', 'dropoff_staff_id', 'pickup_assistant_staff_id', 'dropoff_assistant_staff_id']
+export const headings = ['迎え時刻', '迎え場所', '迎え担当', '送り時刻', '送り場所', '送り担当', '迎え担当2', '送り担当2']
 const clone = value => JSON.parse(JSON.stringify(value))
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
 
@@ -19,7 +19,7 @@ export function parseTSV(text) {
   if (quoted) throw new Error('貼り付けデータの引用符が閉じていません。')
   rows.at(-1).push(cell)
   if (rows.length > 1 && rows.at(-1).length === 1 && rows.at(-1)[0] === '') rows.pop()
-  if (rows.length > 200 || rows.some(row => row.length > 6)) throw new Error('貼り付けは200行・6列以内にしてください。')
+  if (rows.length > 200 || rows.some(row => row.length > fields.length)) throw new Error('貼り付けは200行・8列以内にしてください。')
   return rows
 }
 
@@ -39,8 +39,9 @@ export function resolveCell(field, text, row, config) {
     ? Object.entries(config.locations).map(([value, label]) => ({ value, label }))
     : staffLabels(config.staff)
   let matches = options.filter(option => option.label.normalize('NFKC') === value || String(option.value) === value)
+  if (field.endsWith('_location') && value === '学校(名称未登録)' && !row.school_name) matches = options.filter(option => option.value === 'school')
   if (field.endsWith('_location') && row.location_aliases?.[text.trim()]) matches = options.filter(option => option.value === row.location_aliases[text.trim()])
-  if (matches.length === 1) return { value: matches[0].value, text: matches[0].label, error: '' }
+  if (matches.length === 1) return { value: matches[0].value, text: matches[0].value === 'school' && row.school_name ? row.school_name : matches[0].label, error: '' }
   return { value, text, error: field.endsWith('_location') ? '候補にある場所を選択してください。登録済みの学校・方面名も貼り付けできます。' : '候補にある職員を選択してください。' }
 }
 
@@ -148,7 +149,7 @@ export function mountTransportGrid(root, options) {
   }
   const cell = (row, col) => resolveCell(fields[col], rows[row][fields[col]], rows[row], config)
   const readText = (row, field) => {
-    if (field.endsWith('_location')) return config.locations[row[field]] ?? row[field] ?? ''
+    if (field.endsWith('_location')) return row[field] === 'school' ? row.school_name || '学校（名称未登録）' : config.locations[row[field]] ?? row[field] ?? ''
     if (field.endsWith('_staff_id')) return staffLabels(config.staff).find(person => String(person.value) === String(row[field]))?.label ?? row[field] ?? ''
     return row[field] ?? ''
   }
@@ -166,7 +167,9 @@ export function mountTransportGrid(root, options) {
       for (const direction of ['pickup', 'dropoff']) {
         if (!!row[direction + '_time'] !== !!row[direction + '_location']) errors[`${i}.${direction}_location`] = '時刻と場所をセットで入力してください。'
         const location = resolveCell(direction + '_location', row[direction + '_location'], row, config).value
-        if (row[direction + '_staff_id'] && (!row[direction + '_time'] || location === 'parents')) errors[`${i}.${direction}_staff_id`] = '親送迎・時刻なしの方向には担当を指定できません。'
+        const assistant = row[direction + '_assistant_staff_id']
+        if (assistant && (!row[direction + '_staff_id'] || String(assistant) === String(row[direction + '_staff_id']))) errors[`${i}.${direction}_assistant_staff_id`] = '担当1と異なる職員を選択してください。'
+        if ((row[direction + '_staff_id'] || assistant) && (!row[direction + '_time'] || location === 'parents')) errors[`${i}.${direction}_staff_id`] = '親送迎・時刻なしの方向には担当を指定できません。'
       }
     })
     return !Object.keys(errors).length
@@ -178,7 +181,7 @@ export function mountTransportGrid(root, options) {
       <div class="tg-toolbar"><strong>送迎一覧</strong><span data-count role="status"></span><button type="button" data-reload>最新の一覧を確認</button></div>
       ${disclosure('guide', '入力・コピペの使い方', '<p class="tg-help">▼で全候補を表示。文字入力で絞り込み。Excelの複数セルを貼り付けできます。範囲コピーはShift＋クリックで選択します。</p><p class="tg-help">時刻は設定範囲内の5分刻み、場所・担当は候補にあるものだけ保存できます。行の削除は当日の予約の取り消しです。</p>')}
       <p role="status" class="tg-message">${escape(message)}</p>
-      ${editable ? disclosure('tools', '予約の追加・削除／一括変更', `<div class="tg-toolbar"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button><button type="button" data-add-all>未予約の児童をまとめて追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div>
+      ${editable ? disclosure('tools', '予約の追加・削除／一括変更', `<div class="tg-toolbar"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !person.is_absent && !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button><button type="button" data-add-all>未予約の児童をまとめて追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div>
       <div class="tg-toolbar"><label>一括変更する列 <select data-bulk-field>${fields.map((field, i) => `<option value="${i}">${headings[i]}</option>`).join('')}</select></label><label>入力値 <span class="tg-picker"><input data-bulk-value aria-label="一括変更の入力値" list="${uid}-bulk" autocomplete="off"></span></label><datalist id="${uid}-bulk"></datalist><button type="button" data-apply>選択した児童に適用</button></div>`) : ''}
       <div class="tg-scroll"><table><thead><tr><th scope="col">選択${editable ? '<input type="checkbox" data-select-all aria-label="表示中の児童をすべて選択">' : ''}</th><th scope="col">児童</th>${headings.map(name => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody>${rows.map((row, i) => `<tr class="${deleted.has(row.user_id) ? 'tg-deleted' : ''}"><td><input type="checkbox" data-select="${row.user_id}" aria-label="${escape(row.name)}を選択" ${selected.has(row.user_id) ? 'checked' : ''} ${!editable ? 'disabled' : ''}></td><th scope="row">${escape(row.name)}${deleted.has(row.user_id) ? '<small>保存時に予約を削除</small>' : ''}</th>${fields.map((field, col) => {
         const error = errors[`${i}.${field}`]
@@ -208,7 +211,7 @@ export function mountTransportGrid(root, options) {
       rows.push(clone(person)); render()
     }
     root.querySelector('[data-add-all]').onclick = () => {
-      rows.push(...clone(config.rows.filter(person => !rows.some(row => row.user_id === person.user_id))))
+      rows.push(...clone(config.rows.filter(person => !person.is_absent && !rows.some(row => row.user_id === person.user_id))))
       anchor = end = null; render()
     }
     root.querySelector('[data-delete]').onclick = () => {
@@ -286,7 +289,7 @@ export function mountTransportGrid(root, options) {
       const data = await options.load()
       if (disposed) return
       if (!data || !Array.isArray(data.rows) || !Array.isArray(data.times) || !Array.isArray(data.staff) || !data.locations) throw new Error('送迎一覧を読み込めません。連携設定と両アプリの更新状況を確認してください。')
-      config = data; rows = clone(data.rows.filter(row => row.exists)); original = new Map(data.rows.map(row => [row.user_id, clone(row)]))
+      config = data; rows = clone(data.rows.filter(row => row.exists && !row.is_absent).sort((a,b) => (a.pickup_time || a.dropoff_time || '99:99').localeCompare(b.pickup_time || b.dropoff_time || '99:99') || (a.school_name || '').localeCompare(b.school_name || '', 'ja') || a.user_id-b.user_id)); original = new Map(data.rows.map(row => [row.user_id, clone(row)]))
       selected.clear(); deleted.clear(); errors = {}; anchor = end = null; uncertain = false; message = ''; busy = false; render(); return true
     } catch (error) { busy = false; root.innerHTML = `<p role="alert">${escape(error.message)}</p><button type="button">再読み込み</button>`; root.querySelector('button').onclick = load; return false }
   }

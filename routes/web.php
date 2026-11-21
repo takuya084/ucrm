@@ -386,3 +386,10 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])->name('dashboard');
 
 require __DIR__.'/auth.php';
+
+Route::middleware(['auth','verified'])->group(function () {
+ Route::get('/absences',[\App\Http\Controllers\AbsenceController::class,'index'])->name('absences.index');
+ Route::get('/absences/data',[\App\Http\Controllers\AbsenceController::class,'show'])->name('absences.data');
+ Route::put('/absences/data',[\App\Http\Controllers\AbsenceController::class,'update']);
+ Route::put('/absences/calendar',[\App\Http\Controllers\AbsenceController::class,'calendar'])->name('absences.calendar');
+});

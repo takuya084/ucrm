@@ -27,9 +27,11 @@ class TransportGridController extends Controller
             'rows.*.pickup_time' => ['sometimes', 'nullable', 'string', 'max:8'],
             'rows.*.pickup_location' => ['sometimes', 'nullable', 'string', 'max:255'],
             'rows.*.pickup_staff_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'rows.*.pickup_assistant_staff_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'rows.*.dropoff_time' => ['sometimes', 'nullable', 'string', 'max:8'],
             'rows.*.dropoff_location' => ['sometimes', 'nullable', 'string', 'max:255'],
             'rows.*.dropoff_staff_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'rows.*.dropoff_assistant_staff_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
         ]);
         $facility = Facility::findOrFail($this->facilityId());
         abort_unless($facility->yoyaku_business_id, 422, 'p-yoyakuとの連携設定が必要です。');

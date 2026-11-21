@@ -30,7 +30,7 @@ test('range paste is bounded and does not mutate data on failure', () => {
   const rows = [{ user_id: 1 }, { user_id: 2 }]
   assert.equal(pasteRange(rows, 0, 0, [['14:30'], ['18:00']])[1].pickup_time, '18:00')
   assert.throws(() => pasteRange(rows, 1, 0, [['14:30'], ['18:00']]))
-  assert.throws(() => pasteRange(rows, 0, 5, [['x', 'y']]))
+  assert.throws(() => pasteRange(rows, 0, 7, [['x', 'y']]))
   assert.deepEqual(rows, [{ user_id: 1 }, { user_id: 2 }])
 })
 
@@ -53,3 +53,7 @@ test('requests use the current XSRF cookie after login instead of a stale head m
     assert.equal(requests.length, 3)
   } finally { globalThis.document = oldDocument; globalThis.fetch = oldFetch }
 })
+
+test("second assignee and school-name paste retain registered values",()=>{assert.equal(resolveCell("pickup_assistant_staff_id", "職員A", {}, {times:[],locations:{school:"学校"},staff:[{id:2,name:"職員A"}]}).value,2);assert.equal(resolveCell("pickup_location","第一小学校",{school_name:"第一小学校",location_aliases:{"第一小学校":"school"}},{times:[],locations:{school:"学校"},staff:[]}).text,"第一小学校")})
+
+test('missing-school display remains a valid unchanged location when saving a time edit',()=>{assert.equal(resolveCell('pickup_location','学校（名称未登録）',{school_name:null},{times:[],locations:{school:'学校'},staff:[]}).value,'school')})

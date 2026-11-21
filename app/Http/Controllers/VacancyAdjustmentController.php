@@ -23,28 +23,15 @@ class VacancyAdjustmentController extends Controller
 
         $capacity = Facility::find($facilityId)?->capacity_per_day ?? 10;
 
-        // その日のスケジュール対象児童ID
-        $scheduledChildIds = ChildSchedule::where('day_of_week', $dayOfWeek)
-            ->where('start_date', '<=', $date)
-            ->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', $date))
-            ->whereHas('child', fn($q) => $q->where('facility_id', $facilityId)->where('contract_status', 'active'))
-            ->pluck('child_id');
-
-        // その日の出席記録
-        $usageMap = UsageRecord::where('date', $date)
-            ->whereIn('child_id', $scheduledChildIds)
-            ->get()
-            ->keyBy('child_id');
-
-        $attended       = $usageMap->where('status', 'attended')->count();
-        $absentRecorded = $usageMap->where('status', '!=', 'attended')->count();
-        $notRecorded    = $scheduledChildIds->count() - $usageMap->count();
-        $availableSlots = max(0, $capacity - $attended);
-
-        // 欠席者（スケジュールあり → 欠席または未記録）
-        $absentChildIds = $scheduledChildIds->filter(fn($id) =>
-            !$usageMap->has($id) || $usageMap->get($id)->status !== 'attended'
-        );
+        $roster=app(\App\Services\DailyAttendanceRoster::class)->forDate($facilityId,$date);
+        $rosterRows=$roster['rows'];
+        $scheduledChildIds=$rosterRows->pluck('child_id');
+        $usageMap=$rosterRows->keyBy('child_id');
+        $attended=$rosterRows->where('status','attended')->count();
+        $absentRecorded=$rosterRows->whereIn('status',['absent','absent_notice','cancel'])->count();
+        $notRecorded=0;
+        $availableSlots=max(0,$capacity-$attended);
+        $absentChildIds=$rosterRows->whereIn('status',['absent','absent_notice','cancel'])->pluck('child_id');
 
         $absentChildren = Child::whereIn('id', $absentChildIds)
             ->with(['guardians' => fn($q) => $q->orderByPivot('priority_order')])
@@ -54,8 +41,8 @@ class VacancyAdjustmentController extends Controller
                 'name'           => $child->name,
                 'grade'          => $child->grade,
                 'pickup_required'=> $child->pickup_required,
-                'status'         => $usageMap->get($child->id)?->status ?? 'not_recorded',
-                'absent_reason'  => $usageMap->get($child->id)?->absent_reason,
+                'status'         => ($usageMap->get($child->id)['status'] ?? null) ?? 'not_recorded',
+                'absent_reason'  => ($usageMap->get($child->id)['absent_reason'] ?? null),
                 'guardian'       => $this->formatGuardian($child->guardians->first()),
             ])
             ->values();
@@ -100,6 +87,7 @@ class VacancyAdjustmentController extends Controller
             ->values();
 
         return Inertia::render('VacancyAdjustment/Index', [
+            'absenceAvailable'=>$roster['absenceAvailable'],
             'date'           => $date,
             'dayName'        => $this->dayName($dayOfWeek),
             'stats'          => [
@@ -107,7 +95,7 @@ class VacancyAdjustmentController extends Controller
                 'scheduled'      => $scheduledChildIds->count(),
                 'attended'       => $attended,
                 'absent'         => $absentRecorded + $notRecorded,
-                'availableSlots' => $availableSlots,
+                'availableSlots' => $roster['absenceAvailable'] ? $availableSlots : 0,
             ],
             'absentChildren' => $absentChildren,
             'candidates'     => $candidates,

@@ -80,6 +80,21 @@ class YoyakuApiService
         return $data;
     }
 
+    public function absences(string $method, array $payload, int $facilityId, bool $calendar = false): array
+    {
+        $client = $this->client($facilityId);
+        abort_unless($client,503,'欠席連携に接続できません。');
+        $url = $this->baseUrl.'/api/absences/'.($calendar ? 'calendar' : 'data');
+        try { $response = $method === 'GET' ? $client->get($url,$payload) : $client->put($url,$payload); }
+        catch (\Illuminate\Http\Client\ConnectionException $e) { abort(503,'欠席連絡の取得・保存結果を確認できません。再読み込みで保存結果を確認してください。'); }
+        if ($response->status() === 422) throw \Illuminate\Validation\ValidationException::withMessages($response->json('errors') ?: ['absence'=>'入力内容を確認してください。']);
+        abort_unless($response->successful(),503,'欠席連絡を取得・保存できません。両アプリの更新・連携設定を確認してください。');
+        $data=$response->json();
+        if($method === 'GET') abort_unless(is_array($data) && ($data['business_id'] ?? null)===$payload['business_id'] && ($data['date'] ?? null)===$payload['date'] && is_array($data['rows'] ?? null) && is_array($data['children'] ?? null),503);
+        else abort_unless(is_array($data) && ($data['ok'] ?? null) === true,503);
+        return $data;
+    }
+
     public function getTransport(string $date, int $businessId, int $facilityId): ?array
     {
         $client = $this->client($facilityId);

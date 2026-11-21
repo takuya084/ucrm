@@ -63,10 +63,25 @@ class DailyAttendanceRoster
             }
         }
 
+        $absence = app(AbsenceBoard::class)->overview($facilityId,$date);
+        $notices = collect($absence['rows'])->filter(fn ($r) => ($r['payload']['is_absent'] ?? true) && !empty($r['local_child_id']))->keyBy('local_child_id');
+        $rows = $rows->map(function ($row) use ($notices) {
+            if ($notice=$notices->get($row['child_id'])) {
+                $row['status']='absent_notice'; $row['absent_reason']=$notice['payload']['reason'] ?? '';
+                $row['absence_notice']=$notice;
+            }
+            return $row;
+        });
+        // Include an absence even if the booking was already removed; do not lose its audit record.
+        $extraIds=$notices->keys()->diff($rows->pluck('child_id'));
+        foreach(Child::with('school')->where('facility_id',$facilityId)->whereIn('id',$extraIds)->get() as $child) {
+            $row=$this->rowFromChild($child); $row['status']='absent_notice';
+            $row['absent_reason']=$notices[$child->id]['payload']['reason'] ?? ''; $row['absence_notice']=$notices[$child->id]; $rows->push($row);
+        }
         // 表示順をカナ順で安定させる
         $rows = $rows->sortBy('child_name_kana')->values();
 
-        return ['rows' => $rows, 'dataSource' => $dataSource, 'hasRecords' => $hasRecords];
+        return ['rows' => $rows, 'dataSource' => $dataSource, 'hasRecords' => $hasRecords, 'absenceAvailable'=>$absence['available'], 'absenceData'=>$absence];
     }
 
     /** usage_record モデルから行データを生成 */

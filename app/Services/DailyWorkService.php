@@ -13,7 +13,7 @@ class DailyWorkService
         'report' => '連絡帳未入力', 'draft' => '連絡帳が下書き', 'delivery' => '連携の確認が必要',
     ];
 
-    public function forDate(int $facilityId, string $date): array
+    public function forDate(int $facilityId, string $date, ?array $absenceData = null): array
     {
         $usage = UsageRecord::where('facility_id', $facilityId)->whereDate('date', $date)
             ->whereHas('child', fn ($q) => $q->where('facility_id', $facilityId))
@@ -24,14 +24,15 @@ class DailyWorkService
         $records = SupportRecord::whereDate('date', $date)
             ->whereHas('child', fn ($q) => $q->where('facility_id', $facilityId))
             ->get(['id', 'child_id'])->keyBy('child_id');
-        $rows = $usage->keys()->merge($notes->keys())->unique()->map(function ($id) use ($usage, $notes, $records) {
+        $absences=collect(($absenceData ?? app(AbsenceBoard::class)->overview($facilityId,$date))['rows'])->filter(fn($r)=>$r['payload']['is_absent']??true)->pluck('local_child_id');
+        $rows = $usage->keys()->merge($notes->keys())->unique()->map(function ($id) use ($usage, $notes, $records, $absences) {
             $ur = $usage->get($id); $note = $notes->get($id); $record = $records->get($id);
             $child = $ur?->child ?? $note->child;
-            $attended = $ur?->status === 'attended';
+            $attended = $ur?->status === 'attended' && !$absences->contains($id);
             $state = ContactNoteStatus::for($note);
             return [
                 'child_id' => $id, 'child_name' => $child->name,
-                'attendance' => $ur ? (UsageRecord::STATUS_LABELS[$ur->status] ?? $ur->status) : '出欠未確定',
+                'attendance' => $absences->contains($id) ? '欠席（連絡あり）' : ($ur ? (UsageRecord::STATUS_LABELS[$ur->status] ?? $ur->status) : '出欠未確定'),
                 'transport' => !$attended || !$child->pickup_required ? '送迎対象外' : (($ur->pickup_done ? '迎え完了' : '迎え未完了').'・'.($ur->dropoff_done ? '送り完了' : '送り未完了')),
                 'state' => $state,
                 'record' => $record ? '保存済み' : ($attended ? '未入力' : '対象外'),

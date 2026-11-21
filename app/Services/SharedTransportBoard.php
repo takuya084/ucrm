@@ -28,11 +28,14 @@ class SharedTransportBoard
                     'reservation_id' => (int) $row['id'], 'revision' => (int) $row['revision'],
                     'child_id' => (int) $row['user_id'], 'direction' => $direction,
                     'staff_id' => $row[$direction.'_staff_id'], 'staff_name' => $row[$direction.'_staff_name'],
-                    'scheduled_time' => $time, 'location' => $locations[$location] ?? $location,
+                    'assistant_staff_id' => $row[$direction.'_assistant_staff_id'] ?? null,
+                    'assistant_staff_name' => $row[$direction.'_assistant_staff_name'] ?? null,
+                    'scheduled_time' => $time, 'location' => $location === 'school' ? ($row['school_name'] ?? '学校（名称未登録）') : ($locations[$location] ?? $location),
                 ];
             }
         }
         usort($assignments, fn ($a, $b) => strcmp($a['scheduled_time'], $b['scheduled_time'])
+            ?: strcmp($a['location'] ?? '', $b['location'] ?? '')
             ?: $a['reservation_id'] <=> $b['reservation_id']);
         return ['state' => 'connected', 'visits' => $visits, 'assignments' => $assignments, 'staff' => $data['staff']];
     }

@@ -14,6 +14,9 @@ class DailyTransportOverview
     {
         $assignments = DB::table('daily_transport_assignments as assignments')
             ->join('staff', 'staff.id', '=', 'assignments.staff_id')
+            ->leftJoin('staff as assistant', fn ($join) => $join->on('assistant.id', '=', 'assignments.assistant_staff_id')->where('assistant.facility_id', $facilityId))
+            ->leftJoin('children', 'children.id', '=', 'assignments.child_id')
+            ->leftJoin('schools', fn($join)=>$join->on('schools.id','=','children.school_id')->where('schools.facility_id',$facilityId))
             ->where('assignments.facility_id', $facilityId)
             ->where('staff.facility_id', $facilityId)
             ->where('assignments.service_date', $date)
@@ -24,7 +27,12 @@ class DailyTransportOverview
             ->get([
                 'assignments.child_id', 'assignments.staff_id', 'assignments.direction',
                 'assignments.scheduled_time', 'assignments.location', 'staff.name as staff_name',
+                'assignments.assistant_staff_id', 'assistant.name as assistant_staff_name', 'schools.name as school_name',
             ]);
+        $assignments = $assignments->map(function ($row) {
+            if (in_array($row->location, ['学校', 'school'], true)) $row->location = $row->school_name ?: '学校（名称未登録）';
+            return $row;
+        })->sort(fn ($a, $b) => strcmp($a->scheduled_time ?? '99:99', $b->scheduled_time ?? '99:99') ?: strcmp($a->location ?? '', $b->location ?? '') ?: $a->child_id <=> $b->child_id)->values();
         $transportStaff = $canManage
             ? Staff::where('facility_id', $facilityId)->where('is_active', true)->orderBy('name')->get(['id', 'name'])
             : [];
