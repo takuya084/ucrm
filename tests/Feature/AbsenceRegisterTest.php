@@ -8,13 +8,13 @@ class AbsenceRegisterTest extends TestCase {
  private function fixture(): array { $f=\App\Models\Facility::create(['name'=>'確認事業所','facility_code'=>(string)random_int(1000000000,1999999999),'service_type'=>'houday']);$user=\App\Models\User::factory()->create();\App\Models\Staff::create(['facility_id'=>$f->id,'user_id'=>$user->id,'name'=>'管理者','role'=>'admin','is_active'=>true]);$child=\App\Models\Child::create(['facility_id'=>$f->id,'name'=>'確認児童','contract_status'=>'active']);return [$f,$user,$child]; }
  public function test_calendar_settings_are_read_from_the_active_facility_and_reject_stale_updates(): void {
   [$tenant,$actor]=$this->fixture();$this->actingAs($actor);
-  $this->getJson('/absences/calendar')->assertOk()->assertJsonPath('calendar',null);
+  $this->getJson('/absences/calendar')->assertOk()->assertJsonPath('calendar.confirmed',false)->assertJsonPath('calendar.revision',0);
   $calendar=['revision'=>0,'weekdays'=>[1,2,3,4,5],'closed_dates'=>['2026-05-06'],'confirmed'=>true];
   $this->putJson('/absences/calendar',$calendar)->assertOk();
   $this->getJson('/absences/calendar')->assertOk()->assertJsonPath('calendar.revision',1)->assertJsonPath('calendar.closed_dates.0','2026-05-06');
   $this->putJson('/absences/calendar',$calendar)->assertUnprocessable();
   [$other,$otherActor]=$this->fixture();$this->actingAs($otherActor);
-  $this->getJson('/absences/calendar?facility_id='.$tenant->id)->assertOk()->assertJsonPath('calendar',null);
+  $this->getJson('/absences/calendar?facility_id='.$tenant->id)->assertOk()->assertJsonPath('calendar.confirmed',false)->assertJsonPath('calendar.revision',0);
   \App\Models\Staff::where('user_id',$actor->id)->update(['role'=>'staff']);$actor->unsetRelation('staff');$this->actingAs($actor);
   $this->getJson('/absences/calendar')->assertForbidden();
   $this->putJson('/absences/calendar',array_replace($calendar,['revision'=>1]))->assertForbidden();
