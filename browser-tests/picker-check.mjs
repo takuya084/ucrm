@@ -54,6 +54,39 @@ export async function checkPicker(page, expect) {
   await root.getByRole('button', { name: '変更をまとめて保存', exact: true }).click()
   await expect(root.getByText('変更をまとめて保存しました。', { exact: true })).toBeVisible()
   expect(await page.evaluate(() => window.pickerSaves[0].rows[0].pickup_staff_id)).toBe(8)
+  expect((await root.locator('thead th').allTextContents()).map(text=>text.trim())).toEqual(['選択','児童','迎え時刻','迎え場所','迎え担当','迎え担当2','送り時刻','送り場所','送り担当','送り担当2'])
+  // Paste both assignees for both directions, then inspect the saved canonical IDs.
+  await input.evaluate(input => {
+    const clipboardData=new DataTransfer();clipboardData.setData('text/plain','候補職員B\t候補職員A\t17:30\t自宅\t候補職員A\t候補職員B')
+    input.dispatchEvent(new ClipboardEvent('paste',{clipboardData,bubbles:true,cancelable:true}))
+  })
+  const commit=root.getByRole('button',{name:'変更をまとめて保存',exact:true})
+  await commit.click()
+  await expect(root.getByText('変更をまとめて保存しました。',{exact:true})).toBeVisible()
+  expect(await page.evaluate(()=>window.pickerSaves.at(-1).rows[0])).toMatchObject({pickup_staff_id:8,pickup_assistant_staff_id:7,dropoff_staff_id:7,dropoff_assistant_staff_id:8})
+  await expect(root.getByRole('combobox',{name:'候補確認児童 迎え担当2',exact:true})).toHaveValue('候補職員A')
+  await expect(root.getByRole('combobox',{name:'候補確認児童 送り担当2',exact:true})).toHaveValue('候補職員B')
+  // An ID and a typed label for the same person are the same assignee.
+  const assistant=root.getByRole('combobox',{name:'候補確認児童 迎え担当2',exact:true})
+  await assistant.evaluate(input=>{
+    const clipboardData=new DataTransfer();clipboardData.setData('text/plain','候補職員B')
+    input.dispatchEvent(new ClipboardEvent('paste',{clipboardData,bubbles:true,cancelable:true}))
+  })
+  const savedCount=await page.evaluate(()=>window.pickerSaves.length)
+  await commit.click()
+  await expect(assistant).toHaveAttribute('aria-invalid','true')
+  expect(await page.evaluate(()=>window.pickerSaves.length)).toBe(savedCount)
+  // Whitespace pasted into an optional assignee is a valid clearing operation.
+  await input.evaluate(input=>{
+    const clipboardData=new DataTransfer();clipboardData.setData('text/plain','　\t　')
+    input.dispatchEvent(new ClipboardEvent('paste',{clipboardData,bubbles:true,cancelable:true}))
+  })
+  await commit.click()
+  await expect(root.getByText('変更をまとめて保存しました。',{exact:true})).toBeVisible()
+  expect(await page.evaluate(()=>window.pickerSaves.at(-1).rows[0])).toMatchObject({pickup_staff_id:null,pickup_assistant_staff_id:null})
+  const last=root.getByRole('combobox',{name:'候補確認児童 送り担当2',exact:true})
+  await last.click();await last.press('Shift+ArrowLeft');await last.press('Shift+ArrowRight')
+  await expect(last).toBeFocused()
   await page.evaluate(() => window.disposePicker())
   await expect(options).toHaveCount(0)
 }
