@@ -1,6 +1,5 @@
 <script setup>
 import MenuDestination from '@/Components/MenuDestination.vue'
-import { allergyNotice } from '@/lib/notice.mjs'
 import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link } from '@inertiajs/vue3'
@@ -58,42 +57,51 @@ const availableToAdd = computed(() =>
 // ── 自動保存 ─────────────────────────────────────────────
 const saveStatus = ref('')   // '' | 'saving' | 'saved' | 'error'
 let saveTimer = null
+let saveInFlight = false
+let saveRequested = false
 
-const autoSave = () => {
+// Keep a single request in flight. Rapid edits are coalesced into the latest
+// full roster after the preceding write, so an older save cannot finish last.
+const autoSave = async () => {
+  saveRequested = true
   saveStatus.value = 'saving'
   clearTimeout(saveTimer)
-
-  axios.post(route('usage-records.bulk-store'), {
-    date:    props.date,
-    records: records.value.map(r => ({
-      child_id:       r.child_id,
-      status:         r.status,
-      absent_reason:  r.absent_reason,
-      pickup_done:    r.pickup_done,
-      dropoff_done:   r.dropoff_done,
-      billing_target: r.billing_target,
-      memo:           r.memo,
-      check_in_time:  r.check_in_time || null,
-      check_out_time: r.check_out_time || null,
-      is_school_day:  r.is_school_day ?? true,
-      service_type:   r.service_type || null,
-    })),
-  }).then(res => {
-    // 返ってきた usage_record_id をローカルに反映（支援記録ボタン表示用）
-    const ids = res.data.ids ?? {}
-    records.value.forEach(r => {
-      if (ids[r.child_id]) r.usage_record_id = ids[r.child_id]
-    })
+  if (saveInFlight) return
+  saveInFlight = true
+  try {
+    while (saveRequested) {
+      saveRequested = false
+      const res = await axios.post(route('usage-records.bulk-store'), {
+        date:    props.date,
+        records: records.value.map(r => ({
+          child_id:       r.child_id,
+          status:         r.status,
+          absent_reason:  r.absent_reason,
+          pickup_done:    r.pickup_done,
+          dropoff_done:   r.dropoff_done,
+          billing_target: r.billing_target,
+          memo:           r.memo,
+          check_in_time:  r.check_in_time || null,
+          check_out_time: r.check_out_time || null,
+          is_school_day:  r.is_school_day ?? true,
+          service_type:   r.service_type || null,
+        })),
+      })
+      const ids = res.data.ids ?? {}
+      records.value.forEach(r => {
+        if (ids[r.child_id]) r.usage_record_id = ids[r.child_id]
+      })
+    }
     saveStatus.value = 'saved'
     saveTimer = setTimeout(() => { saveStatus.value = '' }, 1500)
-  }).catch(() => {
+  } catch {
+    // Keep the edited values on screen and require an explicit retry.
+    saveRequested = false
     saveStatus.value = 'error'
-    saveTimer = setTimeout(() => { saveStatus.value = '' }, 3000)
-  })
+  } finally {
+    saveInFlight = false
+  }
 }
-
-// 手動保存（フォールバック）
-const save = () => autoSave()
 
 // 行を削除
 const removeRow = (row) => {
@@ -161,14 +169,8 @@ const STATUS_OPTIONS = [
   { value: 'cancel',        label: 'キャンセル',        color: 'text-gray-600 bg-gray-50 border-gray-200' },
 ]
 
-// 出席者を上、欠席・キャンセルを下に並べる
-const sortedRecords = computed(() =>
-  [...records.value].sort((a, b) => {
-    const aIsAttended = a.status === 'attended' ? 0 : 1
-    const bIsAttended = b.status === 'attended' ? 0 : 1
-    return aIsAttended - bIsAttended
-  })
-)
+// Keep the server's child order during editing. Moving a row after a status
+// change puts another child's button under the pointer on the next click.
 
 // ステータス変更（支援記録がある児童を出席以外にする場合は確認）→ 自動保存
 const changeStatus = (row, newStatus) => {
@@ -277,7 +279,7 @@ const changeStatus = (row, newStatus) => {
           </div>
 
           <div v-else class="attendance-entries">
-            <article v-for="row in sortedRecords" :key="row.child_id" class="attendance-entry" :data-attendance-status="row.status" :aria-label="row.child_name + 'の出席記録'">
+            <article v-for="row in records" :key="row.child_id" class="attendance-entry" :data-attendance-status="row.status" :aria-label="row.child_name + 'の出席記録'">
               <header class="attendance-entry-header">
                 <div class="attendance-person">
                   <span class="workspace-avatar" aria-hidden="true">{{ row.child_name.replace('【架空】', '').trim().slice(0, 1) }}</span>
@@ -293,7 +295,6 @@ const changeStatus = (row, newStatus) => {
                 <button v-if="!row.has_support_record" type="button" @click="removeRow(row)" class="attendance-remove" title="この日のリストから削除" :aria-label="row.child_name + 'をこの日のリストから削除'">×</button>
                 <span v-else class="attendance-remove opacity-30" title="支援記録があるため削除できません（キャンセルに変更してください）" aria-hidden="true">×</span>
               </header>
-              <p v-if="allergyNotice(row.allergy_note)" class="workspace-allergy mx-4 mt-3 text-sm font-medium text-red-800">アレルギー　{{ allergyNotice(row.allergy_note) }}</p>
 
               <div v-if="row.status !== 'attended'" class="p-4">
                 <label class="block text-sm text-gray-700">欠席理由
@@ -360,7 +361,10 @@ const changeStatus = (row, newStatus) => {
           <div class="p-4 border-t bg-gray-50">
             <p v-if="saveStatus === 'saving'" class="mb-2 text-xs text-gray-600">保存中...</p>
             <p v-else-if="saveStatus === 'saved'" class="mb-2 text-xs text-green-700">✓ 保存完了</p>
-            <p v-else-if="saveStatus === 'error'" role="alert" class="mb-2 text-xs text-red-700">保存失敗</p>
+            <div v-else-if="saveStatus === 'error'" role="alert" class="mb-2 flex items-center gap-3 text-sm text-red-700">
+              保存できませんでした。入力内容は画面に残っています。
+              <button type="button" class="rounded-md border border-red-300 px-3 py-2 font-semibold" @click="autoSave">再保存</button>
+            </div>
             <DisclosurePanel id="attendance-add-child" v-model="showAddPanel" title="児童を追加">
               <p v-if="!availableToAdd.length" class="text-sm text-gray-600">追加できる児童はいません。</p>
               <div v-else class="flex flex-wrap items-center gap-3">

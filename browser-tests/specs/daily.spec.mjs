@@ -400,7 +400,7 @@ test('staff reviews the morning family entry before any support record is writte
 
 
 
-test('categorized navigation works with keyboard, preserves child section and date', async ({page,isMobile}) => {
+test('categorized navigation has one child entry, preserves tabs and date', async ({page,isMobile}) => {
   await login(page);
   if (isMobile) {
     const trigger=page.getByRole('button',{name:'メニュー',exact:true});
@@ -412,10 +412,17 @@ test('categorized navigation works with keyboard, preserves child section and da
   }
   const nav=page.getByRole('navigation',{name:'業務メニュー',exact:true}).filter({visible:true});
   for(const name of ['ホーム','日々の業務','児童・支援','請求・会計','事業所運営','設定']) await expect(nav.getByRole('heading',{name,exact:true})).toBeVisible();
-  await nav.getByRole('link',{name:'支援計画・モニタリング',exact:true}).click();
-  await expect(page).toHaveURL(/\/children\?section=plan$/);
+  await expect(nav.getByRole('link',{name:'支援計画・モニタリング',exact:true})).toHaveCount(0);
+  await expect(nav.getByRole('link',{name:'受給者証・利用契約',exact:true})).toHaveCount(0);
+  await expect(nav.locator('a[href*="/children"]')).toHaveCount(1);
+  await nav.getByRole('link',{name:'児童一覧・過去の記録',exact:true}).click();
+  await expect(page).toHaveURL(/\/children$/);
+  const childNav=page.getByRole('navigation',{name:'業務メニュー',exact:true}).filter({visible:true});
+  if(!await childNav.isVisible()) await page.getByRole('button',{name:'メニュー',exact:true}).click();
+  await expect(childNav.getByRole('link',{name:'児童一覧・過去の記録',exact:true})).toHaveAttribute('aria-current','page');
+  if(isMobile) await page.getByRole('button',{name:'閉じる',exact:true}).click();
   await page.getByRole('link',{name:ownChild().name,exact:true}).click();
-  await expect(page).toHaveURL(/\?tab=plan$/);
+  await page.getByRole('button',{name:/^計画・記録/}).click();
   await expect(page.getByRole('heading',{name:'個別支援計画',exact:true})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'個別支援計画',exact:true})).toBeVisible();
@@ -603,4 +610,91 @@ test('absence contacts keep drafts, appear before visits and are reversible with
   await expect(board.getByRole('status')).toHaveText('保存しました。');
   await expect(board.locator('.ab-record > summary')).toContainText('欠席取消');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
+
+
+test('repeated absence clicks stay on the same child, highlight immediately and persist only that child', async ({page}) => {
+  fixture('attendance-roster');
+  const before=snapshot();
+  await login(page,'staff');
+  await visit(page,'/usage-records?date=2026-12-02','出席管理');
+  const cards=page.locator('.attendance-entry');
+  const order=await cards.evaluateAll(rows=>rows.map(r=>r.getAttribute('aria-label')));
+  expect(order).toHaveLength(3);
+  const first=cards.first();
+  const targetName=(await first.getAttribute('aria-label')).replace(/の出席記録$/,'');
+  const target=before.children.find(c=>c.name===targetName);
+  await expect(page.locator('main')).not.toContainText('アレルギー');
+  await expect(page.locator('main')).not.toContainText('架空の配慮情報');
+  const button=first.getByRole('button',{name:'欠席（連絡あり）',exact:true});
+  await button.scrollIntoViewIfNeeded();
+  const rect=await button.boundingBox();
+  const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/usage-records/bulk-store' && r.request().method()==='POST');
+  // The reported failure is repeated clicks at the same physical position.
+  for(let i=0;i<5;i++) { await page.mouse.click(rect.x+rect.width/2,rect.y+rect.height/2); }
+  expect((await saved).status()).toBe(200);
+  expect(await cards.evaluateAll(rows=>rows.map(r=>r.getAttribute('aria-label')))).toEqual(order);
+  await expect(button).toHaveAttribute('aria-pressed','true');
+  await expect(button).toHaveClass(/bg-amber-50/);
+  await expect(button).toHaveCSS('background-color','rgb(255, 251, 235)');
+  const counts=page.locator('.grid.grid-cols-4').first().locator(':scope > div');
+  await expect(counts.nth(1).locator('.text-2xl')).toHaveText('2');
+  await expect(counts.nth(2).locator('.text-2xl')).toHaveText('1');
+  await expect(cards.locator('[aria-pressed="true"]').filter({hasText:'欠席（連絡あり）'})).toHaveCount(1);
+  for(const row of before.usage) expect(snapshot().usage.find(r=>r.id===row.id)).toMatchObject({status:row.child_id===target.id?'absent_notice':row.status});
+  await page.reload();
+  const targetCard=page.getByRole('article',{name:targetName+'の出席記録',exact:true});
+  await expect(targetCard.getByRole('button',{name:'欠席（連絡あり）',exact:true})).toHaveAttribute('aria-pressed','true');
+  // Each choice affects this child only, including returning to attended.
+  for(const [label,status] of [['無断欠席','absent'],['キャンセル','cancel'],['出席','attended']]) {
+    const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/usage-records/bulk-store' && r.request().method()==='POST');
+    await targetCard.getByRole('button',{name:label,exact:true}).click();
+    expect((await response).status()).toBe(200);
+    await expect(targetCard).toHaveAttribute('data-attendance-status',status);
+    for(const row of before.usage) expect(snapshot().usage.find(r=>r.id===row.id)).toMatchObject({status:row.child_id===target.id?status:row.status});
+  }
+});
+
+test('rapid attendance edits wait for the preceding save and persist the latest selection', async ({page}) => {
+  fixture('attendance-roster');
+  await login(page,'staff');await visit(page,'/usage-records?date=2026-12-02','出席管理');
+  let release;
+  const gate=new Promise(resolve=>{release=resolve});
+  const writes=[];
+  await page.route('**/usage-records/bulk-store',async route=>{
+    writes.push(route.request().postDataJSON());
+    const response=await route.fetch();
+    if(writes.length===1) await gate;
+    await route.fulfill({response});
+  });
+  const row=page.getByRole('article',{name:ownChild().name+'の出席記録',exact:true});
+  try {
+    await row.getByRole('button',{name:'欠席（連絡あり）',exact:true}).click();
+    await expect.poll(()=>writes.length).toBe(1);
+    await row.getByRole('button',{name:'出席',exact:true}).click();
+    await row.getByRole('button',{name:'無断欠席',exact:true}).click();
+    await row.getByRole('button',{name:'欠席（連絡あり）',exact:true}).click();
+    await expect(row.getByRole('button',{name:'欠席（連絡あり）',exact:true})).toHaveAttribute('aria-pressed','true');
+    expect(writes).toHaveLength(1);
+  } finally { release(); }
+  await expect.poll(()=>writes.length).toBe(2);
+  await expect(page.getByText('✓ 保存完了',{exact:true}).first()).toBeVisible();
+  expect(writes[1].records.find(r=>r.child_id===ownChild().id).status).toBe('absent_notice');
+  await page.reload();await expect(row).toHaveAttribute('data-attendance-status','absent_notice');
+  expect(snapshot().usage.filter(r=>r.status!=='attended').map(r=>r.child_id)).toEqual([ownChild().id]);
+});
+
+test('failed attendance save keeps the edit visible and can be explicitly retried', async ({page}) => {
+  fixture('attendance-roster');await login(page,'staff');await visit(page,'/usage-records?date=2026-12-02','出席管理');
+  let fail=true;
+  await page.route('**/usage-records/bulk-store',route=>fail?route.fulfill({status:419,contentType:'application/json',body:'{"message":"expired"}'}):route.continue());
+  const row=page.getByRole('article',{name:ownChild().name+'の出席記録',exact:true});
+  await row.getByRole('button',{name:'欠席（連絡あり）',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('入力内容は画面に残っています');
+  await expect(row).toHaveAttribute('data-attendance-status','absent_notice');
+  expect(snapshot().usage.find(r=>r.child_id===ownChild().id).status).toBe('attended');
+  fail=false;
+  await page.getByRole('button',{name:'再保存',exact:true}).click();
+  await expect(page.getByText('✓ 保存完了',{exact:true}).first()).toBeVisible();
+  await page.reload();await expect(row).toHaveAttribute('data-attendance-status','absent_notice');
 });

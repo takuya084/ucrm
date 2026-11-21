@@ -32,6 +32,16 @@ if ($command === 'reset') {
             }
         }
     }
+ } elseif ($command === 'attendance-roster') {
+    $own=Child::where('name','架空児童a-active')->firstOrFail();
+    foreach (['第二児童','第三児童'] as $name) {
+        Child::create(['facility_id'=>$own->facility_id,'school_id'=>$own->school_id,
+            'name'=>$name,'name_kana'=>$name,'contract_status'=>'active','allergy_note'=>'卵アレルギー']);
+    }
+    foreach (Child::where('contract_status','active')->get() as $child) {
+        UsageRecord::create(['facility_id'=>$child->facility_id,'child_id'=>$child->id,
+            'date'=>'2026-12-02','status'=>'attended','memo'=>'元の記録']);
+    }
 } elseif ($command === 'legacy-attendance-times') {
     $child=Child::where('name','架空児童a-active')->firstOrFail();
     UsageRecord::create(['facility_id'=>$child->facility_id,'child_id'=>$child->id,
