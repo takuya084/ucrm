@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 const source = await readFile(new URL('../public/transport-grid/grid.js', import.meta.url), 'utf8')
-const { parseTSV, resolveCell, pasteRange, staffLabels } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'))
+const { parseTSV, resolveCell, pasteRange, staffLabels, fields, headings } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'))
 const config = { times: ['10:00', '14:30', '18:00'], locations: { school: '学校', home: '自宅', parents: '親送迎', others: 'その他' }, staff: [{ id: 7, name: '職員A' }] }
 
 test('Excel TSV supports CRLF, empty cells and quoted values', () => {
@@ -57,3 +57,11 @@ test('requests use the current XSRF cookie after login instead of a stale head m
 test("second assignee and school-name paste retain registered values",()=>{assert.equal(resolveCell("pickup_assistant_staff_id", "職員A", {}, {times:[],locations:{school:"学校"},staff:[{id:2,name:"職員A"}]}).value,2);assert.equal(resolveCell("pickup_location","第一小学校",{school_name:"第一小学校",location_aliases:{"第一小学校":"school"}},{times:[],locations:{school:"学校"},staff:[]}).text,"第一小学校")})
 
 test('missing-school display remains a valid unchanged location when saving a time edit',()=>{assert.equal(resolveCell('pickup_location','学校（名称未登録）',{school_name:null},{times:[],locations:{school:'学校'},staff:[]}).value,'school')})
+
+
+test('direction groups use the same eight-column order for paste and API fields', () => {
+  assert.deepEqual(headings, ['迎え時刻','迎え場所','迎え担当','迎え担当2','送り時刻','送り場所','送り担当','送り担当2'])
+  const row = pasteRange([{user_id:1}],0,0,parseTSV('14:30\t学校\t職員A\t職員B\t17:30\t自宅\t職員B\t職員A'))[0]
+  assert.deepEqual(fields.map(field=>row[field]), ['14:30','学校','職員A','職員B','17:30','自宅','職員B','職員A'])
+  assert.equal(row.pickup_assistant_staff_id,'職員B');assert.equal(row.dropoff_time,'17:30');assert.equal(row.dropoff_staff_id,'職員B')
+})

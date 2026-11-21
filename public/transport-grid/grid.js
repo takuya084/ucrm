@@ -1,6 +1,6 @@
 // Shared without modification by p-yoyaku and UCRM.
-export const fields = ['pickup_time', 'pickup_location', 'pickup_staff_id', 'dropoff_time', 'dropoff_location', 'dropoff_staff_id', 'pickup_assistant_staff_id', 'dropoff_assistant_staff_id']
-export const headings = ['迎え時刻', '迎え場所', '迎え担当', '送り時刻', '送り場所', '送り担当', '迎え担当2', '送り担当2']
+export const fields = ['pickup_time', 'pickup_location', 'pickup_staff_id', 'pickup_assistant_staff_id', 'dropoff_time', 'dropoff_location', 'dropoff_staff_id', 'dropoff_assistant_staff_id']
+export const headings = ['迎え時刻', '迎え場所', '迎え担当', '迎え担当2', '送り時刻', '送り場所', '送り担当', '送り担当2']
 const clone = value => JSON.parse(JSON.stringify(value))
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
 
@@ -162,14 +162,15 @@ export function mountTransportGrid(root, options) {
     errors = {}
     rows.forEach((row, i) => {
       if (deleted.has(row.user_id) || !dirty(row)) return
-      fields.forEach((field, col) => { const result = cell(i, col); if (result.error) errors[`${i}.${field}`] = result.error })
-      if (!row.pickup_time && !row.dropoff_time) errors[`${i}.pickup_time`] = '迎え・送りのどちらかの時刻を入力してください。'
+      const values = {}
+      fields.forEach((field, col) => { const result = cell(i, col); values[field] = result.value; if (result.error) errors[`${i}.${field}`] = result.error })
+      if (!values.pickup_time && !values.dropoff_time) errors[`${i}.pickup_time`] = '迎え・送りのどちらかの時刻を入力してください。'
       for (const direction of ['pickup', 'dropoff']) {
-        if (!!row[direction + '_time'] !== !!row[direction + '_location']) errors[`${i}.${direction}_location`] = '時刻と場所をセットで入力してください。'
-        const location = resolveCell(direction + '_location', row[direction + '_location'], row, config).value
-        const assistant = row[direction + '_assistant_staff_id']
-        if (assistant && (!row[direction + '_staff_id'] || String(assistant) === String(row[direction + '_staff_id']))) errors[`${i}.${direction}_assistant_staff_id`] = '担当1と異なる職員を選択してください。'
-        if ((row[direction + '_staff_id'] || assistant) && (!row[direction + '_time'] || location === 'parents')) errors[`${i}.${direction}_staff_id`] = '親送迎・時刻なしの方向には担当を指定できません。'
+        if (!!values[direction + '_time'] !== !!values[direction + '_location']) errors[`${i}.${direction}_location`] = '時刻と場所をセットで入力してください。'
+        const location = values[direction + '_location']
+        const assistant = values[direction + '_assistant_staff_id']
+        if (assistant && (!values[direction + '_staff_id'] || String(assistant) === String(values[direction + '_staff_id']))) errors[`${i}.${direction}_assistant_staff_id`] = '担当1と異なる職員を選択してください。'
+        if ((values[direction + '_staff_id'] || assistant) && (!values[direction + '_time'] || location === 'parents')) errors[`${i}.${direction}_staff_id`] = '親送迎・時刻なしの方向には担当を指定できません。'
       }
     })
     return !Object.keys(errors).length
@@ -269,7 +270,7 @@ export function mountTransportGrid(root, options) {
         const moves = { ArrowDown: [1, 0], ArrowUp: [-1, 0], ArrowRight: [0, 1], ArrowLeft: [0, -1] }
         if (!event.shiftKey || !moves[event.key]) return
         event.preventDefault(); anchor ??= { row, col }
-        const next = { row: Math.max(0, Math.min(rows.length - 1, row + moves[event.key][0])), col: Math.max(0, Math.min(5, col + moves[event.key][1])) }
+        const next = { row: Math.max(0, Math.min(rows.length - 1, row + moves[event.key][0])), col: Math.max(0, Math.min(fields.length - 1, col + moves[event.key][1])) }
         end = next; root.querySelector(`[data-row="${next.row}"][data-col="${next.col}"]`)?.focus(); paintSelection()
       }
     })
