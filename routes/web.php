@@ -391,5 +391,6 @@ Route::middleware(['auth','verified'])->group(function () {
  Route::get('/absences',[\App\Http\Controllers\AbsenceController::class,'index'])->name('absences.index');
  Route::get('/absences/data',[\App\Http\Controllers\AbsenceController::class,'show'])->name('absences.data');
  Route::put('/absences/data',[\App\Http\Controllers\AbsenceController::class,'update']);
+ Route::get('/absences/calendar',[\App\Http\Controllers\AbsenceController::class,'showCalendar'])->name('absences.calendar.show');
  Route::put('/absences/calendar',[\App\Http\Controllers\AbsenceController::class,'calendar'])->name('absences.calendar');
 });
