@@ -19,7 +19,7 @@ const groups = computed(() => [
     item('空き枠調整', 'vacancy-adjustment.index', ['vacancy-adjustment.*']),
   ] },
   { label: '児童・支援', items: [
-    item('児童一覧・過去の記録', 'children.index', ['children.*', 'assessments.*', 'support-plans.*', 'monitoring-records.*']),
+    item('児童の記録', 'children.index', ['children.*', 'assessments.*', 'support-plans.*', 'monitoring-records.*']),
   ] },
   { label: '請求・会計', items: [
     item('月次請求', 'billing.index', ['billing.index', 'billing.show', 'billing.details.*'], ['admin','leader']),

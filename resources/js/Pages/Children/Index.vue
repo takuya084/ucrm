@@ -45,10 +45,10 @@ const certExpiryClass = (dateStr) => {
 </script>
 
 <template>
-  <Head title="利用児童一覧" />
+  <Head title="児童の記録" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 leading-tight">利用児童一覧</h2>
+      <h2 class="font-semibold text-xl text-gray-800 leading-tight">児童の記録</h2>
     </template>
 
     <div class="py-8">
