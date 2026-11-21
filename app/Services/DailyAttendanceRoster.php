@@ -81,7 +81,7 @@ class DailyAttendanceRoster
         // 表示順をカナ順で安定させる
         $rows = $rows->sortBy('child_name_kana')->values();
 
-        return ['rows' => $rows, 'dataSource' => $dataSource, 'hasRecords' => $hasRecords, 'absenceAvailable'=>$absence['available']];
+        return ['rows' => $rows, 'dataSource' => $dataSource, 'hasRecords' => $hasRecords, 'absenceAvailable'=>$absence['available'], 'absenceData'=>$absence];
     }
 
     /** usage_record モデルから行データを生成 */

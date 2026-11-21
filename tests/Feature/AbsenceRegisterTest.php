@@ -43,4 +43,19 @@ class AbsenceRegisterTest extends TestCase {
   $this->assertDatabaseHas('usage_records',['child_id'=>$child->id,'status'=>'attended']);
  }
 
+ public function test_normal_confirmation_checks_full_records_month_limit_and_reused_consultation(): void {
+  [$tenant,$actor,$child]=$this->fixture();$this->actingAs($actor);
+  $this->putJson('/absences/calendar',['revision'=>0,'weekdays'=>[1,2,3,4,5,6,7],'closed_dates'=>[],'confirmed'=>true])->assertOk();
+  $data=$this->getJson('/absences/data?date=2026-05-07')->json();$staff=$data['staff'][0]['id'];
+  foreach(['2026-05-07','2026-05-08','2026-05-09','2026-05-10'] as $date) {
+   $payload=['is_absent'=>true,'claim_confirmed'=>true,'contacted_at'=>$date.'T09:00','reason'=>'発熱','contact_method'=>'tel','caller'=>'母','receiver_staff_id'=>$staff,'consultant_staff_id'=>$staff,'consultant_role'=>'児童指導員','child_condition'=>'体温と食事の状態を確認','support_content'=>'療養中の過ごし方と次回利用を相談','next_date'=>\Carbon\Carbon::parse($date)->addDay()->toDateString(),'was_planned'=>true,'sudden'=>true,'service_available'=>true,'consultation_done'=>true];
+   $this->putJson('/absences/data',['date'=>$date,'child_id'=>$child->id,'revision'=>0,'payload'=>$payload])->assertOk();
+  }
+  $payload['contacted_at']='2026-05-11T09:00';$payload['next_date']='2026-05-12';
+  $this->putJson('/absences/data',['date'=>'2026-05-11','child_id'=>$child->id,'revision'=>0,'payload'=>$payload])->assertUnprocessable()->assertJsonValidationErrors('claim_confirmed');
+  $payload['claim_confirmed']=false;
+  $this->putJson('/absences/data',['date'=>'2026-05-11','child_id'=>$child->id,'revision'=>0,'payload'=>$payload])->assertOk();
+  $this->getJson('/absences/data?date=2026-05-11')->assertJsonPath('rows.0.assessment.status','要確認')->assertJsonPath('rows.0.assessment.other_confirmed',4);
+ }
+
 }

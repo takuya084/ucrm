@@ -20,7 +20,7 @@ export function mountAbsences(root, options) {
   const name=id=>data.children.find(c=>c.id===id)?.name || '登録済み児童'
   const optionsHtml=(list,value,empty='選択してください')=>`<option value="">${empty}</option>`+list.map(p=>`<option value="${escape(p.value ?? p.id)}" ${String(p.value ?? p.id)===String(value)?'selected':''}>${escape(p.label ?? p.name)}</option>`).join('')
   const input=(key,label,value,type='text')=>`<label>${label}<input name="${key}" type="${type}" value="${escape(value)}" ${type==='text'?'maxlength="2000"':''}></label>`
-  const bool=(key,label,value)=>`<label>${label}<select name="${key}">${optionsHtml([{value:'true',label:'はい'},{value:'false',label:'いいえ'}],value===null?'':String(value),'未確認')}</select></label>`
+  const bool=(key,label,value)=>`<label>${label}<select aria-label="${label}" name="${key}">${optionsHtml([{value:'true',label:'はい'},{value:'false',label:'いいえ'}],value===null?'':String(value),'未確認')}</select></label>`
   function collectForm(el) {
     const row=data.rows.find(r=>r.child_id===+el.dataset.child),payload={...blanks(),...row.payload}
     for(const element of el.elements){if(!element.name)continue;let value=element.type==='checkbox'?element.checked:element.value.trim();if(['receiver_staff_id','consultant_staff_id'].includes(element.name))value=value?+value:null;if(['was_planned','sudden','service_available','consultation_done'].includes(element.name))value=value===''?null:value==='true';payload[element.name]=value || value===false?value:null}
@@ -31,10 +31,10 @@ export function mountAbsences(root, options) {
     const v={...blanks(),...row.payload};const assessment=row.assessment
     return `<details class="ab-record" ${row.revision===0?'open':''}><summary><strong>${escape(name(row.child_id))}</strong><span>${escape(assessment?.status || '未保存')}</span><span>${escape(v.reason || '理由未記録')}</span></summary><form data-child="${row.child_id}" data-revision="${row.revision}">
     <div class="ab-fields">${input('contacted_at','連絡日時（日本時間）',v.contacted_at,'datetime-local')}${input('reason','欠席理由',v.reason)}
-    <label>連絡手段<select name="contact_method">${optionsHtml(Object.entries(methods).map(([value,label])=>({value,label})),v.contact_method)}</select></label>
+    <label>連絡手段<select aria-label="連絡手段" name="contact_method">${optionsHtml(Object.entries(methods).map(([value,label])=>({value,label})),v.contact_method)}</select></label>
     ${input('caller','連絡者（母・父など）',v.caller)}
-    <label>受付職員<select name="receiver_staff_id">${optionsHtml(data.staff,v.receiver_staff_id)}</select></label>
-    <label>相談援助を行った職員<select name="consultant_staff_id">${optionsHtml(data.staff,v.consultant_staff_id)}</select></label>
+    <label>受付職員<select aria-label="受付職員" name="receiver_staff_id">${optionsHtml(data.staff,v.receiver_staff_id)}</select></label>
+    <label>相談援助を行った職員<select aria-label="相談援助を行った職員" name="consultant_staff_id">${optionsHtml(data.staff,v.consultant_staff_id)}</select></label>
     ${input('consultant_role','相談職員の職名',v.consultant_role)}${input('next_date','次回利用予定日',v.next_date,'date')}
     <label class="ab-wide">児童の状況<textarea name="child_condition" maxlength="5000">${escape(v.child_condition)}</textarea></label>
     <label class="ab-wide">相談援助の内容・経過<textarea name="support_content" maxlength="5000">${escape(v.support_content)}</textarea></label>
@@ -70,7 +70,7 @@ export function mountAbsences(root, options) {
     root.querySelector('[data-calendar]').onsubmit=async event=>{event.preventDefault();if(busy)return;const el=event.currentTarget;busy=true;const thaw=freeze(root)
       try {await options.calendar({revision:data.calendar?.revision ?? 0,weekdays:[...el.querySelectorAll('[name=weekday]:checked')].map(n=>+n.value),closed_dates:el.elements.closed_dates.value.split(/\s+/).filter(Boolean),confirmed:true});calendarDirty=false;dirty=drafts.size>0;savedMessage='営業日を保存しました。';await load(false,true)}catch(e){el.querySelector('[data-error]').textContent=e.message}finally{busy=false;thaw()}}
   }
-  async function load(confirmDirty=false,preserveDrafts=false) {if(confirmDirty && dirty && !confirm('未保存の入力を破棄して最新の一覧を読み込みますか？'))return;try{const fresh=await options.load();if(preserveDrafts){for(const draft of drafts.values()){const i=fresh.rows.findIndex(row=>row.child_id===draft.child_id);if(i<0)fresh.rows.push(draft);else fresh.rows[i]=draft}}else {drafts.clear();calendarDirty=false}data=fresh;dirty=drafts.size>0;render()}catch(e){if(!data)root.innerHTML='<p role="alert"></p>';(root.querySelector('[data-global]')||root.querySelector('[role=alert]')).textContent=e.message}}
+  async function load(confirmDirty=false,preserveDrafts=false) {if(confirmDirty && dirty && !confirm('未保存の入力を破棄して最新の一覧を読み込みますか？'))return;try{const fresh=await options.load();if(disposed)return;if(preserveDrafts){for(const draft of drafts.values()){const i=fresh.rows.findIndex(row=>row.child_id===draft.child_id);if(i<0)fresh.rows.push(draft);else fresh.rows[i]=draft}}else {drafts.clear();calendarDirty=false}data=fresh;dirty=drafts.size>0;render()}catch(e){if(disposed)return;if(!data)root.innerHTML='<p role="alert"></p>';(root.querySelector('[data-global]')||root.querySelector('[role=alert]')).textContent=e.message}}
   const before=event=>{if(dirty){event.preventDefault();event.returnValue=''}};window.addEventListener('beforeunload',before);load()
   return {destroy(){disposed=true;window.removeEventListener('beforeunload',before)},hasChanges:()=>dirty}
 }
