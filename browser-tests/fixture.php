@@ -51,6 +51,17 @@ if ($command === 'reset') {
     $note=new \App\Models\ContactNote(['facility_id'=>$child->facility_id,'child_id'=>$child->id,'date'=>'2026-07-01',
         'guardian_submitted_at'=>now(),'guardian_comment'=>'架空の利用前の体調連絡','home_temperature'=>'36.6']);
     $note->guardian_source_revision=1; $note->save();
+ } elseif ($command === 'contact-delivery') {
+    $facility=Facility::where('name','架空事業所a')->firstOrFail();
+    $facility->update(['yoyaku_business_id'=>77,'yoyaku_api_token'=>'synthetic-private-token']);
+    $child=Child::where('name','架空児童a-active')->firstOrFail();$child->update(['yoyaku_user_id'=>501]);
+    $note=\App\Models\ContactNote::create(['facility_id'=>$facility->id,'child_id'=>$child->id,'date'=>'2026-07-01',
+        'status'=>'published','published_at'=>now(),'guardian_message'=>'架空の公開連絡帳']);
+    $note->forceFill(['delivery_error_code'=>'authentication'])->save();
+} elseif ($command === 'contact-delivery-complete') {
+    \Illuminate\Support\Facades\Http::fake(['*'=>\Illuminate\Support\Facades\Http::response(['ok'=>true])]);
+    $note=\App\Models\ContactNote::where('guardian_message','架空の公開連絡帳')->firstOrFail();
+    (new \App\Jobs\PushContactNote($note->id))->handle(app(\App\Services\YoyakuApiService::class));
 } elseif ($command === 'contact-notes') {
     foreach (['a','b'] as $tenant) {
         $child=Child::where('name','架空児童'.$tenant.'-active')->firstOrFail();

@@ -59,6 +59,29 @@ const unpublish = (row) => {
   router.post(route('contact-notes.unpublish', row.note.id), {}, { preserveScroll: true })
 }
 
+const retryingId = ref(null)
+const refreshing = ref(false)
+const actionError = ref('')
+const refreshDelivery = () => {
+  if (refreshing.value || retryingId.value) return
+  actionError.value = ''
+  router.reload({ only: ['rows'], preserveScroll: true,
+    onStart: () => { refreshing.value = true },
+    onError: () => { actionError.value = '最新の状態を取得できませんでした。時間をおいて更新してください。' },
+    onFinish: () => { refreshing.value = false },
+  })
+}
+const retryDelivery = (row) => {
+  if (retryingId.value || !row.delivery?.canRetry) return
+  if (!confirm(`${row.child_name} さんの連絡帳の現在の公開状態を、現在の連携先へ再送します。公開状態と本文は変更しません。よろしいですか？`)) return
+  actionError.value = ''
+  retryingId.value = row.note.id
+  router.post(route('contact-notes.retry-delivery', row.note.id), {}, { preserveScroll: true,
+    onError: () => { actionError.value = '再試行を受け付けられませんでした。最新の状態を確認してください。' },
+    onFinish: () => { retryingId.value = null },
+  })
+}
+
 const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
 </script>
 
@@ -72,6 +95,8 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
     <div class="py-8">
       <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
         <FlashMessage />
+        <p v-if="actionError" role="alert" class="text-sm text-red-700">{{ actionError }}</p>
+        <button type="button" class="text-sm text-primary-700 underline disabled:opacity-50" :disabled="refreshing || retryingId !== null" @click="refreshDelivery">{{ refreshing ? '更新中…' : '最新の状態に更新' }}</button>
         <p class="text-sm text-gray-600">家庭からの連絡を確認し、記録・連絡帳を入力して保護者へ公開します。保存・公開・連携・確認印はそれぞれ別の状態です。</p>
 
         <!-- 日付ナビ -->
@@ -126,6 +151,12 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
               </div>
 
               <ContactNoteStatus :state="row.state" />
+              <div v-if="row.delivery?.pending" class="w-full rounded-md border border-amber-200 bg-amber-50 p-3 text-sm" :aria-label="`${row.child_name}の連携状況`">
+                <p class="text-amber-900">{{ row.delivery.reason }}</p>
+                <p v-if="row.delivery.attemptedAt" class="mt-1 text-xs text-gray-600">最終送信試行 {{ row.delivery.attemptedAt }}（日本時間）</p>
+                <button type="button" class="mt-2 rounded-md border border-primary-400 bg-white px-3 py-2 font-semibold text-primary-700 disabled:opacity-50"
+                  :disabled="!row.delivery.canRetry || retryingId !== null || refreshing" @click="retryDelivery(row)">{{ retryingId === row.note.id ? '受付中…' : '連携を再試行' }}</button>
+              </div>
 
               <div v-if="row.note?.guardian_submitted_at" class="w-full rounded-md border border-amber-200 bg-amber-50 p-3 space-y-2">
                 <p class="font-semibold text-sm">家庭からの連絡</p>
@@ -148,10 +179,10 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
               <!-- 操作 -->
               <div class="ml-auto flex items-center gap-2">
                 <button
-                  v-if="row.note?.status === 'published' || (row.note?.withdrawn_at && !row.note.yoyaku_synced_at)"
+                  v-if="row.note?.status === 'published'"
                   @click="unpublish(row)"
                   class="text-xs px-3 py-1.5 border border-amber-500 text-amber-800 rounded-md hover:bg-amber-50"
-                >{{ row.note.status === 'published' ? '公開を取り下げる' : '取り下げを再送' }}</button>
+                >公開を取り下げる</button>
                 <button
                   v-if="row.note && row.note.status === 'draft' && (row.note.guardian_message || row.note.meal_note || row.note.health_note)"
                   @click="publish(row)"

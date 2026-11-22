@@ -47,6 +47,8 @@ class ContactNoteWithdrawalTest extends TestCase
         $this->post('/contact-notes/'.$this->note->id.'/unpublish')->assertRedirect();
         Http::fake(['*'=>Http::response(['ok'=>true,'applied'=>true])]);
         $job->handle(app(YoyakuApiService::class));
+        Http::assertNothingSent();
+        (new PushContactNote($this->note->id))->handle(app(YoyakuApiService::class));
         Http::assertSent(function($request) {
             $this->assertTrue($request['withdrawn']);
             $this->assertNull($request['published_at']);
@@ -65,6 +67,8 @@ class ContactNoteWithdrawalTest extends TestCase
         $this->assertSame('published',$this->note->fresh()->status);
         Http::fake(['*'=>Http::response(['ok'=>true,'applied'=>true])]);
         $job->handle(app(YoyakuApiService::class));
+        Http::assertNothingSent();
+        (new PushContactNote($this->note->id))->handle(app(YoyakuApiService::class));
         Http::assertSent(fn($request)=>$request['withdrawn']===false && $request['guardian_message']==='Synthetic public history');
         $this->assertSame('Synthetic home history',$this->note->fresh()->guardian_comment);
     }

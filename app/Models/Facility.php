@@ -34,6 +34,10 @@ class Facility extends Model
         'stripe_subscription_id',
     ];
 
+    // Default/nested serialization must not expose integration credentials.
+    // The admin-only settings screen explicitly selects its editable fields.
+    protected $hidden = ['yoyaku_api_token', 'yoyaku_webhook_secret'];
+
     protected $casts = [
         'is_active'              => 'boolean',
         'subscription_ended_at'  => 'datetime',

@@ -723,3 +723,29 @@ test('failed attendance save keeps the edit visible and can be explicitly retrie
   await expect(page.getByText('✓ 保存完了',{exact:true}).first()).toBeVisible();
   await page.reload();await expect(row).toHaveAttribute('data-attendance-status','absent_notice');
 });
+
+
+test('contact delivery shows safe reasons, retries without changing publication and refreshes completion', async ({page}) => {
+  fixture('contact-delivery');
+  await login(page,'staff');
+  await visit(page,'/contact-notes?date=2026-07-01','記録・連絡帳');
+  const row=page.locator('#child-'+ownChild().id);
+  await expect(row).toContainText('p-yoyakuで認証されませんでした。');
+  await expect(page.locator('body')).not.toContainText('synthetic-private-token');
+  const before=snapshot().notes.find(n=>n.child_id===ownChild().id);
+  page.once('dialog',d=>d.dismiss());
+  await row.getByRole('button',{name:'連携を再試行',exact:true}).click();
+  await expect(row.getByRole('button',{name:'連携を再試行',exact:true})).toBeEnabled();
+  page.once('dialog',d=>d.accept());
+  await row.getByRole('button',{name:'連携を再試行',exact:true}).click();
+  await expect(row).toContainText('送信処理の完了待ち');
+  await expect(row.getByRole('button',{name:'連携を再試行',exact:true})).toBeDisabled();
+  const after=snapshot().notes.find(n=>n.id===before.id);
+  expect(after).toMatchObject({status:before.status,published_at:before.published_at,guardian_message:before.guardian_message});
+  fixture('contact-delivery-complete');
+  await page.getByRole('button',{name:'最新の状態に更新',exact:true}).click();
+  await expect(row.getByText('連携完了',{exact:true})).toBeVisible();
+  await expect(row.getByRole('button',{name:'連携を再試行',exact:true})).toHaveCount(0);
+  await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01$/);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
