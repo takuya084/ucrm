@@ -18,6 +18,11 @@ class BillingCompletenessGuard
     public function resolve(UsageRecord $record, Facility $facility, string $serviceType, string $month): ServiceCodeMaster
     {
         $date = $record->date->format('Y-m-d');
+        $type=\App\Services\ChildServiceType::forDate($facility->id,$record->child_id,$date);
+        if (!$type['type'] || $type['type']!==$serviceType) $this->fail($record,'certificate_service_type','受給者証のサービス種別が未設定・重複、または明細と不一致です。児童の記録で確認してください。');
+        $schoolDay=\App\Services\SchoolDayCalendar::value($facility->id,$record->child_id,$date);
+        if ($serviceType==='houday' && $schoolDay===null) $this->fail($record,'school_day_unconfirmed','学校日・休業日が未設定です。学校日・休業日設定で確認してください。');
+
         $plan = $record->child->supportPlans()
             ->where('plan_date', '<=', $date)
             ->where(fn ($q) => $q->whereNull('valid_from')->orWhere('valid_from', '<=', $date))
@@ -25,7 +30,7 @@ class BillingCompletenessGuard
             ->orderByDesc('plan_date')->orderByDesc('id')->first();
         try {
             return $this->resolver->resolveBaseCode(
-                $serviceType, $record->is_school_day ?? true, $record->check_in_time,
+                $serviceType, $schoolDay ?? false, $record->check_in_time,
                 $record->check_out_time, $month, $facility->capacity_per_day,
                 $plan?->planned_duration_minutes
             );

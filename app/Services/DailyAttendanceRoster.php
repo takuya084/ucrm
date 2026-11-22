@@ -79,7 +79,7 @@ class DailyAttendanceRoster
             $row['absent_reason']=$notices[$child->id]['payload']['reason'] ?? ''; $row['absence_notice']=$notices[$child->id]; $rows->push($row);
         }
         // 表示順をカナ順で安定させる
-        $rows = $rows->sortBy('child_name_kana')->values();
+        $rows = $rows->map(fn($row)=>array_replace($row,SchoolDayCalendar::metadata($facilityId,(int)$row['child_id'],$date)))->sortBy('child_name_kana')->values();
 
         return ['rows' => $rows, 'dataSource' => $dataSource, 'hasRecords' => $hasRecords, 'absenceAvailable'=>$absence['available'], 'absenceData'=>$absence];
     }

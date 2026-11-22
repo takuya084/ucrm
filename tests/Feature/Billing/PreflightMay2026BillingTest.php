@@ -52,6 +52,7 @@ class PreflightMay2026BillingTest extends TestCase
             'check_in_time' => '14:30', 'check_out_time' => '17:30',
             'pickup_done' => false, 'dropoff_done' => false,
         ]);
+        \Illuminate\Support\Facades\DB::table('child_school_days')->insert(['facility_id'=>$this->facility->id,'child_id'=>$this->child->id,'date'=>'2026-05-07','is_school_day'=>true,'created_at'=>now(),'updated_at'=>now()]);
     }
 
     private function master(string $from = '2024-04-01'): void

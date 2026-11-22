@@ -43,7 +43,7 @@ jobs:
       - name: Build actual Vue application
         run: npm run build
       - name: Test shared grid clipboard rules
-        run: node --test tests-js/transport-grid.test.mjs tests-js/notice.test.mjs
+        run: node --test tests-js/*.test.mjs
       - name: Run browser with synthetic data and isolated loopback only
         run: |
           set -euo pipefail

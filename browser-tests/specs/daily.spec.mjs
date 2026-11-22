@@ -411,7 +411,7 @@ test('categorized navigation has one child entry, preserves tabs and date', asyn
     await trigger.click();
   }
   const nav=page.getByRole('navigation',{name:'業務メニュー',exact:true}).filter({visible:true});
-  for(const name of ['ホーム','日々の業務','児童・支援','請求・会計','事業所運営','設定']) await expect(nav.getByRole('heading',{name,exact:true})).toBeVisible();
+  for(const name of ['ホーム','日々の業務','児発管・管理者業務','請求・会計','事業所運営','設定']) await expect(nav.getByRole('heading',{name,exact:true})).toBeVisible();
   await expect(nav.getByRole('link',{name:'支援計画・モニタリング',exact:true})).toHaveCount(0);
   await expect(nav.getByRole('link',{name:'受給者証・利用契約',exact:true})).toHaveCount(0);
   await expect(nav.locator('a[href*="/children"]')).toHaveCount(1);
@@ -748,4 +748,45 @@ test('contact delivery shows safe reasons, retries without changing publication 
   await expect(row.getByRole('button',{name:'連携を再試行',exact:true})).toHaveCount(0);
   await expect(page).toHaveURL(/\/contact-notes\?date=2026-07-01$/);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
+
+
+test('monthly school calendar supports cells, Excel paste and bulk settings and attendance is read-only',async({page})=>{
+  fixture('school-calendar');await login(page);
+  await visit(page,'/school-calendar?month=2026-07','学校日・休業日設定');
+  const first=page.getByRole('combobox',{name:ownChild().name+' 2026-07-01',exact:true});
+  await expect(first).toHaveValue('');
+  await first.evaluate(node=>{const data=new DataTransfer();data.setData('text/plain','学校日\t休業日');node.dispatchEvent(new ClipboardEvent('paste',{clipboardData:data,bubbles:true,cancelable:true}))});
+  await expect(first).toHaveValue('school');
+  await expect(page.getByRole('combobox',{name:ownChild().name+' 2026-07-02',exact:true})).toHaveValue('holiday');
+  await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click();
+  await expect(page.getByRole('status')).toHaveText('学校日・休業日を保存しました。');
+  await page.reload();await expect(first).toHaveValue('school');
+  await page.getByRole('checkbox',{name:ownChild().name+'を選択',exact:true}).check();
+  await page.getByRole('button',{name:'一括設定・コピペの使い方',exact:true}).click();
+  await page.getByLabel('開始日',{exact:true}).fill('2026-07-03');await page.getByLabel('終了日',{exact:true}).fill('2026-07-03');
+  await page.getByRole('button',{name:'選択した児童に適用',exact:true}).click();
+  await expect(page.getByRole('combobox',{name:ownChild().name+' 2026-07-03',exact:true})).toHaveValue('school');
+  await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click();
+  await expect(page.getByRole('status')).toHaveText('学校日・休業日を保存しました。');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await visit(page,'/usage-records?date=2026-07-02','出欠・利用実績');
+  const article=page.getByRole('article',{name:ownChild().name+'の出席記録',exact:true});
+  await expect(article.getByText('休業日',{exact:true})).toBeVisible();
+  await expect(article.getByText('放課後等デイサービス',{exact:true})).toBeVisible();
+  await expect(article.getByRole('checkbox',{name:'学校日',exact:true})).toHaveCount(0);
+  await expect(article.getByRole('combobox',{name:ownChild().name+'のサービス種別',exact:true})).toHaveCount(0);
+});
+
+test('monthly school calendar preserves unsaved edits on a revision conflict and refresh needs consent',async({page})=>{
+  fixture('school-calendar');await login(page);
+  await visit(page,'/school-calendar?month=2026-07','学校日・休業日設定');
+  const first=page.getByRole('combobox',{name:ownChild().name+' 2026-07-01',exact:true});
+  await first.selectOption('school');fixture('school-calendar-concurrent');
+  await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('他の職員が更新しました');await expect(first).toHaveValue('school');
+  page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'最新の状態に更新',exact:true}).click();
+  await expect(first).toHaveValue('school');
+  page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'最新の状態に更新',exact:true}).click();
+  await expect(first).toHaveValue('holiday');await expect(page.getByRole('button',{name:'変更をまとめて保存',exact:true})).toBeDisabled();
 });

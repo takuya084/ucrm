@@ -83,8 +83,6 @@ const autoSave = async () => {
           memo:           r.memo,
           check_in_time:  r.check_in_time || null,
           check_out_time: r.check_out_time || null,
-          is_school_day:  r.is_school_day ?? true,
-          service_type:   r.service_type || null,
         })),
       })
       const ids = res.data.ids ?? {}
@@ -143,8 +141,9 @@ const addChild = () => {
     memo:                    '',
     check_in_time:           '',
     check_out_time:          '',
-    is_school_day:           true,
-    service_type:            '',
+    service_label:          child.service_label,
+    school_day_confirmed:    child.school_day_confirmed,
+    school_day_label:        child.school_day_label,
     has_support_record:      false,
     support_record_id:       null,
   })
@@ -321,10 +320,8 @@ const changeStatus = (row, newStatus) => {
                     </label>
                   </div>
                   <div class="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                    <label class="attendance-check"><input v-model="row.is_school_day" type="checkbox" @change="autoSave" />学校日</label>
-                    <select v-model="row.service_type" :aria-label="row.child_name + 'のサービス種別'" class="max-w-full rounded-md border-gray-300 text-sm" @change="autoSave">
-                      <option value="">種別自動</option><option value="houday">放デイ</option><option value="jidou">児発</option>
-                    </select>
+                    <span class="rounded-md bg-gray-100 px-2 py-1">{{ row.service_label || '受給者証未設定' }}</span>
+                    <span class="rounded-md px-2 py-1" :class="row.school_day_confirmed || row.school_day_label === '対象外' ? 'bg-blue-50 text-blue-800' : 'bg-amber-50 text-amber-900'">{{ row.school_day_label || '未設定' }}</span>
                   </div>
                 </div>
                 <div class="attendance-field-group" role="group" :aria-label="row.child_name + 'の送迎・請求'">

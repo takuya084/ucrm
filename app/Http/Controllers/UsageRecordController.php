@@ -26,7 +26,8 @@ class UsageRecordController extends Controller
             ->where('facility_id', $facilityId)
             ->with('school:id,name')
             ->orderBy('name_kana')
-            ->get(['id', 'name', 'name_kana', 'grade', 'pickup_required', 'school_id']);
+            ->get(['id', 'name', 'name_kana', 'grade', 'pickup_required', 'school_id'])
+            ->map(fn($child)=>array_merge($child->toArray(),\App\Services\SchoolDayCalendar::metadata($facilityId,$child->id,$date)));
 
         return Inertia::render('UsageRecords/Index', [
             'date'              => $date,
@@ -65,6 +66,9 @@ class UsageRecordController extends Controller
         $savedIds = [];
 
         DB::transaction(function () use ($request, $dateStr, $facilityId, $staffId, &$savedIds) {
+            \App\Models\Facility::whereKey($facilityId)->lockForUpdate()->firstOrFail();
+            $period=\App\Models\BillingPeriod::where('facility_id',$facilityId)->where('year_month',substr($dateStr,0,7))->lockForUpdate()->first();
+            abort_if($period?->isLocked(),423,'請求確定済みの月は変更できません。');
             $sentChildIds = collect($request->records)->pluck('child_id')->toArray();
 
             // 1. リストから削除（バツ印）された児童の既存レコードをソフトデリート
@@ -77,6 +81,9 @@ class UsageRecordController extends Controller
 
             // 2. 残りの児童を更新または作成（過去にソフトデリートした記録があれば復活させる）
             foreach ($request->records as $rec) {
+                $old=UsageRecord::withTrashed()->where('facility_id',$facilityId)->where('child_id',$rec['child_id'])->whereDate('date',$dateStr)->first();
+                $schoolDay=\App\Services\SchoolDayCalendar::value($facilityId,(int)$rec['child_id'],$dateStr);
+                $service=\App\Services\ChildServiceType::forDate($facilityId,(int)$rec['child_id'],$dateStr);
                 $ur = UsageRecord::withTrashed()->whereDate('date', $dateStr)->updateOrCreate(
                     ['child_id' => $rec['child_id'], 'facility_id' => $facilityId],
                     [
@@ -91,8 +98,8 @@ class UsageRecordController extends Controller
                         'memo'            => $rec['memo'] ?? null,
                         'check_in_time'   => $rec['check_in_time'] ?? null,
                         'check_out_time'  => $rec['check_out_time'] ?? null,
-                        'is_school_day'   => $rec['is_school_day'] ?? true,
-                        'service_type'    => $rec['service_type'] ?? null,
+                        'is_school_day'   => $schoolDay ?? $old?->is_school_day ?? true,
+                        'service_type'    => $service['type'],
                     ]
                 );
                 if ($ur->trashed()) {
