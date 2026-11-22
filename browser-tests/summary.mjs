@@ -3,6 +3,10 @@ export default class Summary {
   onTestEnd(test,result) {
     const key=result.status==='passed'?'passed':result.status==='skipped'?'skipped':'failed';
     this[key]=(this[key]||0)+1;
+    if (key==='failed') {
+      const steps=(items)=>items.flatMap(s=>[{step:s.title,duration:s.duration,error:s.error?.message?.split('\n')[0]},...steps(s.steps||[])]);
+      console.log('Failed synthetic browser steps:',JSON.stringify(steps(result.steps||[])));
+    }
   }
   onEnd(result) {
     const passed=result.status==='passed' && this.passed===74 && !this.failed && !this.skipped;

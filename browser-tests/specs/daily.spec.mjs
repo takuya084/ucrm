@@ -782,7 +782,7 @@ test('monthly school calendar preserves unsaved edits on a revision conflict and
   fixture('school-calendar');await login(page);
   await visit(page,'/school-calendar?month=2026-07','学校日・休業日設定');
   const first=page.getByRole('checkbox',{name:ownChild().name+' 2026-07-01',exact:true});
-  await test.step('select school day',async()=>{await first.check()});fixture('school-calendar-concurrent');
+  await test.step('select school day',async()=>{await first.check()});await test.step('simulate concurrent update',async()=>{fixture('school-calendar-concurrent')});
   await test.step('save with conflicting revision',async()=>{await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click()});
   await expect(page.getByRole('alert')).toContainText('他の職員が更新しました');await expect(first).toBeChecked();
   await test.step('cancel refresh and retain edits',async()=>{page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'最新の状態に更新',exact:true}).click()});
