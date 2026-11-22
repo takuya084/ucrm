@@ -546,7 +546,7 @@ test('overview names, menu guidance, no-op allergy notes and role sections stay 
   await expect(page.locator('main')).not.toContainText('ここで未対応を把握し');
   await expect(page.locator('main')).not.toContainText('保存済みの出欠');
   await expect(page.locator('#daily-visits').locator('..')).toContainText('利用児童');
-  const visits=page.getByRole('region',{name:'利用・欠席',exact:true}).locator('.daily-visits-list');
+  const visits=page.getByRole('region',{name:'利用・欠席',exact:true});
   await expect(visits).not.toContainText('特記事項なし');
   await expect(visits).toContainText('卵アレルギー');
   for (const [id,heading] of [['staff-work','職員の確認事項'],['management-work','管理者・児発管の確認事項'],['office-work','事務の確認事項']]) {
