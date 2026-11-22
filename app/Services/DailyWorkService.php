@@ -10,7 +10,7 @@ class DailyWorkService
 {
     public const TASK_LABELS = [
         'home' => '家庭の連絡が未確認', 'record' => '支援記録未入力',
-        'report' => '連絡帳未入力', 'draft' => '連絡帳が下書き', 'delivery' => '連携の確認が必要',
+        'report' => '連絡帳未入力', 'draft' => '連絡帳が下書き', 'delivery' => '連絡帳の連携未完了',
     ];
 
     public function forDate(int $facilityId, string $date, ?array $absenceData = null): array

@@ -442,7 +442,9 @@ test('daily work leads staff from family review to one saved record without losi
   await expect(nav.getByRole('link',{name:'施設設定',exact:true})).toHaveCount(0);
   if(isMobile) await page.getByRole('button',{name:'閉じる',exact:true}).click();
   await visit(page,'/dashboard?date=2026-07-01','業務内容確認');
-  await expect(page.getByRole('navigation', {name:'この日の確認順',exact:true})).toBeVisible();
+  await expect(page.getByRole('navigation', {name:'この日の確認順',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'利用・欠席',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:/連絡帳の連携未完了/})).toBeVisible();
   await expect(page.locator('.workspace-shell')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await expect(page.locator('main')).not.toContainText(foreignChild().name);
@@ -544,7 +546,7 @@ test('overview names, menu guidance, no-op allergy notes and role sections stay 
   await expect(page.locator('main')).not.toContainText('ここで未対応を把握し');
   await expect(page.locator('main')).not.toContainText('保存済みの出欠');
   await expect(page.locator('#daily-visits').locator('..')).toContainText('利用児童');
-  const visits=page.getByRole('region',{name:/^利用児童/});
+  const visits=page.getByRole('region',{name:'利用・欠席',exact:true});
   await expect(visits).not.toContainText('特記事項なし');
   await expect(visits).toContainText('卵アレルギー');
   for (const [id,heading] of [['staff-work','職員の確認事項'],['management-work','管理者・児発管の確認事項'],['office-work','事務の確認事項']]) {
@@ -580,7 +582,7 @@ test('activity edit and delete align and the editor retains its content', async 
 });
 
 
-test('absence contacts keep drafts, appear before visits and are reversible with audit retention', async ({page}) => {
+test('absence contacts keep drafts, appear below visits in one card and are reversible with audit retention', async ({page}) => {
   fixture('morning-entry');
   await login(page);
   await visit(page,'/absences?date=2026-07-01','欠席連絡・相談記録');
@@ -614,13 +616,18 @@ test('absence contacts keep drafts, appear before visits and are reversible with
   await expect(board.getByRole('status')).toHaveText('保存しました。');
   await expect(board.locator('summary').first()).toContainText('記録不足');
   await visit(page,'/dashboard?date=2026-07-01','業務内容確認');
-  const summary=page.getByRole('region',{name:'出欠の概要',exact:true});
+  const summary=page.getByRole('region',{name:'利用・欠席',exact:true});
+  const counts=page.locator('[aria-label="利用・欠席の集計"]');
+  await expect(counts).toContainText('契約中');
+  await expect(counts).toContainText('利用');
+  await expect(counts).toContainText('欠席 1人');
+  await expect(counts).not.toContainText('出席');
   await expect(summary).toContainText(ownChild().name);
   await expect(summary).toContainText('発熱のため自宅で休養');
   await expect(summary).toContainText('LINE');
-  await expect(page.locator('section[aria-labelledby="daily-visits"]').getByText(ownChild().name,{exact:true})).toHaveCount(0);
-  const summaryY=await summary.boundingBox(), visitsY=await page.locator('#daily-visits').boundingBox(), transportY=await page.locator('#staff-transport').boundingBox(), activityY=await page.locator('#activity-preparation').boundingBox();
-  expect(summaryY.y).toBeLessThan(visitsY.y);expect(visitsY.y).toBeLessThan(transportY.y);expect(transportY.y).toBeLessThan(activityY.y);
+  await expect(summary.locator('.daily-visits-list').getByText(ownChild().name,{exact:true})).toHaveCount(0);
+  const countsY=await counts.boundingBox(), summaryY=await summary.boundingBox(), visitsY=await page.locator('#daily-visits').boundingBox(), absencesY=await page.locator('#daily-absences').boundingBox(), transportY=await page.locator('#staff-transport').boundingBox(), activityY=await page.locator('#activity-preparation').boundingBox();
+  expect(countsY.y+countsY.height).toBeLessThanOrEqual(summaryY.y);expect(visitsY.y).toBeLessThan(absencesY.y);expect(summaryY.y+summaryY.height).toBeLessThanOrEqual(transportY.y);expect(transportY.y).toBeLessThan(activityY.y);
   await visit(page,'/absences?date=2026-07-01','欠席連絡・相談記録');
   await board.locator('.ab-record > summary').click();
   await form.getByLabel('欠席として記録する（解除すると欠席取消。記録は保持）',{exact:true}).uncheck();
