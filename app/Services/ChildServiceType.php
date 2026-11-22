@@ -11,8 +11,9 @@ class ChildServiceType
 
     public static function fromCertificates(Collection $certificates,string $date): array
     {
-        $valid=$certificates->filter(fn($certificate)=>$certificate->status==='active'
-            && (!$certificate->valid_from || $certificate->valid_from->format('Y-m-d')<=$date)
+        $valid=$certificates->filter(fn($certificate)=>in_array($certificate->status,['active','expired'],true)
+            && $certificate->valid_from && $certificate->valid_from->format('Y-m-d')<=$date
+            && ($certificate->status!=='expired' || $certificate->valid_to)
             && (!$certificate->valid_to || $certificate->valid_to->format('Y-m-d')>=$date));
         $certificate=$valid->count()===1?$valid->first():null;
         $type=$certificate && isset(self::LABELS[$certificate->service_type])?$certificate->service_type:null;

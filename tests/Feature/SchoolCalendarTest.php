@@ -147,4 +147,16 @@ class SchoolCalendarTest extends TestCase
         $this->assertSame($code,app(\App\Services\Billing\BillingCompletenessGuard::class)->resolve($record,$this->facility,'jidou','2026-07'));
     }
 
+    public function test_registering_a_new_certificate_keeps_the_historical_type_from_the_old_valid_period(): void
+    {
+        $this->child->recipientCertificates()->update(['valid_to'=>'2026-06-30']);
+        $this->post('/children/'.$this->child->id.'/certificates',[
+            'certificate_number'=>'1234567899','status'=>'active','valid_from'=>'2026-07-01','valid_to'=>'2026-12-31',
+            'monthly_limit'=>23,'service_type'=>'jidou',
+        ])->assertRedirect();
+        $this->assertSame('expired',$this->child->recipientCertificates()->orderBy('id')->first()->status);
+        $this->assertSame('houday',ChildServiceType::forDate($this->facility->id,$this->child->id,'2026-06-30')['type']);
+        $this->assertSame('jidou',ChildServiceType::forDate($this->facility->id,$this->child->id,'2026-07-01')['type']);
+    }
+
 }

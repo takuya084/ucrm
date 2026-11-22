@@ -53,6 +53,7 @@ const save=async()=>{
   } finally {busy.value=false}
 }
 const navigate=(refresh=false)=>{
+  if(!refresh&&!targetMonth.value){targetMonth.value=props.month;return}
   if(busy.value)return
   if(dirty.value&&!confirm('未保存の変更があります。変更を破棄して最新の状態を表示しますか？')){targetMonth.value=props.month;return}
   discarding=true
