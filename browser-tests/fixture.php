@@ -51,11 +51,16 @@ if ($command === 'reset') {
     $note=new \App\Models\ContactNote(['facility_id'=>$child->facility_id,'child_id'=>$child->id,'date'=>'2026-07-01',
         'guardian_submitted_at'=>now(),'guardian_comment'=>'架空の利用前の体調連絡','home_temperature'=>'36.6']);
     $note->guardian_source_revision=1; $note->save();
- } elseif ($command === 'school-calendar') {
+ } elseif (in_array($command, ['school-calendar', 'school-calendar-bulk'], true)) {
     $child=Child::where('name','架空児童a-active')->firstOrFail();
     \App\Models\RecipientCertificate::create(['child_id'=>$child->id,'status'=>'active','valid_from'=>'2026-01-01','valid_to'=>'2026-12-31','service_type'=>'houday','certificate_number'=>'1234567890']);
     $younger=Child::create(['facility_id'=>$child->facility_id,'name'=>'架空の児発児童','contract_status'=>'active']);
     \App\Models\RecipientCertificate::create(['child_id'=>$younger->id,'status'=>'active','valid_from'=>'2026-01-01','valid_to'=>'2026-12-31','service_type'=>'jidou','certificate_number'=>'1234567891']);
+    if ($command === 'school-calendar-bulk') {
+        $other=Child::create(['facility_id'=>$child->facility_id,'name'=>'架空の一括設定対象外児童','contract_status'=>'active']);
+        \App\Models\RecipientCertificate::create(['child_id'=>$other->id,'status'=>'active','valid_from'=>'2026-01-01','valid_to'=>'2026-12-31','service_type'=>'houday','certificate_number'=>'1234567892']);
+
+    }
 } elseif ($command === 'school-calendar-concurrent') {
     $child=Child::where('name','架空児童a-active')->firstOrFail();
     \Illuminate\Support\Facades\DB::table('school_calendar_months')->insert(['facility_id'=>$child->facility_id,'month'=>'2026-07','revision'=>1,'created_at'=>now(),'updated_at'=>now()]);

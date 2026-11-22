@@ -754,19 +754,19 @@ test('contact delivery shows safe reasons, retries without changing publication 
 test('monthly school calendar supports cells, Excel paste and bulk settings and attendance is read-only',async({page})=>{
   fixture('school-calendar');await login(page);
   await visit(page,'/school-calendar?month=2026-07','学校日・休業日設定');
-  const first=page.getByRole('combobox',{name:ownChild().name+' 2026-07-01',exact:true});
-  await expect(first).toHaveValue('');
+  const first=page.getByRole('checkbox',{name:ownChild().name+' 2026-07-01',exact:true});
+  await expect(first).toHaveJSProperty('indeterminate',true);
   await first.evaluate(node=>{const data=new DataTransfer();data.setData('text/plain','学校日\t休業日');node.dispatchEvent(new ClipboardEvent('paste',{clipboardData:data,bubbles:true,cancelable:true}))});
-  await expect(first).toHaveValue('school');
-  await expect(page.getByRole('combobox',{name:ownChild().name+' 2026-07-02',exact:true})).toHaveValue('holiday');
+  await expect(first).toBeChecked();
+  await expect(page.getByRole('checkbox',{name:ownChild().name+' 2026-07-02',exact:true})).not.toBeChecked();
   await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click();
   await expect(page.getByRole('status')).toHaveText('学校日・休業日を保存しました。');
-  await page.reload();await expect(first).toHaveValue('school');
+  await page.reload();await expect(first).toBeChecked();
   await page.getByRole('checkbox',{name:ownChild().name+'を選択',exact:true}).check();
   await page.getByRole('button',{name:'一括設定・コピペの使い方',exact:true}).click();
   await page.getByLabel('開始日',{exact:true}).fill('2026-07-03');await page.getByLabel('終了日',{exact:true}).fill('2026-07-03');
   await page.getByRole('button',{name:'選択した児童に適用',exact:true}).click();
-  await expect(page.getByRole('combobox',{name:ownChild().name+' 2026-07-03',exact:true})).toHaveValue('school');
+  await expect(page.getByRole('checkbox',{name:ownChild().name+' 2026-07-03',exact:true})).toBeChecked();
   await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click();
   await expect(page.getByRole('status')).toHaveText('学校日・休業日を保存しました。');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
@@ -781,12 +781,43 @@ test('monthly school calendar supports cells, Excel paste and bulk settings and 
 test('monthly school calendar preserves unsaved edits on a revision conflict and refresh needs consent',async({page})=>{
   fixture('school-calendar');await login(page);
   await visit(page,'/school-calendar?month=2026-07','学校日・休業日設定');
-  const first=page.getByRole('combobox',{name:ownChild().name+' 2026-07-01',exact:true});
-  await first.selectOption('school');fixture('school-calendar-concurrent');
+  const first=page.getByRole('checkbox',{name:ownChild().name+' 2026-07-01',exact:true});
+  await test.step('select school day',async()=>{await first.check()});await test.step('simulate concurrent update',async()=>{fixture('school-calendar-concurrent')});
+  await test.step('save with conflicting revision',async()=>{await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click()});
+  await expect(page.getByRole('alert')).toContainText('他の職員が更新しました');await expect(first).toBeChecked();
+  await test.step('cancel refresh and retain edits',async()=>{page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'最新の状態に更新',exact:true}).click()});
+  await expect(first).toBeChecked();
+  await test.step('accept refresh and load saved holiday',async()=>{page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'最新の状態に更新',exact:true}).click()});
+  await expect(first).not.toBeChecked();await expect(first).toHaveJSProperty('indeterminate',false);await expect(page.getByRole('button',{name:'変更をまとめて保存',exact:true})).toBeDisabled();
+});
+
+test('school bulk settings cover December 1 through 31 and preserve dates and children outside a later range',async({page})=>{
+  fixture('school-calendar-bulk');await login(page);
+  await visit(page,'/school-calendar?month=2026-12','学校日・休業日設定');
+  const cell=(name,day)=>page.getByRole('checkbox',{name:`${name} 2026-12-${String(day).padStart(2,'0')}`,exact:true});
+  await page.getByRole('checkbox',{name:ownChild().name+'を選択',exact:true}).check();
+  await page.getByRole('button',{name:'一括設定・コピペの使い方',exact:true}).click();
+  await page.getByRole('button',{name:'すべての曜日',exact:true}).click();
+  await page.getByRole('button',{name:'選択した児童に適用',exact:true}).click();
+  for(let day=1;day<=31;day++)await expect(cell(ownChild().name,day)).toBeChecked();
+  await expect(cell('架空の一括設定対象外児童',1)).toHaveJSProperty('indeterminate',true);
+  await page.getByLabel('開始日',{exact:true}).fill('2026-12-07');
+  await page.getByLabel('終了日',{exact:true}).fill('2026-12-11');
+  await page.getByLabel('設定値',{exact:true}).selectOption('holiday');
+  await page.getByRole('button',{name:'選択した児童に適用',exact:true}).click();
   await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click();
-  await expect(page.getByRole('alert')).toContainText('他の職員が更新しました');await expect(first).toHaveValue('school');
-  page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'最新の状態に更新',exact:true}).click();
-  await expect(first).toHaveValue('school');
-  page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'最新の状態に更新',exact:true}).click();
-  await expect(first).toHaveValue('holiday');await expect(page.getByRole('button',{name:'変更をまとめて保存',exact:true})).toBeDisabled();
+  await expect(page.getByRole('status')).toHaveText('学校日・休業日を保存しました。');
+  await page.reload();
+  for(let day=1;day<=31;day++){
+    await expect(cell(ownChild().name,day)).toHaveJSProperty('checked',day<7||day>11);
+    await expect(cell(ownChild().name,day)).toHaveJSProperty('indeterminate',false);
+    await expect(cell('架空の一括設定対象外児童',day)).toHaveJSProperty('indeterminate',true);
+  }
+  await cell(ownChild().name,7).check();await cell(ownChild().name,1).uncheck();
+  await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click();
+  await expect(page.getByRole('status')).toHaveText('学校日・休業日を保存しました。');await page.reload();
+  await expect(cell(ownChild().name,7)).toBeChecked();await expect(cell(ownChild().name,1)).not.toBeChecked();
+  await expect(cell(ownChild().name,1)).toHaveJSProperty('indeterminate',false);
+  expect(await cell(ownChild().name,1).locator('..').evaluate(node=>node.closest('td').getBoundingClientRect().width)).toBeLessThan(65);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
