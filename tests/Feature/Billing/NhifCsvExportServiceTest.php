@@ -150,6 +150,7 @@ class NhifCsvExportServiceTest extends TestCase
             'dropoff_done'   => $dropoff,
             'billing_target' => true,
         ]);
+        \Illuminate\Support\Facades\DB::table('child_school_days')->insert(['facility_id'=>$this->facility->id,'child_id'=>$this->child->id,'date'=>$date,'is_school_day'=>true,'created_at'=>now(),'updated_at'=>now()]);
         if ($status === 'absent_notice') $this->confirmAbsence($record);
         return $record;
     }

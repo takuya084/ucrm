@@ -347,7 +347,7 @@ class NhifCsvExportService
                 16  => $hours !== null ? NhifExchangeFileBuilder::scaled($hours, 2) : null,
                 21  => (!$isAbsent && $usage->pickup_done) ? 1 : null,
                 22  => (!$isAbsent && $usage->dropoff_done) ? 1 : null,
-                34  => $isAbsent ? null : ($usage->is_school_day ? '1' : '2'), // 提供形態: 1=授業終了後, 2=休業日
+                34  => $isAbsent ? null : (($detail->service_type==='houday' ? \App\Services\SchoolDayCalendar::value($usage->facility_id,$usage->child_id,$usage->date->format('Y-m-d')) : $usage->is_school_day) ? '1' : '2'), // 提供形態: 1=授業終了後, 2=休業日
                 36  => $isAbsent ? '8' : null,                                 // サービス提供の状況: 8=欠席（欠席時対応加算）
                 111 => $extension && !$isAbsent ? $this->extensionTier($extension) : null,
             ]);

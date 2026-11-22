@@ -44,6 +44,7 @@ class BillingCalculationService
         }
 
         return DB::transaction(function () use ($facility, $yearMonth) {
+            Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
             $locked = BillingPeriod::where('facility_id', $facility->id)
                 ->where('year_month', $yearMonth)->lockForUpdate()->first();
             if ($locked && $locked->isLocked()) {
@@ -82,21 +83,6 @@ class BillingCalculationService
         Facility $facility,
         string $yearMonth
     ): ?BillingDetail {
-        // 有効な受給者証を取得
-        $certificate = $child->recipientCertificates()
-            ->where('status', 'active')
-            ->where('valid_from', '<=', $yearMonth . '-01')
-            ->where(function ($q) use ($yearMonth) {
-                $q->whereNull('valid_to')
-                  ->orWhere('valid_to', '>=', $yearMonth . '-01');
-            })
-            ->latest('valid_from')
-            ->first();
-
-        if (!$certificate) {
-            return null;
-        }
-
         // 当月の請求対象利用記録を取得
         $usageRecords = UsageRecord::where('child_id', $child->id)
             ->where('facility_id', $facility->id)
@@ -110,7 +96,10 @@ class BillingCalculationService
             return null;
         }
 
-        $serviceType = $certificate->service_type ?? $facility->service_type;
+        $info=\App\Services\ChildServiceType::forDate($facility->id,$child->id,$usageRecords->first()->date->format('Y-m-d'));
+        if (!$info['type']) throw \Illuminate\Validation\ValidationException::withMessages(['billing'=>$child->name.'：'.$info['reason'].' 児童の記録で受給者証を確認してください。']);
+        $certificate=RecipientCertificate::findOrFail($info['certificate_id']);
+        $serviceType=$info['type'];
 
         // 請求明細を作成
         $detail = BillingDetail::create([

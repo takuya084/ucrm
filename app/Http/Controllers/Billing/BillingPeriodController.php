@@ -245,25 +245,29 @@ class BillingPeriodController extends Controller
     public function confirm(BillingPeriod $billingPeriod)
     {
         $this->authorizeFacility($billingPeriod);
-        app(BillingCompletenessGuard::class)->assertPeriod($billingPeriod);
+        return \Illuminate\Support\Facades\DB::transaction(function()use($billingPeriod){
+            \App\Models\Facility::whereKey($billingPeriod->facility_id)->lockForUpdate()->firstOrFail();
+            $billingPeriod=BillingPeriod::whereKey($billingPeriod->id)->lockForUpdate()->firstOrFail();
+            app(BillingCompletenessGuard::class)->assertPeriod($billingPeriod);
 
-        if (!$billingPeriod->isDraft()) {
-            session()->flash('message', '下書き状態の請求のみ確定できます。');
-            session()->flash('status', 'error');
+            if (!$billingPeriod->isDraft()) {
+                session()->flash('message', '下書き状態の請求のみ確定できます。');
+                session()->flash('status', 'error');
+                return back();
+            }
+
+            $billingPeriod->update([
+                'status'       => 'confirmed',
+                'confirmed_by' => auth()->user()->staff?->id,
+            ]);
+
+            $billingPeriod->billingDetails()->update(['status' => 'confirmed']);
+
+            session()->flash('message', '請求を確定しました。');
+            session()->flash('status', 'success');
+
             return back();
-        }
-
-        $billingPeriod->update([
-            'status'       => 'confirmed',
-            'confirmed_by' => auth()->user()->staff?->id,
-        ]);
-
-        $billingPeriod->billingDetails()->update(['status' => 'confirmed']);
-
-        session()->flash('message', '請求を確定しました。');
-        session()->flash('status', 'success');
-
-        return back();
+        });
     }
 
     /**

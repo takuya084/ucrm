@@ -98,6 +98,7 @@ class BillingCalculationServiceTest extends TestCase
             'pickup_done'    => $pickup,
             'billing_target' => true,
         ]);
+        \Illuminate\Support\Facades\DB::table('child_school_days')->insert(['facility_id'=>$this->facility->id,'child_id'=>$this->child->id,'date'=>$date,'is_school_day'=>true,'created_at'=>now(),'updated_at'=>now()]);
         if ($status === 'absent_notice') $this->confirmAbsence($record);
         return $record;
     }
@@ -305,5 +306,33 @@ class BillingCalculationServiceTest extends TestCase
   $detail=$period->billingDetails->firstWhere('child_id',$this->child->id);
   $this->assertFalse($detail->billingDetailLines()->where('service_code','636300')->exists());
  }
+
+    public function test_monthly_calendar_overrides_an_old_school_day_snapshot_in_billing(): void
+    {
+        $record=$this->createUsageRecord('2026-05-07');
+        $this->createCode('631111',500,'base',['day_type'=>'holiday','max_capacity'=>10]);
+        \Illuminate\Support\Facades\DB::table('child_school_days')->where('child_id',$this->child->id)->update(['is_school_day'=>false]);
+        $this->assertTrue($record->fresh()->is_school_day);
+        $period=$this->service()->calculateMonthlyBilling($this->facility->id,'2026-05');
+        $this->assertEquals(500,$period->billingDetails->first()->total_units);
+    }
+
+    public function test_school_day_must_be_confirmed_in_the_monthly_calendar_before_billing(): void
+    {
+        $this->createUsageRecord('2026-05-07');
+        \Illuminate\Support\Facades\DB::table('child_school_days')->delete();
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectExceptionMessage('school_day_unconfirmed');
+        $this->service()->calculateMonthlyBilling($this->facility->id,'2026-05');
+    }
+
+    public function test_missing_certificate_type_never_falls_back_to_facility_type(): void
+    {
+        $this->createUsageRecord('2026-05-07');
+        $this->child->recipientCertificates()->update(['service_type'=>null]);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectExceptionMessage('サービス種別が未設定');
+        $this->service()->calculateMonthlyBilling($this->facility->id,'2026-05');
+    }
 
 }

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
-const icons = { 'ホーム': 'M3 10l9-7 9 7v10H3z M9 20v-7h6v7', '日々の業務': 'M4 5h16v16H4z M8 3v4 M16 3v4 M4 11h16', '児童・支援': 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M17 4a4 4 0 0 1 0 8 M22 21v-2a4 4 0 0 0-3-4', '請求・会計': 'M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6', '事業所運営': 'M4 21V3h16v18 M8 7h2 M14 7h2 M8 11h2 M14 11h2 M9 21v-6h6v6', '設定': 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2' }
+const icons = { 'ホーム': 'M3 10l9-7 9 7v10H3z M9 20v-7h6v7', '日々の業務': 'M4 5h16v16H4z M8 3v4 M16 3v4 M4 11h16', '児発管・管理者業務': 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M17 4a4 4 0 0 1 0 8 M22 21v-2a4 4 0 0 0-3-4', '請求・会計': 'M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6', '事業所運営': 'M4 21V3h16v18 M8 7h2 M14 7h2 M8 11h2 M14 11h2 M9 21v-6h6v6', '設定': 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2' }
 const emit = defineEmits(['navigate'])
 const page = usePage()
 const role = computed(() => page.props.auth.staff_role)
@@ -18,7 +18,8 @@ const groups = computed(() => [
     item('療育の実施状況', 'program-progress.index', ['program-progress.*']),
     item('空き枠調整', 'vacancy-adjustment.index', ['vacancy-adjustment.*']),
   ] },
-  { label: '児童・支援', items: [
+  { label: '児発管・管理者業務', items: [
+    item('学校日・休業日設定', 'school-calendar.index', ['school-calendar.*'], ['admin','leader']),
     item('児童の記録', 'children.index', ['children.*', 'assessments.*', 'support-plans.*', 'monitoring-records.*']),
   ] },
   { label: '請求・会計', items: [
@@ -44,7 +45,7 @@ const groups = computed(() => [
     item('加算・減算設定', 'billing.settings.service-codes', ['billing.settings.*'], ['admin','leader']),
   ] },
 ].map(g => ({ ...g, items: g.items.filter(i => !i.roles || i.roles.includes(role.value)) })).filter(g => g.items.length))
-const params = i => ({ ...(['dashboard','usage-records.index','absences.index','contact-notes.index','program-progress.index','transport.index','daily-activities.index'].includes(i.name) && day.value ? { date: day.value } : {}), ...i.params })
+const params = i => ({ ...(i.name === 'school-calendar.index' && day.value ? { month: day.value.slice(0,7) } : {}), ...(['dashboard','usage-records.index','absences.index','contact-notes.index','program-progress.index','transport.index','daily-activities.index'].includes(i.name) && day.value ? { date: day.value } : {}), ...i.params })
 const active = i => {
   return i.patterns.some(p => route().current(p))
 }

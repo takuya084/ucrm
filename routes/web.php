@@ -395,3 +395,9 @@ Route::middleware(['auth','verified'])->group(function () {
  Route::get('/absences/calendar',[\App\Http\Controllers\AbsenceController::class,'showCalendar'])->name('absences.calendar.show');
  Route::put('/absences/calendar',[\App\Http\Controllers\AbsenceController::class,'calendar'])->name('absences.calendar');
 });
+
+// 月次の学校日・休業日設定（児発管・管理者）
+Route::middleware(['auth','verified','role:leader-or-above'])->group(function () {
+    Route::get('school-calendar', [\App\Http\Controllers\SchoolCalendarController::class,'index'])->name('school-calendar.index');
+    Route::put('school-calendar', [\App\Http\Controllers\SchoolCalendarController::class,'update'])->name('school-calendar.update');
+});
