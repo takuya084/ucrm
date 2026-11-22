@@ -49,6 +49,7 @@ class ContactNoteController extends Controller
                 'usage_record_id'       => $ur->id,
                 'note'                  => $note,
                 'state' => \App\Services\ContactNoteStatus::for($note),
+                'delivery' => \App\Services\ContactNoteDelivery::details($note),
                 'support_record_id' => $ur->supportRecord?->id ?? $note?->support_record_id,
             ];
         });
@@ -62,6 +63,7 @@ class ContactNoteController extends Controller
                 'usage_record_id' => null,
                 'note'            => $note,
                 'state' => \App\Services\ContactNoteStatus::for($note),
+                'delivery' => \App\Services\ContactNoteDelivery::details($note),
                 'support_record_id' => $note->support_record_id,
             ]);
         }
@@ -169,7 +171,7 @@ class ContactNoteController extends Controller
                 $note->forceFill(['status'=>ContactNote::STATUS_PUBLISHED,'published_at'=>now(),
                     'published_by'=>auth()->user()->staff?->id,'withdrawn_at'=>null,'yoyaku_synced_at'=>null])->save();
             }
-            PushContactNote::dispatch($note->id)->afterCommit();
+            \App\Services\ContactNoteDelivery::enqueue($note);
             return back()->with(['message'=>'連絡帳を公開しました。','status'=>'success']);
         });
     }
@@ -187,8 +189,22 @@ class ContactNoteController extends Controller
                     'withdrawn_at'=>now(),'yoyaku_synced_at'=>null,'publication_hash'=>null,'guardian_confirmed_at'=>null,'guardian_confirmed_hash'=>null])->save();
             }
             // 再送時も最新の状態をジョブで読み直す。本文はキューに保持しない。
-            PushContactNote::dispatch($note->id)->afterCommit();
+            \App\Services\ContactNoteDelivery::enqueue($note);
             return back()->with(['message'=>'公開の取り下げを受け付けました。保護者側への反映は連携の完了後です。','status'=>'success']);
+        });
+    }
+
+    /** Retry the current public state; never publish a draft or withdraw a public note. */
+    public function retryDelivery(ContactNote $contactNote)
+    {
+        abort_if($contactNote->facility_id !== $this->facilityId(), 403);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($contactNote) {
+            $note = ContactNote::where('facility_id', $this->facilityId())->whereKey($contactNote->id)->lockForUpdate()->firstOrFail();
+            $delivery = \App\Services\ContactNoteDelivery::details($note);
+            if (!$delivery || !$delivery['pending']) return back()->with(['message'=>'再試行が必要な連携はありません。', 'status'=>'success']);
+            if (!$delivery['canRetry']) return back()->with(['message'=>$delivery['reason'], 'status'=>'error']);
+            \App\Services\ContactNoteDelivery::enqueue($note);
+            return back()->with(['message'=>'連携の再試行を受け付けました。公開状態・本文は変更していません。送信結果を更新して確認してください。', 'status'=>'success']);
         });
     }
 

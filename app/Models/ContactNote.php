@@ -43,6 +43,8 @@ class ContactNote extends Model
     ];
 
     protected $casts = [
+        'delivery_requested_at' => 'datetime',
+        'delivery_attempted_at' => 'datetime',
         'guardian_checked_at' => 'datetime',
         'guardian_checked_revision' => 'integer',
         'guardian_confirmed_at' => 'datetime',

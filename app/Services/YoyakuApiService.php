@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Log;
 
 class YoyakuApiService
 {
+    private ?string $contactNoteError = null;
+
+    public function contactNoteDeliveryError(): ?string { return $this->contactNoteError; }
+
     private string $baseUrl;
     private int    $timeout;
 
@@ -205,12 +209,28 @@ class YoyakuApiService
      */
     public function upsertContactNote(array $payload, ?int $facilityId = null, ?string $expectedTokenHash = null): ?array
     {
+        $this->contactNoteError = null;
         $client = $this->client($facilityId, $expectedTokenHash);
-        if (!$client) return null;
-
-        return $this->safe(fn() =>
-            $client->post("{$this->baseUrl}/api/contact-notes", $payload)
-        );
+        if (!$client) { $this->contactNoteError = 'not_configured'; return null; }
+        try {
+            $response = $client->post("{$this->baseUrl}/api/contact-notes", $payload);
+            if (!$response->successful()) {
+                $this->contactNoteError = match (true) {
+                    in_array($response->status(), [401, 403], true) => 'authentication',
+                    $response->serverError() => 'remote_error',
+                    default => 'rejected',
+                };
+                return null;
+            }
+            $result = $response->json();
+            if (!is_array($result)) { $this->contactNoteError = 'invalid_response'; return null; }
+            return $result;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            $this->contactNoteError = 'unreachable';
+        } catch (\Throwable $e) {
+            $this->contactNoteError = 'delivery_failed';
+        }
+        return null;
     }
 
     /**

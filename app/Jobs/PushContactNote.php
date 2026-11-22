@@ -27,25 +27,60 @@ class PushContactNote implements ShouldQueue
     public int $tries = 3;
 
     public ?array $target = null;
+    public ?string $requestId = null;
+    private ?int $attemptRevision = null;
+    private string $failureReason = 'delivery_failed';
 
     public function __construct(public int $contactNoteId)
     {
         $note = ContactNote::find($contactNoteId);
         if ($note) {
+            $this->requestId = $note->delivery_request_id;
             $this->target = YoyakuOutboundTarget::capture((int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'));
         }
     }
 
     public function handle(YoyakuApiService $api): void
     {
+        $this->attemptRevision = null;
+        $this->failureReason = 'delivery_failed';
+        try { $this->deliver($api); }
+        catch (\Throwable $e) { $this->recordFailure($this->failureReason); throw $e; }
+    }
+
+    public function failed(?\Throwable $exception): void
+    {
+        $this->recordFailure('delivery_failed', false);
+    }
+
+    private function recordFailure(string $code, bool $overwrite = true): void
+    {
+        $query = \Illuminate\Support\Facades\DB::table('contact_notes')->where('id', $this->contactNoteId)
+            ->whereNull('deleted_at')->where('delivery_request_id', $this->requestId)->whereNull('yoyaku_synced_at');
+        if ($this->target) $query->where('facility_id', $this->target['facility_id'])->where('child_id', $this->target['child_id']);
+        if ($this->attemptRevision !== null) $query->where('delivery_revision', $this->attemptRevision);
+        if (!$overwrite) $query->whereNull('delivery_error_code');
+        $query->update(['delivery_error_code'=>$code]);
+    }
+
+    private function deliver(YoyakuApiService $api): void
+    {
         $delivery = \Illuminate\Support\Facades\DB::transaction(function () {
             $note = ContactNote::with(['child', 'supportRecord.programs', 'publishedByStaff'])
                 ->lockForUpdate()->find($this->contactNoteId);
-            if (!$note) return;
+            if (!$note || $note->delivery_request_id !== $this->requestId) return;
             $withdrawn=!$note->isPublished() && $note->withdrawn_at!==null;
             if (!$note->isPublished() && !$withdrawn) return;
 
-            if (!YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'))) return;
+            \Illuminate\Support\Facades\DB::table('contact_notes')->where('id', $note->id)
+                ->update(['delivery_attempted_at'=>now(), 'delivery_error_code'=>null]);
+            $note->refresh();
+            try {
+                if (!YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'))) {
+                    $this->recordFailure(\App\Services\ContactNoteDelivery::blockedReason($note) ?? 'not_configured');
+                    return;
+                }
+            } catch (\RuntimeException $e) { $this->failureReason = 'mapping_changed'; throw $e; }
             $facility = Facility::findOrFail($note->facility_id);
 
             if (!$withdrawn) {
@@ -81,6 +116,7 @@ class PushContactNote implements ShouldQueue
 
             // 本文のスナップショットと世代の採番を同じ行ロック内で確定する。
             $revision=(int)$note->delivery_revision+1;
+            $this->attemptRevision = $revision;
             if ($revision>9007199254740991) throw new \RuntimeException('Contact delivery revision exhausted');
             // 配信管理情報だけの更新なので個人情報の監査イベントは発火させない。
             \Illuminate\Support\Facades\DB::table('contact_notes')->where('id',$note->id)->update(['delivery_revision'=>$revision]);
@@ -114,15 +150,18 @@ class PushContactNote implements ShouldQueue
         if (!$delivery) return;
         ['note'=>$note,'facility'=>$facility,'payload'=>$payload]=$delivery;
         // 通信中はDBロックを保持しない。遅れて到着した本文は受信側の世代で拒否する。
-        $result=$api->upsertContactNote($payload,$facility->id,$this->target['token_hash']);
+        try { $result=$api->upsertContactNote($payload,$facility->id,$this->target['token_hash']); }
+        catch (\RuntimeException $e) { $this->failureReason = 'mapping_changed'; throw $e; }
 
         if ($result !== null) {
             // 同期時刻の記録のみ（個人情報の変更ではないため監査ログは発火させない）
-            YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d'));
+            try { YoyakuOutboundTarget::assertCurrent($this->target, (int) $note->facility_id, (int) $note->child_id, $note->date->format('Y-m-d')); }
+            catch (\RuntimeException $e) { $this->failureReason = 'mapping_changed'; throw $e; }
             // 編集・公開状態変更・移動・削除があったスナップショットは同期済みにしない。
             ContactNote::whereKey($note->id)->where($note->getRawOriginal())
-                ->update(['yoyaku_synced_at' => now()]);
+                ->update(['yoyaku_synced_at' => now(), 'delivery_error_code'=>null]);
         } else {
+            $this->recordFailure($api->contactNoteDeliveryError() ?? 'delivery_failed');
             Log::warning('PushContactNote: 配信失敗', ['contact_note_id' => $note->id]);
             $this->release(60);
         }

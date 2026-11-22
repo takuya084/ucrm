@@ -121,7 +121,7 @@ class SupportRecordController extends Controller
         }
 
         if ($note->isPublished()) {
-            PushContactNote::dispatch($note->id)->afterCommit();
+            \App\Services\ContactNoteDelivery::enqueue($note);
         }
     }
 
