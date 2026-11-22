@@ -26,6 +26,7 @@ const missing=row=>props.days.filter(day=>row.services[day.date].type==='houday'
 const unknown=row=>props.days.some(day=>!row.services[day.date].type)
 const missingChildren=computed(()=>props.rows.filter(row=>missing(row)>0).length)
 const unknownChildren=computed(()=>props.rows.filter(unknown).length)
+watch(school,()=>{selected.value=[]})
 const toggleAll=event=>{selected.value=event.target.checked?visible.value.map(row=>row.id):[]}
 const applyBulk=()=>{
   error.value='';message.value=''
@@ -84,6 +85,7 @@ onUnmounted(()=>{window.removeEventListener('beforeunload',beforeUnload);removeN
       <DisclosurePanel id="school-calendar-bulk" title="一括設定・コピペの使い方">
         <fieldset :disabled="locked || busy" class="space-y-4 text-sm">
           <div class="flex flex-wrap gap-3"><label>開始日<input type="date" v-model="start" :min="days[0].date" :max="days.at(-1).date" class="ml-2 rounded-md border-gray-300" /></label><label>終了日<input type="date" v-model="end" :min="days[0].date" :max="days.at(-1).date" class="ml-2 rounded-md border-gray-300" /></label></div>
+          <div class="flex flex-wrap gap-3"><button type="button" @click="weekdays=[1,2,3,4,5]" class="text-primary-700 underline">平日を選択</button><button type="button" @click="weekdays=[0,6]" class="text-primary-700 underline">土日を選択</button><button type="button" @click="weekdays=[0,1,2,3,4,5,6]" class="text-primary-700 underline">すべての曜日</button><span class="text-gray-600">児童 {{ selected.length }}人を選択中</span></div>
           <div class="flex flex-wrap gap-4"><label v-for="(label,index) in ['日','月','火','水','木','金','土']" :key="label"><input type="checkbox" :value="index" v-model="weekdays" /> {{ label }}</label></div>
           <div class="flex flex-wrap items-center gap-3"><label>設定値<select v-model="bulkValue" class="ml-2 rounded-md border-gray-300"><option value="school">学校日</option><option value="holiday">休業日</option><option value="">未設定に戻す</option></select></label><button type="button" @click="applyBulk" class="rounded-md border border-primary-300 px-4 py-2 font-semibold text-primary-700">選択した児童に適用</button></div>
           <p class="text-gray-600">学校の予定を確認して設定してください。祝日・振替休日も個別に確認します。Excelから「学校日」「休業日」「未設定」を複数セルまとめて貼り付けできます。</p>

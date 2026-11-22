@@ -30,7 +30,7 @@ class BillingCompletenessGuard
             ->orderByDesc('plan_date')->orderByDesc('id')->first();
         try {
             return $this->resolver->resolveBaseCode(
-                $serviceType, $schoolDay ?? false, $record->check_in_time,
+                $serviceType, $serviceType==='houday' ? $schoolDay : ($record->is_school_day ?? true), $record->check_in_time,
                 $record->check_out_time, $month, $facility->capacity_per_day,
                 $plan?->planned_duration_minutes
             );

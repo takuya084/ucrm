@@ -130,4 +130,21 @@ class SchoolCalendarTest extends TestCase
         try {app(\App\Services\Billing\BillingCompletenessGuard::class)->resolve($record,$this->facility,'houday','2026-07');$this->fail('Unconfirmed school day must block billing');}
         catch(\Illuminate\Validation\ValidationException $e){$this->assertStringContainsString('school_day_unconfirmed',json_encode($e->errors()));}
     }
+    public function test_month_end_historical_attendance_still_includes_the_child(): void
+    {
+        $this->child->update(['contract_status'=>'ended']);
+        UsageRecord::create(['facility_id'=>$this->facility->id,'child_id'=>$this->child->id,'date'=>'2026-07-31','status'=>'attended']);
+        $this->get('/school-calendar?month=2026-07')->assertInertia(fn(Assert $page)=>$page->has('rows',1)->where('rows.0.id',$this->child->id));
+    }
+
+    public function test_child_development_billing_does_not_require_a_school_calendar_entry(): void
+    {
+        $this->child->recipientCertificates()->update(['service_type'=>'jidou']);
+        $this->child->supportPlans()->create(['plan_date'=>'2026-01-01','planned_duration_minutes'=>120]);
+        $record=UsageRecord::create(['facility_id'=>$this->facility->id,'child_id'=>$this->child->id,'date'=>'2026-07-01','status'=>'attended','is_school_day'=>true]);
+        $code=\App\Models\ServiceCodeMaster::create(['service_type'=>'jidou','service_code'=>'synthetic','service_name'=>'Synthetic child development','unit_count'=>100,'unit_type'=>'per_day','category'=>'base','valid_from'=>'2026-01-01','revision_date'=>'2026-01-01']);
+        $this->mock(\App\Services\Billing\ServiceCodeResolver::class,fn($mock)=>$mock->shouldReceive('resolveBaseCode')->once()->with('jidou',true,null,null,'2026-07',10,120)->andReturn($code));
+        $this->assertSame($code,app(\App\Services\Billing\BillingCompletenessGuard::class)->resolve($record,$this->facility,'jidou','2026-07'));
+    }
+
 }

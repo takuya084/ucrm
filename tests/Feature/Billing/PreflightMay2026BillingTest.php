@@ -293,7 +293,9 @@ class PreflightMay2026BillingTest extends TestCase
         $cert->save();
         $record = UsageRecord::first()->replicate();
         $record->child_id = $second->id;
-        $record->save(); // second child has no plan; first child's rows are already recalculated when this fails.
+        $record->save();
+        \Illuminate\Support\Facades\DB::table('child_school_days')->insert(['facility_id'=>$this->facility->id,'child_id'=>$second->id,'date'=>'2026-05-07','is_school_day'=>true,'created_at'=>now(),'updated_at'=>now()]);
+        // second child has no plan; first child's rows are already recalculated when this fails.
         $before = $this->snapshot();
         $this->reject('planned_time_missing', fn () => $this->calculate());
         $this->assertSame($before, $this->snapshot());
@@ -315,6 +317,7 @@ class PreflightMay2026BillingTest extends TestCase
         $record = UsageRecord::first()->replicate();
         $record->child_id = $second->id;
         $record->save();
+        \Illuminate\Support\Facades\DB::table('child_school_days')->insert(['facility_id'=>$this->facility->id,'child_id'=>$second->id,'date'=>'2026-05-07','is_school_day'=>true,'created_at'=>now(),'updated_at'=>now()]);
         $before = $this->snapshot();
         $this->reject('planned_time_missing', fn () => $this->calculate());
         $this->assertSame($before, $this->snapshot());

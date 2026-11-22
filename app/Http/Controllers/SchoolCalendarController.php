@@ -23,7 +23,7 @@ class SchoolCalendarController extends Controller
         ]);
         $entries=DB::table('child_school_days')->where('facility_id',$facilityId)->whereBetween('date',[$first,$last])->get()->groupBy('child_id');
         $children=Child::where('facility_id',$facilityId)->where(fn($q)=>$q->where('contract_status','active')
-            ->orWhereIn('id',UsageRecord::where('facility_id',$facilityId)->whereBetween('date',[$first,$last])->select('child_id'))
+            ->orWhereIn('id',UsageRecord::where('facility_id',$facilityId)->whereDate('date','>=',$first)->whereDate('date','<=',$last)->select('child_id'))
             ->orWhereIn('id',$entries->keys()))->with(['school:id,name','recipientCertificates'])->orderBy('name_kana')->orderBy('id')->get();
         $rows=$children->map(function($child)use($days,$entries){
             $saved=($entries->get($child->id)??collect())->keyBy('date');

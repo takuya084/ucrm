@@ -770,7 +770,7 @@ test('monthly school calendar supports cells, Excel paste and bulk settings and 
   await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click();
   await expect(page.getByRole('status')).toHaveText('学校日・休業日を保存しました。');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  await visit(page,'/usage-records?date=2026-07-02','出欠・利用実績');
+  await visit(page,'/usage-records?date=2026-07-02','出席管理');
   const article=page.getByRole('article',{name:ownChild().name+'の出席記録',exact:true});
   await expect(article.getByText('休業日',{exact:true})).toBeVisible();
   await expect(article.getByText('放課後等デイサービス',{exact:true})).toBeVisible();
