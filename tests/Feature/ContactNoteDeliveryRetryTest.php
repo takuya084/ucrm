@@ -32,6 +32,13 @@ class ContactNoteDeliveryRetryTest extends TestCase
             'date'=>'2026-11-07','status'=>'published','published_at'=>now(),'guardian_message'=>'Public synthetic content','guardian_comment'=>'Home synthetic content']);
     }
 
+    private function fakeHttp(array $callbacks): void
+    {
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::preventStrayRequests();
+        Http::fake($callbacks);
+    }
+
     private function retry(): \Illuminate\Testing\TestResponse
     {
         return $this->post('/contact-notes/'.$this->note->id.'/retry-delivery');
@@ -51,7 +58,7 @@ class ContactNoteDeliveryRetryTest extends TestCase
         $this->assertSame($requested->delivery_request_id,$this->note->fresh()->delivery_request_id);
         Bus::assertDispatchedTimes(PushContactNote::class,1);
         Bus::assertDispatched(PushContactNote::class,fn($job)=>$job->afterCommit && $job->requestId===$requested->delivery_request_id);
-        Http::fake(['*'=>Http::response(['ok'=>true])]);
+        $this->fakeHttp(['*'=>Http::response(['ok'=>true])]);
         (new PushContactNote($requested->id))->handle(app(YoyakuApiService::class));
         $this->assertSame('連携完了',ContactNoteStatus::for($this->note->fresh())['delivery']);
         $this->assertSame($before['guardian_confirmed_hash'],$this->note->fresh()->guardian_confirmed_hash);
@@ -61,7 +68,7 @@ class ContactNoteDeliveryRetryTest extends TestCase
 
     public function test_http_failure_has_safe_reason_then_retry_succeeds_and_clears_it(): void
     {
-        Http::fake(['*'=>Http::response(['error'=>'synthetic-private-token and private remote body'],401)]);
+        $this->fakeHttp(['*'=>Http::response(['error'=>'synthetic-private-token and private remote body'],401)]);
         $this->retry();
         $job=(new PushContactNote($this->note->id))->withFakeQueueInteractions();
         $job->handle(app(YoyakuApiService::class)); $job->assertReleased(60);
@@ -69,7 +76,7 @@ class ContactNoteDeliveryRetryTest extends TestCase
         $this->get('/contact-notes?date=2026-11-07')->assertOk()->assertDontSee('synthetic-private-token')->assertDontSee('private remote body')
             ->assertInertia(fn(Assert $page)=>$page->where('rows.0.delivery.canRetry',true)
                 ->where('rows.0.delivery.reason',ContactNoteDelivery::REASONS['authentication']));
-        $this->retry(); Http::fake(['*'=>Http::response(['ok'=>true])]);
+        $this->retry(); $this->fakeHttp(['*'=>Http::response(['ok'=>true])]);
         (new PushContactNote($this->note->id))->handle(app(YoyakuApiService::class));
         $this->assertNull($this->note->fresh()->delivery_error_code);
         $this->assertFalse(ContactNoteDelivery::details($this->note->fresh())['pending']);
@@ -78,14 +85,14 @@ class ContactNoteDeliveryRetryTest extends TestCase
     public function test_connection_and_response_failures_are_distinguished_without_raw_details(): void
     {
         foreach ([503=>'remote_error',422=>'rejected',403=>'authentication'] as $status=>$code) {
-            Http::fake(['*'=>Http::response(['error'=>'private detail'],$status)]);
+            $this->fakeHttp(['*'=>Http::response(['error'=>'private detail'],$status)]);
             $this->retry(); (new PushContactNote($this->note->id))->withFakeQueueInteractions()->handle(app(YoyakuApiService::class));
             $this->assertSame($code,$this->note->fresh()->delivery_error_code);
         }
-        Http::fake(['*'=>fn()=>throw new \Illuminate\Http\Client\ConnectionException('private connection detail')]);
+        $this->fakeHttp(['*'=>fn()=>throw new \Illuminate\Http\Client\ConnectionException('private connection detail')]);
         $this->retry(); (new PushContactNote($this->note->id))->withFakeQueueInteractions()->handle(app(YoyakuApiService::class));
         $this->assertSame('unreachable',$this->note->fresh()->delivery_error_code);
-        Http::fake(['*'=>Http::response('not-json',200)]);
+        $this->fakeHttp(['*'=>Http::response('not-json',200)]);
         $this->retry(); (new PushContactNote($this->note->id))->withFakeQueueInteractions()->handle(app(YoyakuApiService::class));
         $this->assertSame('invalid_response',$this->note->fresh()->delivery_error_code);
     }
@@ -122,7 +129,7 @@ class ContactNoteDeliveryRetryTest extends TestCase
     public function test_withdrawal_retry_sends_only_withdrawal_and_never_republishes(): void
     {
         $this->note->forceFill(['status'=>'draft','published_at'=>null,'withdrawn_at'=>now()])->save();
-        $this->retry()->assertRedirect();Http::fake(['*'=>Http::response(['ok'=>true])]);
+        $this->retry()->assertRedirect();$this->fakeHttp(['*'=>Http::response(['ok'=>true])]);
         (new PushContactNote($this->note->id))->handle(app(YoyakuApiService::class));
         Http::assertSent(fn($request)=>$request['withdrawn']===true && !array_key_exists('guardian_message',$request->data()));
         $this->assertSame('draft',$this->note->fresh()->status);
@@ -134,7 +141,7 @@ class ContactNoteDeliveryRetryTest extends TestCase
     {
         $this->retry();$old=new PushContactNote($this->note->id);
         $this->travel(61)->seconds();$this->retry();
-        Http::fake(['*'=>Http::response(['ok'=>true])]);
+        $this->fakeHttp(['*'=>Http::response(['ok'=>true])]);
         (new PushContactNote($this->note->id))->handle(app(YoyakuApiService::class));
         $old->handle(app(YoyakuApiService::class));$old->failed(new \RuntimeException('private exception'));
         Http::assertSentCount(1);
