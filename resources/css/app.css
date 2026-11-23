@@ -120,3 +120,5 @@
  .workspace-shell :is(input:not([type=checkbox]):not([type=radio]),select,textarea) { font-size:16px; }
  .workspace-shell button:not(.tg button) { min-height:44px; }
 }
+
+@media(max-width:767px){.workspace-shell .ab-add-row :is(select,button){min-height:44px;height:44px}}

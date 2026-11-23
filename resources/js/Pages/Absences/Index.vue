@@ -8,7 +8,7 @@ const props=defineProps({date:String})
 const page=usePage()
 const selectedDate=ref(props.date),root=ref(null)
 let board,removeListener
-const mountBoard=()=>{board?.destroy();board=mountAbsences(root.value,{date:props.date,load:()=>request(route('absences.data',{date:props.date})),save:p=>request(route('absences.data'),'PUT',p),settingsUrl:page.props.auth.staff_role==='admin'?route('facility.edit')+'#absence-calendar':null})}
+const mountBoard=()=>{board?.destroy();board=mountAbsences(root.value,{date:props.date,load:()=>request(route('absences.data',{date:props.date})),save:p=>request(route('absences.data'),'PUT',p),settingsLabel:'事業所設定',settingsUrl:page.props.auth.staff_role==='admin'?route('facility.edit')+'#absence-calendar':null})}
 onMounted(()=>{mountBoard();removeListener=router.on('before',event=>{if(board.hasChanges()&&!confirm('未保存の欠席記録があります。このページを離れますか？'))event.preventDefault()})})
 watch(()=>props.date, date=>{selectedDate.value=date;mountBoard()})
 onBeforeUnmount(()=>{board?.destroy();removeListener?.()})

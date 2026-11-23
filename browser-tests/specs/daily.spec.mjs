@@ -381,7 +381,7 @@ test('contact publication can be withdrawn and republished without deleting hist
   expect(snapshot().notes.find(n=>n.id===foreign.id).status).toBe('published');
   page.once('dialog',d=>d.accept());
   const publishing=page.waitForResponse(r=>new URL(r.url()).pathname===`/contact-notes/${own.id}/publish` && r.request().method()==='POST');
-  await page.getByRole('button',{name:'公開する',exact:true}).click();
+  await page.getByRole('button',{name:'保護者に公開',exact:true}).click();
   expect((await publishing).status()).toBe(302);
   await expect(page.getByRole('button',{name:'公開を取り下げる',exact:true})).toBeVisible();
   expect(snapshot().notes.find(n=>n.id===own.id)).toMatchObject({status:'published',withdrawn_at:null,guardian_comment:'架空の家庭返信'});
@@ -498,7 +498,7 @@ test('dashboard shows all staff transport read-only and editing has one sidebar 
   await expect(transport.getByText('送迎一覧を開く',{exact:true})).toBeVisible();
   await expect(transport.getByText('送迎担当を割り当てる',{exact:true})).toHaveCount(0);
   await expect(page.locator('main a[href*="/support-records/"]')).toHaveCount(0);
-  await expect(transport.getByRole('link',{name:'送迎一覧',exact:true})).toBeVisible();
+  await expect(transport.getByRole('link',{name:'送迎一覧を開く',exact:true})).toBeVisible();
   await openModule(page,'送迎一覧');
   await expect(page).toHaveURL(/\/transport\?date=2026-07-01$/);
   await page.getByText('送迎担当を割り当てる',{exact:true}).click();
@@ -560,7 +560,7 @@ test('overview names, menu guidance, no-op allergy notes and role sections stay 
   }
   const colors=await page.locator('.workspace-role-header').evaluateAll(nodes=>nodes.map(node=>getComputedStyle(node).backgroundColor));
   expect(new Set(colors).size).toBe(3);
-  await visits.getByRole('link',{name:'出欠・利用実績',exact:true}).click();
+  await visits.getByRole('link',{name:'出欠・利用実績を開く',exact:true}).click();
   await expect(page).toHaveURL(/\/usage-records\?date=2026-07-01$/);
   await expect(page.getByRole('article',{name:ownChild().name+'の出席記録',exact:true})).not.toContainText('特記事項なし');
   await expect(page.getByRole('group',{name:ownChild().name+'の利用時間',exact:true})).toBeVisible();
