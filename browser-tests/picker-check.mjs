@@ -23,9 +23,12 @@ export async function checkPicker(page, expect) {
   await expect(bulk).not.toBeVisible()
   await tools.press('Enter')
   await expect(bulk).toHaveValue('15:00')
-  const addBox = await root.locator('.tg-add-row').boundingBox()
-  const actionsBox = await root.locator('.tg-reservation-actions').boundingBox()
-  expect(actionsBox.y).toBeGreaterThanOrEqual(addBox.y + addBox.height)
+  // Read both rows in the same frame while the accordion may still be animating.
+  const positions = await root.evaluate(root => ({
+    addBottom: root.querySelector('.tg-add-row').getBoundingClientRect().bottom,
+    actionsTop: root.querySelector('.tg-reservation-actions').getBoundingClientRect().top,
+  }))
+  expect(positions.actionsTop).toBeGreaterThanOrEqual(positions.addBottom)
   await expect(root.getByRole('group', { name: '選択した児童の一括変更', exact: true }).getByRole('button', { name: '選択した児童に適用', exact: true })).toBeVisible()
   await root.getByRole('checkbox', { name: '表示中の児童をすべて選択', exact: true }).check()
   await root.getByLabel('一括変更する列', { exact: true }).selectOption('1')
