@@ -85,7 +85,7 @@ onUnmounted(()=>{window.removeEventListener('beforeunload',beforeUnload);removeN
       <p v-if="error" role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-800">{{ error }}</p>
       <p v-if="message" role="status" class="text-sm text-primary-800">{{ message }}</p>
       <div class="rounded-xl border bg-white p-4">
-      <label class="block text-sm text-gray-700">学校で絞り込み<select v-model="school" :disabled="busy" class="ml-2 max-w-full rounded-md border-gray-300"><option value="">すべて</option><option v-for="name in schools" :key="name">{{ name }}</option></select></label>
+      <label class="block text-sm text-gray-700">学校で絞り込み<select aria-label="学校で絞り込み" v-model="school" :disabled="busy" class="ml-2 max-w-full rounded-md border-gray-300"><option value="">すべて</option><option v-for="name in schools" :key="name">{{ name }}</option></select></label>
         <p class="mt-2 text-sm text-gray-600">学校を選ぶと、下の表を絞り込めます。一括設定する児童は、表のチェック欄で選択してください。学校を切り替えると児童の選択は解除されます。入力済みの変更は残ります。</p>
       </div>
       <DisclosurePanel id="school-calendar-bulk" title="一括設定・コピペの使い方">
