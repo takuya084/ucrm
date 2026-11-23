@@ -32,6 +32,19 @@ const changeDate = () => { if (selectedDate.value) router.get(route('dashboard')
       <span class="text-amber-900">欠席 <strong class="text-lg">{{ absences.length }}</strong>人<span v-if="!absenceAvailable" class="ml-1 text-xs">（取得分）</span></span>
     </div>
 
+    <section aria-labelledby="pending-heading" class="rounded-xl border bg-white p-4">
+      <h3 id="pending-heading" class="workspace-section-title mb-4 text-gray-900">未対応業務</h3>
+      <p v-if="!work.hasAttendance && visits.length" class="mb-3 text-sm text-amber-900">出欠が未保存です。記録・連絡帳の未入力は、出欠の保存後に集計されます。</p>
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Link v-for="task in tasks" :key="task.key" :aria-label="`${task.label} ${work.counts[task.key]}人`" :href="route('contact-notes.index', { date, task: task.key })"
+          class="workspace-task-card rounded-lg p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600"
+          :class="work.counts[task.key] ? 'bg-amber-50 text-amber-900' : 'bg-gray-50 text-gray-600'">
+          <span class="block text-sm">{{ task.label }}</span>
+          <span class="mt-1 block text-2xl font-bold tabular-nums">{{ work.counts[task.key] }}<span class="ml-1 text-sm font-normal">人</span></span>
+        </Link>
+      </div>
+      <p v-if="work.counts.delivery" class="mt-3 text-sm text-gray-600">連絡帳の公開・取り下げがp-yoyakuに反映されたか、記録・連絡帳で確認してください。</p>
+    </section>
     <section aria-labelledby="daily-attendance" class="overflow-hidden rounded-xl border bg-white">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
         <h3 id="daily-attendance" class="workspace-section-title text-gray-900">利用・欠席</h3>
@@ -66,19 +79,7 @@ const changeDate = () => { if (selectedDate.value) router.get(route('dashboard')
       </div>
     </section>
     <slot name="after-visits" />
-    <section aria-labelledby="pending-heading" class="rounded-xl border bg-white p-4">
-      <h3 id="pending-heading" class="workspace-section-title mb-4 text-gray-900">未対応業務</h3>
-      <p v-if="!work.hasAttendance && visits.length" class="mb-3 text-sm text-amber-900">出欠が未保存です。記録・連絡帳の未入力は、出欠の保存後に集計されます。</p>
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Link v-for="task in tasks" :key="task.key" :aria-label="`${task.label} ${work.counts[task.key]}人`" :href="route('contact-notes.index', { date, task: task.key })"
-          class="workspace-task-card rounded-lg p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600"
-          :class="work.counts[task.key] ? 'bg-amber-50 text-amber-900' : 'bg-gray-50 text-gray-600'">
-          <span class="block text-sm">{{ task.label }}</span>
-          <span class="mt-1 block text-2xl font-bold tabular-nums">{{ work.counts[task.key] }}<span class="ml-1 text-sm font-normal">人</span></span>
-        </Link>
-      </div>
-      <p v-if="work.counts.delivery" class="mt-3 text-sm text-gray-600">連絡帳の公開・取り下げがp-yoyakuに反映されたか、記録・連絡帳で確認してください。</p>
-    </section>
+
 
   </section>
 </template>

@@ -77,16 +77,16 @@ onUnmounted(()=>{window.removeEventListener('beforeunload',beforeUnload);removeN
         <button type="button" class="text-sm text-primary-700 underline disabled:opacity-50" :disabled="busy" @click="navigate(true)">最新の状態に更新</button>
       </div>
       <div class="rounded-xl border bg-white p-4 text-sm text-gray-700">
-        <p>この画面では、放課後等デイサービスを利用する日の「学校日・休業日」を設定します。</p>
-        <p class="mt-2">放デイ・児童発達支援の区分は、各日付で有効な受給者証の登録内容から自動で判別します。児童発達支援の日は設定不要です。「未確認」の日は、受給者証のサービス種別・有効期間を確認してください。</p>
-        <div class="mt-2"><MenuDestination prefix="受給者証の設定先：メニュー" label="児童の記録" :href="route('children.index')" /></div>
+        <details><summary class="cursor-pointer font-semibold">学校日設定の使い方</summary>
+        <p class="mt-2">放デイ・児童発達支援の区分は、各日付で有効な受給者証の登録内容から自動で判別します。児童発達支援の日は設定不要です。「未確認」の日は、受給者証のサービス種別・有効期間を確認してください。</p></details>
+        <div class="mt-2"><MenuDestination prefix="受給者証の設定先：メニュー" label="児童情報" :href="route('children.index')" /></div>
       </div>
       <p v-if="locked" role="alert" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">請求確定済みの月です。設定は変更できません。</p>
       <p v-if="error" role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-800">{{ error }}</p>
       <p v-if="message" role="status" class="text-sm text-primary-800">{{ message }}</p>
       <div class="rounded-xl border bg-white p-4">
       <label class="block text-sm text-gray-700">学校で絞り込み<select aria-label="学校で絞り込み" v-model="school" :disabled="busy" class="ml-2 max-w-full rounded-md border-gray-300"><option value="">すべて</option><option v-for="name in schools" :key="name">{{ name }}</option></select></label>
-        <p class="mt-2 text-sm text-gray-600">学校を選ぶと、下の表を絞り込めます。一括設定する児童は、表のチェック欄で選択してください。学校を切り替えると児童の選択は解除されます。入力済みの変更は残ります。</p>
+        <p class="mt-2 text-sm text-gray-600">学校で絞り込み → 児童を選択 → 一括設定。学校変更時は選択が解除されます。</p>
       </div>
       <DisclosurePanel id="school-calendar-bulk" title="一括設定・コピペの使い方">
         <fieldset :disabled="locked || busy" class="space-y-4 text-sm">
@@ -114,7 +114,7 @@ onUnmounted(()=>{window.removeEventListener('beforeunload',beforeUnload);removeN
         </table>
         <p v-if="!visible.length" class="p-5 text-sm text-gray-600">対象の児童はいません。</p>
       </div>
-      <div class="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4 shadow-sm"><p class="text-sm text-gray-600">放デイを利用した日に「未設定」が残っていると、請求計算・確定はできません。学校日か休業日を設定し、保存してください。</p><button type="button" @click="save" :disabled="!dirty||locked||busy" class="rounded-lg bg-primary-600 px-5 py-3 font-semibold text-white disabled:opacity-40">{{ busy?'保存中…':'変更をまとめて保存' }}</button></div>
+      <div class="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4 shadow-sm"><p class="text-sm text-gray-600">利用日の未設定を確認して保存してください。</p><button type="button" @click="save" :disabled="!dirty||locked||busy" class="rounded-lg bg-primary-600 px-5 py-3 font-semibold text-white disabled:opacity-40">{{ busy?'保存中…':'変更をまとめて保存' }}</button></div>
     </div>
   </Layout>
 </template>

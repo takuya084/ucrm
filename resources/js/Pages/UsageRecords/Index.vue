@@ -186,11 +186,11 @@ const changeStatus = (row, newStatus) => {
 </script>
 
 <template>
-  <Head title="出席管理" />
+  <Head title="出欠・利用実績" />
   <BreezeAuthenticatedLayout>
     <template #header>
       <div class="flex items-center gap-3 flex-wrap">
-        <h2 class="font-semibold text-xl text-gray-800">出席管理</h2>
+        <h2 class="font-semibold text-xl text-gray-800">出欠・利用実績</h2>
         <MenuDestination label="欠席連絡・相談記録" :href="route('absences.index', {date})" />
 
         <!-- データソースバッジ -->
@@ -257,8 +257,8 @@ const changeStatus = (row, newStatus) => {
         <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="p-4 border-b flex justify-between items-center">
             <h3 class="font-medium text-gray-700">{{ date.slice(0, 10) }} の出席記録</h3>
-            <span v-if="saveStatus === 'saving'" class="text-xs text-gray-400">保存中...</span>
-            <span v-else-if="saveStatus === 'saved'" class="text-xs text-green-600 font-medium">✓ 保存完了</span>
+            <span role="status" v-if="saveStatus === 'saving'" class="text-xs text-gray-400">保存中...</span>
+            <span role="status" v-else-if="saveStatus === 'saved'" class="text-xs text-green-600 font-medium">✓ 保存完了</span>
             <span v-else-if="saveStatus === 'error'" class="text-xs text-red-600 font-medium">保存失敗</span>
             <span v-else class="text-xs text-gray-300">自動保存</span>
           </div>

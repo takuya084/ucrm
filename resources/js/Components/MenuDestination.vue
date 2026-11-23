@@ -4,5 +4,5 @@ defineProps({ label: String, href: String, prefix: { type: String, default: '入
 </script>
 
 <template>
-  <span class="workspace-menu-destination">{{ prefix }}「<Link :href="href" class="font-semibold text-primary-700 underline decoration-primary-300 underline-offset-4 hover:text-primary-900">{{ label }}</Link>」</span>
+  <span class="workspace-menu-destination"><Link :href="href" class="font-semibold text-primary-700 underline decoration-primary-300 underline-offset-4 hover:text-primary-900">{{ label }}を開く</Link></span>
 </template>

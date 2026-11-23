@@ -27,6 +27,7 @@ const setGoalProgress = (key) => {
   props.form.goal_progress = props.form.goal_progress === key ? null : key
 }
 
+const previewOpen = ref(false)
 const aiLoading = ref(false)
 const aiError   = ref('')
 
@@ -145,6 +146,13 @@ const generateDraft = async () => {
         </div>
       </div>
 
+      <button type="button" @click="previewOpen = !previewOpen" :aria-expanded="previewOpen" class="rounded-md border px-4 py-2 text-sm font-semibold">{{ previewOpen ? 'プレビューを閉じる' : '保護者向け本文をプレビュー' }}</button>
+      <section v-if="previewOpen" aria-label="保護者向け本文プレビュー" class="rounded-lg border-2 border-green-500 bg-white p-4 space-y-3">
+        <h4 class="font-semibold">保護者向け本文（未保存の入力内容）</h4>
+        <p class="whitespace-pre-wrap">{{ form.guardian_message || '連絡文は未入力です' }}</p>
+        <p v-if="form.meal_note" class="whitespace-pre-wrap">おやつ・食事：{{ form.meal_note }}</p>
+        <p v-if="form.health_note" class="whitespace-pre-wrap">体調：{{ form.health_note }}</p>
+      </section>
       <!-- 公開 -->
       <p v-if="contactNote?.withdrawn_at" class="text-xs text-amber-700 p-2 bg-amber-50 rounded-md">
         {{ contactNote.yoyaku_synced_at ? '保護者への公開を取り下げました。' : '公開の取り下げを連携中です。完了まで保護者側に表示される場合があります。' }}

@@ -1,4 +1,5 @@
 <script setup>
+import SetupChecklist from '@/Components/SetupChecklist.vue'
 import MenuDestination from '@/Components/MenuDestination.vue'
 
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
@@ -54,11 +55,11 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
 </script>
 
 <template>
-  <Head title="業務内容確認" />
+  <Head title="今日の業務" />
   <BreezeAuthenticatedLayout>
     <template #header>
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-semibold text-xl text-gray-800">業務内容確認</h2>
+        <h2 class="font-semibold text-xl text-gray-800">今日の業務</h2>
         <nav v-if="canManage" aria-label="担当別の業務" class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
           <a href="#staff-work" class="workspace-jump workspace-jump-staff">職員の確認事項</a>
           <a href="#management-work" class="workspace-jump workspace-jump-management">管理者・児発管の確認事項</a>
@@ -69,6 +70,18 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
 
     <div class="py-8">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+        <nav aria-label="今日の操作" class="workspace-steps">
+          <a :href="route('usage-records.index', { date })"><strong>出欠を記録</strong></a>
+          <a :href="route('transport.index', { date })"><strong>送迎を確認</strong></a>
+          <a :href="route('contact-notes.index', { date })"><strong>記録・連絡帳を開く</strong></a>
+        </nav>
+        <SetupChecklist v-if="canManage" :storage-key="'setup:'+($page.props.auth.facility?.id ?? '')+':'+$page.props.auth.user.id" :items="[
+          ...($page.props.auth.staff_role === 'admin' ? [{key:'facility',label:'事業所・予約連携を設定',href:route('facility.edit')}] : []),
+          {key:'children',label:'児童・受給者証を登録',href:route('children.index')},
+          {key:'school',label:'学校日を設定',href:route('school-calendar.index',{month:date.slice(0,7)})},
+          {key:'attendance',label:'今日の出欠を記録',href:route('usage-records.index',{date})}
+        ]" />
 
         <section id="staff-work" aria-labelledby="staff-heading" class="workspace-role-area workspace-role-staff">
           <div class="workspace-role-header"><h3 id="staff-heading" class="workspace-section-title">職員の確認事項</h3></div>
@@ -143,7 +156,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     </span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="児童の記録" :href="route('children.index')" /></p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="児童情報" :href="route('children.index')" /></p>
               </div>
 
               <!-- モニタリング期限アラート -->
@@ -181,7 +194,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     </span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="児童の記録" :href="route('children.index')" /></p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="児童情報" :href="route('children.index')" /></p>
               </div>
 
               <!-- 個別支援計画 同意待ち -->
@@ -208,7 +221,7 @@ const billingGuide = BILLING_GUIDE[props.billingPeriod?.status ?? 'none'] ?? BIL
                     <span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">同意待ち</span>
                   </li>
                 </ul>
-                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="児童の記録" :href="route('children.index')" /></p>
+                <p class="border-t bg-gray-50 px-5 py-2 text-xs text-gray-600"><MenuDestination prefix="対応先：メニュー" label="児童情報" :href="route('children.index')" /></p>
               </div>
 
               <!-- 未対応・対応中の問い合わせ -->
