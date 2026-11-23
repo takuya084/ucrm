@@ -8,7 +8,7 @@ const role = computed(() => page.props.auth.staff_role)
 const day = computed(() => page.props.date ?? page.props.recordDate ?? page.props.todayStats?.date)
 const item = (label, name, patterns, roles, params = {}) => ({ label, name, patterns, roles, params })
 const groups = computed(() => [
-  { label: 'ホーム', items: [item('業務内容確認', 'dashboard', ['dashboard'])] },
+  { label: 'ホーム', items: [item('今日の業務', 'dashboard', ['dashboard'])] },
   { label: '日々の業務', items: [
     item('出欠・利用実績', 'usage-records.index', ['usage-records.*']),
     item('欠席連絡・相談記録', 'absences.index', ['absences.*']),
@@ -20,7 +20,7 @@ const groups = computed(() => [
   ] },
   { label: '児発管・管理者業務', items: [
     item('学校日・休業日設定', 'school-calendar.index', ['school-calendar.*'], ['admin','leader']),
-    item('児童の記録', 'children.index', ['children.*', 'assessments.*', 'support-plans.*', 'monitoring-records.*']),
+    item('児童情報', 'children.index', ['children.*', 'assessments.*', 'support-plans.*', 'monitoring-records.*']),
   ] },
   { label: '請求・会計', items: [
     item('月次請求', 'billing.index', ['billing.index', 'billing.show', 'billing.details.*'], ['admin','leader']),
@@ -38,7 +38,7 @@ const groups = computed(() => [
     item('問い合わせ', 'inquiries.index', ['inquiries.*']),
   ] },
   { label: '設定', items: [
-    item('施設設定', 'facility.edit', ['facility.*'], ['admin']),
+    item('事業所設定', 'facility.edit', ['facility.*'], ['admin']),
     item('学校', 'schools.index', ['schools.*'], ['admin','leader']),
     item('他社事業所', 'external-facilities.index', ['external-facilities.*'], ['admin','leader']),
     item('療育プログラム', 'programs.index', ['programs.*']),
@@ -53,13 +53,13 @@ const active = i => {
 
 <template>
   <nav aria-label="業務メニュー" class="space-y-5 px-3 py-5">
-    <section v-for="group in groups" :key="group.label" :aria-label="group.label">
-      <h2 class="workspace-nav-heading"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path :d="icons[group.label]" stroke-linecap="round" stroke-linejoin="round" /></svg>{{ group.label }}</h2>
+    <details v-for="group in groups" :key="group.label" :open="['ホーム','日々の業務'].includes(group.label) || group.items.some(active)" :aria-label="group.label">
+      <summary class="workspace-nav-heading cursor-pointer"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path :d="icons[group.label]" stroke-linecap="round" stroke-linejoin="round" /></svg>{{ group.label }}</summary>
       <Link v-for="entry in group.items" :key="entry.label" :href="route(entry.name, params(entry))"
         :aria-current="active(entry) ? 'page' : undefined" @click="emit('navigate')"
         :class="['block rounded-lg px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600', active(entry) ? 'bg-primary-50 text-primary-800 font-bold border-l-4 border-primary-500' : 'text-gray-700 hover:bg-gray-100']">
         {{ entry.label }}
       </Link>
-    </section>
+    </details>
   </nav>
 </template>

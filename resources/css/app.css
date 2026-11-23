@@ -110,3 +110,13 @@
   @media (max-width: 1100px) { .attendance-entry-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .attendance-field-group:last-child { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .attendance-entries { padding: .65rem; } .attendance-entry-fields { grid-template-columns: minmax(0, 1fr); padding: .75rem; } .attendance-entry-header { padding: .75rem; } .attendance-status-choices { order: 3; flex-basis: 100%; } }
 }
+
+/* Everyday tasks use one quiet visual hierarchy. */
+.workspace-shell :is(button,a):focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+.workspace-shell summary { min-height: 44px; padding-block: .6rem; }
+.workspace-shell .workspace-nav-heading { font-size: .875rem; }
+.workspace-shell .workspace-card { box-shadow: none; }
+@media(max-width:767px) {
+ .workspace-shell :is(input:not([type=checkbox]):not([type=radio]),select,textarea) { font-size:16px; }
+ .workspace-shell button:not(.tg button) { min-height:44px; }
+}

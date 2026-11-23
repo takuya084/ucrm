@@ -56,9 +56,9 @@ const planAlert = computed(() =>
 
 const TABS = [
   { key: 'basic',  label: '基本情報' },
-  { key: 'cert',   label: '受給者証・利用' },
-  { key: 'plan',   label: '計画・記録' },
-  { key: 'usage',  label: '利用記録' },
+  { key: 'cert',   label: '契約・受給者証' },
+  { key: 'plan',   label: '支援計画' },
+  { key: 'usage',  label: '日々の記録' },
 ]
 
 const tabAlert = (key) => (key === 'cert' && certAlert.value) || (key === 'plan' && planAlert.value)
@@ -77,7 +77,7 @@ const tabAlert = (key) => (key === 'cert' && certAlert.value) || (key === 'plan'
         >{{ CONTRACT_STATUS[child.contract_status].label }}</span>
         <span v-if="child.allergy_note"
           class="px-2 py-1 rounded-md text-xs font-medium text-red-700 bg-red-50 border border-red-200">
-          ⚠ アレルギー
+          アレルギー：{{ child.allergy_note }}
         </span>
         <div v-if="['admin','leader'].includes($page.props.auth.staff_role)" class="ml-auto flex gap-2">
           <Link :href="route('children.edit', child.id)" class="px-4 py-1.5 text-sm bg-primary-500 text-white rounded-md hover:bg-primary-600">

@@ -97,7 +97,7 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
         <FlashMessage />
         <p v-if="actionError" role="alert" class="text-sm text-red-700">{{ actionError }}</p>
         <button type="button" class="text-sm text-primary-700 underline disabled:opacity-50" :disabled="refreshing || retryingId !== null" @click="refreshDelivery">{{ refreshing ? '更新中…' : '最新の状態に更新' }}</button>
-        <p class="text-sm text-gray-600">家庭からの連絡を確認し、記録・連絡帳を入力して保護者へ公開します。保存・公開・連携・確認印はそれぞれ別の状態です。</p>
+        <p class="text-sm text-gray-600">家庭の連絡を確認 → 記録を入力 → 保護者に公開。</p>
 
         <!-- 日付ナビ -->
         <div class="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3 flex-wrap">
@@ -187,7 +187,7 @@ const fmtTime = (v) => v ? v.replace('T', ' ').slice(11, 16) : ''
                   v-if="row.note && row.note.status === 'draft' && (row.note.guardian_message || row.note.meal_note || row.note.health_note)"
                   @click="publish(row)"
                   class="text-xs px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
-                >公開する</button>
+                >保護者に公開</button>
                 <Link
                   v-if="row.support_record_id"
                   :href="route('support-records.edit', row.support_record_id)"

@@ -45,10 +45,10 @@ const certExpiryClass = (dateStr) => {
 </script>
 
 <template>
-  <Head title="児童の記録" />
+  <Head title="児童情報" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 leading-tight">児童の記録</h2>
+      <h2 class="font-semibold text-xl text-gray-800 leading-tight">児童情報</h2>
     </template>
 
     <div class="py-8">
@@ -158,7 +158,7 @@ const certExpiryClass = (dateStr) => {
                     </td>
                   </tr>
                   <tr v-if="children.data.length === 0">
-                    <td colspan="9" class="px-4 py-8 text-center text-gray-400">該当する児童がいません</td>
+                    <td colspan="9" class="px-4 py-8 text-center text-gray-400">該当する児童がいません。絞り込み条件を確認してください。<Link v-if="['admin','leader'].includes($page.props.auth.staff_role)" :href="route('children.create')" class="ml-3 text-primary-700 underline">児童を登録</Link></td>
                   </tr>
                 </tbody>
               </table>

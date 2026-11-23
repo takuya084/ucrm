@@ -43,10 +43,10 @@ const calculate = () => {
 </script>
 
 <template>
-  <Head title="請求管理" />
+  <Head title="月次請求" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">請求管理</h2>
+      <h2 class="font-semibold text-xl text-gray-800">月次請求</h2>
     </template>
 
     <div class="py-8">

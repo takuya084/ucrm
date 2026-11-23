@@ -37,10 +37,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 </script>
 
 <template>
-  <Head title="施設設定" />
+  <Head title="事業所設定" />
   <BreezeAuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">施設設定</h2>
+      <h2 class="font-semibold text-xl text-gray-800">事業所設定</h2>
     </template>
 
     <div class="py-8">
@@ -56,7 +56,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
               <h3 class="text-base font-semibold text-gray-800 border-b pb-2 mb-4">基本情報</h3>
               <div class="space-y-4">
                 <div>
-                  <label :class="labelClass">施設名 <span class="text-red-500">*</span></label>
+                  <label :class="labelClass">事業所名 <span class="text-red-500">*</span></label>
                   <input v-model="form.name" type="text" :class="inputClass" />
                 </div>
                 <div>
@@ -143,6 +143,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   </p>
                 </div>
 
+                <details><summary class="cursor-pointer font-semibold">連携の詳細設定</summary>
                 <div>
                   <label :class="labelClass">API トークン</label>
                   <input v-model="form.yoyaku_api_token" type="text" :class="inputClass"
@@ -160,6 +161,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
                   </p>
                 </div>
 
+                </details>
                 <!-- 連携状態インジケーター -->
                 <div v-if="form.yoyaku_business_id"
                   class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
