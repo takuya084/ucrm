@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 // Runs the exact common module in Chromium; no simulated DOM and no external API.
 export async function checkPicker(page, expect) {
   const source = await readFile(fileURLToPath(new URL('../public/transport-grid/grid.js', import.meta.url)), 'utf8')
+  const css = await readFile(fileURLToPath(new URL('../public/transport-grid/grid.css', import.meta.url)), 'utf8')
+  await page.evaluate(css => { const style=document.createElement('style'); style.id='picker-regression-css'; style.textContent=css; document.head.append(style) }, css)
   await page.evaluate(async source => {
     const { mountTransportGrid } = await import('data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(source))))
     const root = document.createElement('div'); root.id = 'picker-regression'; (document.querySelector('main') ?? document.body).append(root)
@@ -115,7 +117,7 @@ export async function checkPicker(page, expect) {
   const last=root.getByRole('combobox',{name:'候補確認児童 送り担当2',exact:true})
   await last.click();await last.press('Shift+ArrowLeft');await last.press('Shift+ArrowRight')
   await expect(last).toBeFocused()
-  await page.evaluate(() => window.disposePicker())
+  await page.evaluate(() => { window.disposePicker(); document.getElementById('picker-regression-css')?.remove() })
   await expect(options).toHaveCount(0)
 }
 
