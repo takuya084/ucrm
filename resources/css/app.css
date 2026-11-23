@@ -122,3 +122,5 @@
 }
 
 @media(max-width:767px){.workspace-shell .ab-add-row :is(select,button){min-height:44px;height:44px}}
+
+@media(max-width:767px){.workspace-shell #main-content .workspace-inline-action{min-height:44px}}
