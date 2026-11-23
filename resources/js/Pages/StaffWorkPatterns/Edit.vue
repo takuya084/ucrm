@@ -1,4 +1,7 @@
 <script setup>
+import {shiftTimes} from '@/lib/shiftClipboard.mjs'
+import {useShiftClipboard} from '@/lib/useShiftClipboard.mjs'
+import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import BreezeValidationErrors from '@/Components/ValidationErrors.vue'
 import { Head, Link } from '@inertiajs/vue3'
@@ -23,13 +26,13 @@ const isOff = (type) => {
   return label ? label.is_off : false
 }
 
-// 15分刻みの時刻選択肢を生成 (06:00〜22:00)
-const timeOptions = []
-for (let h = 6; h <= 22; h++) {
-  for (let m = 0; m < 60; m += 15) {
-    timeOptions.push(String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'))
-  }
-}
+const timeOptions = shiftTimes()
+const clipboard = useShiftClipboard({
+  rows: () => form.patterns.length, cols: () => 2,
+  read: (row, col) => form.patterns[row][col ? 'start_time' : 'work_type'],
+  write: (row, col, value) => { form.patterns[row][col ? 'start_time' : 'work_type'] = value },
+  labels: () => props.labels, times: timeOptions, canEdit: () => true,
+})
 
 const save = () => {
   router.patch(route('staff.work-patterns.update', props.staff.id), form)
@@ -48,9 +51,14 @@ const save = () => {
         <div class="bg-white border border-gray-200 sm:rounded-lg p-6">
           <FlashMessage />
           <BreezeValidationErrors class="mb-4" />
+          <DisclosurePanel id="pattern-copy-help" title="コピー・貼り付けの使い方" class="mb-3">
+            <p class="p-3 text-sm">⌘／Ctrl＋C・Vでコピー・貼り付けできます。Shift＋クリック、またはShift＋矢印キーで範囲選択。Excelは「勤務区分・開始時刻」の2列、月〜日の7行で貼り付けてください。不正な値を含む範囲は全体を変更せず拒否します。</p>
+          </DisclosurePanel>
+          <p role="status" aria-live="polite" class="text-sm text-gray-600 mb-2">{{ clipboard.status.value }}</p>
 
           <form @submit.prevent="save" class="space-y-2">
-            <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm">
+            <div class="workspace-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="横スクロールできる一覧"><table class="w-full text-sm" aria-label="曜日別勤務パターン入力表"
+              @focusin="clipboard.focus" @pointerdown="clipboard.pointer" @copy="clipboard.copy" @paste="clipboard.paste" @keydown="clipboard.keydown">
               <thead>
                 <tr class="border-b text-left text-gray-500">
                   <th class="py-2 px-2 w-12">曜日</th>
@@ -73,7 +81,10 @@ const save = () => {
                     {{ dayLabels[p.day_of_week] }}
                   </td>
                   <td class="py-2 px-2">
-                    <select v-model="p.work_type"
+                    <select :value="p.work_type" @change="p.work_type = $event.target.value; isOff(p.work_type) && (p.start_time = null)"
+                      data-shift-cell :data-clip-row="i" :data-clip-col="0"
+                      :aria-label="`${dayLabels[p.day_of_week]}曜日 勤務区分`"
+                      :class="{'shift-clipboard-selected': clipboard.selected(i, 0)}"
                       class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm">
                       <option value="">―</option>
                       <option v-for="l in labels" :key="l.name" :value="l.name">{{ l.name }}</option>
@@ -81,6 +92,9 @@ const save = () => {
                   </td>
                   <td class="py-2 px-2">
                     <select
+                      data-shift-cell :data-clip-row="i" :data-clip-col="1"
+                      :aria-label="`${dayLabels[p.day_of_week]}曜日 開始時刻`"
+                      :class="{'shift-clipboard-selected': clipboard.selected(i, 1)}"
                       v-if="!isOff(p.work_type)"
                       v-model="p.start_time"
                       class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"

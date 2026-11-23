@@ -108,11 +108,14 @@ if ($command === 'reset') {
     $activity = new \App\Models\DailyActivityPlan(['activity_date'=>'2026-07-01','category'=>'support','title'=>'架空の読み聞かせ','materials'=>'絵本']);
     $activity->facility_id = $facility->id;
     $activity->save();
+} elseif ($command === 'shift-demo') {
+    $demoResult=app(\App\Support\ShiftDemoData::class)->create('2026-12','Fixture-password-123!');
 } elseif ($command !== 'snapshot') {
     throw new RuntimeException('fixture_command_refused');
 }
 // All values belong to synthetic data in the private CI database.
 echo json_encode([
+    'shift_demo'=>$demoResult??null,
     'facilities'=>Facility::orderBy('id')->get(['id','name']),
     'staff'=>Staff::orderBy('id')->get(['id','facility_id','name','role','is_active']),
     'schools'=>School::orderBy('id')->get(['id','facility_id','name']),

@@ -29,6 +29,7 @@ class MonthlyShiftCreationTest extends TestCase
             'is_active' => true,
         ]);
 
+        \App\Models\ShiftLabel::create(['facility_id' => $facility->id, 'name' => '勤務', 'is_off' => false, 'display_order' => 0]);
         $this->actingAs($admin);
 
         $created = $this->post(route('shifts.create'), ['year' => 2026, 'month' => 5]);

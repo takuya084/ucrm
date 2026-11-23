@@ -888,3 +888,73 @@ test('public-body preview excludes private records and cannot publish', async ({
   await expect(page.getByRole('checkbox',{name:'保存と同時に保護者へ公開する'})).not.toBeChecked();
   expect(snapshot().support).toHaveLength(0);
 });
+
+async function loginShiftDemo(page) {
+  const demo=fixture('shift-demo').shift_demo
+  await visit(page,'/login')
+  await page.locator('#email').fill(demo.email)
+  await page.locator('#password').fill(password)
+  await page.getByRole('button',{name:'ログイン',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'今日の業務',exact:true})).toBeVisible()
+  return demo
+}
+async function nativePaste(page, cell, text) {
+  await page.evaluate(value=>navigator.clipboard.writeText(value),text)
+  await cell.focus()
+  await cell.press('Control+V')
+}
+
+test('work patterns keep dropdowns and accept native clipboard ranges; invalid paste is atomic',async({page,context})=>{
+  await context.grantPermissions(['clipboard-read','clipboard-write'])
+  const demo=await loginShiftDemo(page)
+  const roster=snapshot().staff.filter(s=>s.facility_id===demo.facility_id)
+  const admin=roster.find(s=>s.role==='admin')
+  await visit(page,`/staff/${admin.id}/work-patterns`)
+  const first=page.locator('[data-clip-row="0"][data-clip-col="0"]')
+  const time=page.locator('[data-clip-row="0"][data-clip-col="1"]')
+  await nativePaste(page,first,'遅番\t10:15\n早番\t9:00')
+  await expect(first).toHaveValue('遅番');await expect(time).toHaveValue('10:15')
+  await first.focus();await first.press('Shift+ArrowRight');await first.press('Control+C')
+  expect(await page.evaluate(()=>navigator.clipboard.readText())).toBe('遅番\t10:15')
+  let alert='';page.once('dialog',async d=>{alert=d.message();await d.accept()})
+  await nativePaste(page,first,'早番\t09:10')
+  await expect.poll(()=>alert).toContain('選択できない時刻')
+  await expect(first).toHaveValue('遅番');await expect(time).toHaveValue('10:15')
+  await page.getByRole('button',{name:'保存する',exact:true}).click()
+  await expect(page.getByText('勤務パターンを保存しました。')).toBeVisible()
+  await page.reload();await expect(first).toHaveValue('遅番');await expect(time).toHaveValue('10:15')
+})
+
+test('ten staff monthly grid pastes across staff and days, rejects unknown labels and overflow, and persists',async({page,context,isMobile})=>{
+  await context.grantPermissions(['clipboard-read','clipboard-write'])
+  const demo=await loginShiftDemo(page)
+  await visit(page,`/shifts/${demo.shifts[0].id}/edit`)
+  await expect(page.locator('.shift-table thead th')).toHaveCount(13)
+  if (isMobile) expect(await page.locator('.shift-table').evaluate(t=>t.parentElement.scrollWidth>t.parentElement.clientWidth)).toBe(true)
+  const first=page.locator('[data-clip-row="0"][data-clip-col="0"]')
+  await nativePaste(page,first,'遅番\t10:15\t早番\t09:30\n早番\t08:30\t遅番\t10:45')
+  await expect(page.locator('[data-clip-row="1"][data-clip-col="3"]')).toHaveValue('10:45')
+  for(const [text,message] of [['早番\t09:00\t未登録\t10:00','未登録'],[Array(32).fill('早番').join('\n'),'はみ出します']]) {
+    let alert='';page.once('dialog',async d=>{alert=d.message();await d.accept()})
+    await nativePaste(page,first,text);await expect.poll(()=>alert).toContain(message)
+    await expect(first).toHaveValue('遅番');await expect(page.locator('[data-clip-row="0"][data-clip-col="1"]')).toHaveValue('10:15')
+  }
+  await page.getByRole('button',{name:'保存',exact:true}).click()
+  await expect(page.getByText('シフトを保存しました。')).toBeVisible()
+  await page.reload();await expect(first).toHaveValue('遅番')
+  await expect(page.locator('[data-clip-row="1"][data-clip-col="3"]')).toHaveValue('10:45')
+})
+
+test('sample covers two months, paid leave, part time, drivers and visible shortage examples',async({page})=>{
+  const demo=await loginShiftDemo(page)
+  for(const s of demo.shifts) {
+    await visit(page,`/shifts/${s.id}/edit`)
+    await expect(page.locator('.shift-table thead th')).toHaveCount(13)
+    await expect(page.locator('select[data-shift-cell]').filter({has:page.locator('option[value="有給"]')})).not.toHaveCount(0)
+    for(const message of ['職員不足の警告例','児発管不在の警告例','有資格者不足の警告例']) {
+      expect(await page.locator('.shift-table input').evaluateAll((inputs,text)=>inputs.filter(i=>i.value.includes(text)).length,message)).toBe(1)
+    }
+    await expect(page.getByText('職員1名不足',{exact:true})).toBeVisible()
+    await expect(page.locator('.shift-table thead').getByText('【デモ】05 午前パート',{exact:true})).toBeVisible()
+  }
+})
