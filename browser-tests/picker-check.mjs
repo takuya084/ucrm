@@ -12,6 +12,15 @@ export async function checkPicker(page, expect) {
     window.pickerSaves = []; window.disposePicker = mountTransportGrid(root, { date: '2026-12-01', load: async () => config, save: async payload => { window.pickerSaves.push(payload); for (const changed of payload.rows) Object.assign(config.rows.find(person => person.user_id === changed.user_id), changed) } })
   }, source.slice(0, source.indexOf("if (typeof document !== 'undefined')")))
   const root = page.locator('#picker-regression')
+  const direction = root.getByLabel('表示する送迎', {exact:true})
+  if(page.viewportSize().width < 768) {
+    await expect(direction).toBeVisible()
+    await expect(direction).toHaveValue('pickup')
+    await direction.selectOption('dropoff')
+    await expect(root.getByRole('combobox',{name:'候補確認児童 送り時刻',exact:true})).toBeVisible()
+    await expect(root.getByRole('combobox',{name:'候補確認児童 迎え時刻',exact:true})).toHaveCount(0)
+    await direction.selectOption('pickup')
+  } else await expect(direction).not.toBeVisible()
   const tools = root.getByRole('button', { name: '予約の追加・削除／一括変更', exact: true })
   const bulk = root.getByLabel('一括変更の入力値', { exact: true })
   await expect(tools).toHaveAttribute('aria-expanded', 'false')
@@ -73,6 +82,7 @@ export async function checkPicker(page, expect) {
   await expect(root.getByText('変更をまとめて保存しました。', { exact: true })).toBeVisible()
   expect(await page.evaluate(() => window.pickerSaves.at(-1).rows[0].pickup_staff_id)).toBe(8)
   expect((await root.locator('thead th').allTextContents()).map(text=>text.trim())).toEqual(['選択','児童','迎え時刻','迎え場所','迎え担当','迎え担当2','送り時刻','送り場所','送り担当','送り担当2'])
+  if(page.viewportSize().width < 768) await direction.selectOption('all')
   // Paste both assignees for both directions, then inspect the saved canonical IDs.
   await input.evaluate(input => {
     const clipboardData=new DataTransfer();clipboardData.setData('text/plain','候補職員B\t候補職員A\t17:30\t自宅\t候補職員A\t候補職員B')
@@ -108,3 +118,5 @@ export async function checkPicker(page, expect) {
   await page.evaluate(() => window.disposePicker())
   await expect(options).toHaveCount(0)
 }
+
+
