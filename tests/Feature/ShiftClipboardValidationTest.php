@@ -56,6 +56,13 @@ class ShiftClipboardValidationTest extends TestCase
         $this->assertDatabaseCount('staff_work_patterns',0);
         $this->assertDatabaseCount('shift_entries',0);
     }
+    public function test_off_work_types_cannot_have_a_start_time_in_either_form(): void
+    {
+        $this->postJson(route('shifts.bulk-save',$this->shift),['entries'=>[$this->entry(['work_type'=>'休み'])]])->assertUnprocessable()->assertJsonValidationErrors('entries.0.start_time');
+        $this->patchJson(route('staff.work-patterns.update',$this->admin),['patterns'=>$this->patterns(['work_type'=>'休み'])])->assertUnprocessable()->assertJsonValidationErrors('patterns.0.start_time');
+        $this->assertDatabaseCount('shift_entries',0);
+        $this->assertDatabaseCount('staff_work_patterns',0);
+    }
     public function test_rows_outside_month_or_facility_and_confirmed_edits_are_rejected(): void
     {
         $this->postJson(route('shifts.bulk-save',$this->shift),['entries'=>[$this->entry(['date'=>'2027-01-01'])]])->assertUnprocessable();

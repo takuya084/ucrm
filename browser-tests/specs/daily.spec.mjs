@@ -954,7 +954,13 @@ test('sample covers two months, paid leave, part time, drivers and visible short
     for(const message of ['職員不足の警告例','児発管不在の警告例','有資格者不足の警告例']) {
       expect(await page.locator('.shift-table input').evaluateAll((inputs,text)=>inputs.filter(i=>i.value.includes(text)).length,message)).toBe(1)
     }
-    await expect(page.getByText('職員1名不足',{exact:true})).toBeVisible()
+    const shortage=page.locator('.shift-table tbody tr').nth(Number(s.examples.shortage.slice(-2))-1)
+    await expect(shortage.getByText('職員1名不足',{exact:false})).toBeVisible()
+    await expect(shortage.getByText('配置1',{exact:true})).toBeVisible()
+    for(const [key,message] of [['no-leader','児発管不在'],['no-qualified','有資格者不足']]) {
+      const row=page.locator('.shift-table tbody tr').nth(Number(s.examples[key].slice(-2))-1)
+      await expect(row.getByText(message,{exact:false})).toBeVisible()
+    }
     await expect(page.locator('.shift-table thead').getByText('【デモ】05 午前パート',{exact:true})).toBeVisible()
   }
 })

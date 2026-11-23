@@ -38,6 +38,13 @@ class BulkSaveShiftRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            ShiftInput::rejectOffTimes($validator, $this->input('entries'), 'entries', $this->user()->staff->facility_id);
+        });
+    }
+
     public function messages(): array
     {
         return [

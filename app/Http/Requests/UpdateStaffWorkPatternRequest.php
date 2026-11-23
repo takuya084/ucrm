@@ -25,6 +25,13 @@ class UpdateStaffWorkPatternRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            ShiftInput::rejectOffTimes($validator, $this->input('patterns'), 'patterns', $this->user()->staff->facility_id);
+        });
+    }
+
     public function messages(): array
     {
         return [
