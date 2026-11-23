@@ -65,3 +65,14 @@ test('direction groups use the same eight-column order for paste and API fields'
   assert.deepEqual(fields.map(field=>row[field]), ['14:30','学校','職員A','職員B','17:30','自宅','職員B','職員A'])
   assert.equal(row.pickup_assistant_staff_id,'職員B');assert.equal(row.dropoff_time,'17:30');assert.equal(row.dropoff_staff_id,'職員B')
 })
+
+test('school bulk value resolves for each child and accepts its displayed school name without aliases', () => {
+  for (const school_name of ['第一小学校', '第二小学校']) {
+    const row = { school_name }
+    const result = resolveCell('pickup_location', '学校', row, config)
+    assert.equal(result.text, school_name)
+    assert.equal(result.value, 'school')
+    assert.equal(resolveCell('pickup_location', result.text, row, config).value, 'school')
+  }
+  assert.ok(resolveCell('pickup_location', '他児童の学校', { school_name: '第一小学校' }, config).error)
+})

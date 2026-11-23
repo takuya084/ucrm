@@ -7,9 +7,9 @@ export async function checkPicker(page, expect) {
   await page.evaluate(async source => {
     const { mountTransportGrid } = await import('data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(source))))
     const root = document.createElement('div'); root.id = 'picker-regression'; (document.querySelector('main') ?? document.body).append(root)
-    const row = { user_id: 1, name: '候補確認児童', exists: true, snapshot: 'test', pickup_time: '14:30', pickup_location: 'school', pickup_staff_id: 7, dropoff_time: '17:30', dropoff_location: 'home', dropoff_staff_id: null }
-    const config = { rows: [row], times: ['14:30', '15:00', '17:30'], locations: { school: '学校', home: '自宅' }, staff: [{ id: 7, name: '候補職員A' }, { id: 8, name: '候補職員B' }] }
-    window.pickerSaves = []; window.disposePicker = mountTransportGrid(root, { date: '2026-12-01', load: async () => config, save: async payload => { window.pickerSaves.push(payload); Object.assign(row, payload.rows[0]) } })
+    const row = { user_id: 1, name: '候補確認児童', school_name: '候補第一小学校', exists: true, snapshot: 'test', pickup_time: '14:30', pickup_location: 'home', pickup_staff_id: 7, dropoff_time: '17:30', dropoff_location: 'home', dropoff_staff_id: null }
+    const config = { rows: [row, { ...row, user_id: 2, name: '候補確認児童2', school_name: '候補第二小学校' }], times: ['14:30', '15:00', '17:30'], locations: { school: '学校', home: '自宅' }, staff: [{ id: 7, name: '候補職員A' }, { id: 8, name: '候補職員B' }] }
+    window.pickerSaves = []; window.disposePicker = mountTransportGrid(root, { date: '2026-12-01', load: async () => config, save: async payload => { window.pickerSaves.push(payload); for (const changed of payload.rows) Object.assign(config.rows.find(person => person.user_id === changed.user_id), changed) } })
   }, source.slice(0, source.indexOf("if (typeof document !== 'undefined')")))
   const root = page.locator('#picker-regression')
   const tools = root.getByRole('button', { name: '予約の追加・削除／一括変更', exact: true })
@@ -23,6 +23,24 @@ export async function checkPicker(page, expect) {
   await expect(bulk).not.toBeVisible()
   await tools.press('Enter')
   await expect(bulk).toHaveValue('15:00')
+  // Read both rows in the same frame while the accordion may still be animating.
+  const positions = await root.evaluate(root => ({
+    addBottom: root.querySelector('.tg-add-row').getBoundingClientRect().bottom,
+    actionsTop: root.querySelector('.tg-reservation-actions').getBoundingClientRect().top,
+  }))
+  expect(positions.actionsTop).toBeGreaterThanOrEqual(positions.addBottom)
+  await expect(root.getByRole('group', { name: '選択した児童の一括変更', exact: true }).getByRole('button', { name: '選択した児童に適用', exact: true })).toBeVisible()
+  await root.getByRole('checkbox', { name: '表示中の児童をすべて選択', exact: true }).check()
+  await root.getByLabel('一括変更する列', { exact: true }).selectOption('1')
+  await bulk.fill('学校')
+  await root.getByRole('button', { name: '選択した児童に適用', exact: true }).click()
+  await expect(root.getByRole('combobox', { name: '候補確認児童 迎え場所', exact: true })).toHaveValue('候補第一小学校')
+  await expect(root.getByRole('combobox', { name: '候補確認児童2 迎え場所', exact: true })).toHaveValue('候補第二小学校')
+  await root.getByRole('button', { name: '変更をまとめて保存', exact: true }).click()
+  await expect(root.getByText('変更をまとめて保存しました。', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => window.pickerSaves.at(-1).rows.map(row => ({ user_id: row.user_id, location: row.pickup_location })))).toEqual([{ user_id: 1, location: 'school' }, { user_id: 2, location: 'school' }])
+  await expect(root.getByRole('combobox', { name: '候補確認児童 迎え場所', exact: true })).toHaveValue('候補第一小学校')
+  await expect(root.getByRole('combobox', { name: '候補確認児童2 迎え場所', exact: true })).toHaveValue('候補第二小学校')
   await tools.click()
   const input = root.getByRole('combobox', { name: '候補確認児童 迎え担当', exact: true })
   const toggle = root.getByRole('button', { name: '候補確認児童 迎え担当の候補をすべて表示', exact: true })
@@ -53,7 +71,7 @@ export async function checkPicker(page, expect) {
   await expect(input).toHaveValue('候補職員B')
   await root.getByRole('button', { name: '変更をまとめて保存', exact: true }).click()
   await expect(root.getByText('変更をまとめて保存しました。', { exact: true })).toBeVisible()
-  expect(await page.evaluate(() => window.pickerSaves[0].rows[0].pickup_staff_id)).toBe(8)
+  expect(await page.evaluate(() => window.pickerSaves.at(-1).rows[0].pickup_staff_id)).toBe(8)
   expect((await root.locator('thead th').allTextContents()).map(text=>text.trim())).toEqual(['選択','児童','迎え時刻','迎え場所','迎え担当','迎え担当2','送り時刻','送り場所','送り担当','送り担当2'])
   // Paste both assignees for both directions, then inspect the saved canonical IDs.
   await input.evaluate(input => {

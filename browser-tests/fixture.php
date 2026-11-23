@@ -32,6 +32,20 @@ if ($command === 'reset') {
             }
         }
     }
+ } elseif ($command === 'transport-summary') {
+    $own=Child::where('name','架空児童a-active')->firstOrFail();
+    $staff=Staff::where('facility_id',$own->facility_id)->where('role','staff')->firstOrFail();
+    $assistant=Staff::where('facility_id',$own->facility_id)->where('role','leader')->firstOrFail();
+    $second=Child::create(['facility_id'=>$own->facility_id,'school_id'=>$own->school_id,'name'=>'同乗の第二児童','contract_status'=>'active']);
+    foreach ([$own,$second] as $child) {
+        UsageRecord::create(['facility_id'=>$child->facility_id,'child_id'=>$child->id,'date'=>'2026-07-01','status'=>'attended']);
+        foreach (['pickup','dropoff'] as $direction) {
+            \Illuminate\Support\Facades\DB::table('daily_transport_assignments')->insert([
+                'facility_id'=>$child->facility_id,'child_id'=>$child->id,'staff_id'=>$staff->id,'assistant_staff_id'=>$assistant->id,
+                'service_date'=>'2026-07-01','direction'=>$direction,'scheduled_time'=>$direction==='pickup'?'14:30':'17:30',
+                'location'=>$direction==='pickup'?'学校':'自宅','created_at'=>now(),'updated_at'=>now()]);
+        }
+    }
  } elseif ($command === 'attendance-roster') {
     $own=Child::where('name','架空児童a-active')->firstOrFail();
     foreach (['第二児童','第三児童'] as $name) {
