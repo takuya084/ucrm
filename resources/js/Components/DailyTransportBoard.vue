@@ -1,4 +1,5 @@
 <script setup>
+import { groupTransportAssignments } from '@/lib/transportOverview.mjs'
 import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { router, useForm } from '@inertiajs/vue3'
@@ -16,6 +17,7 @@ const props = defineProps({
 const shared = computed(() => props.syncState !== 'local')
 const selections = computed(() => [...new Map(props.assignments.filter(row => row.direction === form.direction).map(row => [row.reservation_id, row])).values()])
 const directions = { pickup: '迎え', dropoff: '送り' }
+const grouped = computed(() => groupTransportAssignments(props.assignments))
 const locations = { school: '学校', home: '自宅', parents: '親送迎', others: 'その他' }
 const visitById = computed(() => new Map(props.visits.map((visit) => [visit.childId, visit])))
 const time = (value) => value?.slice(0, 5) || ''
@@ -92,30 +94,34 @@ onUnmounted(() => clearInterval(timer))
     <p v-if="syncState === 'unavailable'" role="alert" class="px-4 py-3 text-sm text-red-700">p-yoyakuの送迎情報を取得できません。接続・連携設定とp-yoyakuの更新状況を確認し、再読み込みしてください。</p>
     <p v-if="localCount" class="px-4 pt-3 text-sm text-amber-800">UCRMだけに保存した担当が{{ localCount }}件あります。共通の一覧で担当を選び直してください。</p>
     <p v-if="assignments.length === 0 && syncState !== 'unavailable'" class="px-4 py-4 text-sm text-gray-700">この日の送迎担当は登録されていません。</p>
-    <div v-else-if="assignments.length" class="transport-table-wrap overflow-x-auto">
-      <table class="w-full text-left text-sm">
-        <thead class="bg-gray-50 text-gray-700">
-          <tr>
-            <th scope="col" class="px-4 py-2 whitespace-nowrap">時刻・区分</th>
-            <th scope="col" class="px-4 py-2">児童</th>
-            <th scope="col" class="px-4 py-2">担当職員</th>
-            <th scope="col" class="px-4 py-2">場所</th>
-            <th v-if="canManage" scope="col" class="px-4 py-2">操作</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y">
-          <tr v-for="row in assignments" :key="`${row.child_id}-${row.direction}`">
-            <td class="px-4 py-3 whitespace-nowrap">{{ time(row.scheduled_time) || '時刻未登録' }}・{{ directions[row.direction] }}</td>
-            <td class="px-4 py-3">{{ visitById.get(row.child_id)?.name }}</td>
-            <td class="px-4 py-3 font-medium"><span class="block">{{ row.staff_name || '未割り当て' }}</span><span v-if="row.assistant_staff_name" class="mt-1 block">{{ row.assistant_staff_name }}</span></td>
-            <td class="break-words px-4 py-3 text-gray-700">{{ row.location || '場所未登録' }}</td>
-            <td v-if="canManage" class="px-4 py-3">
-              <button type="button" :disabled="form.processing" @click="edit(row)"
-                class="whitespace-nowrap text-primary-700 underline disabled:opacity-50">担当変更</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-if="syncState !== 'unavailable'" class="divide-y">
+      <section v-for="(label, direction) in directions" :key="direction" :aria-label="label + 'の送迎'" class="py-3">
+        <h4 class="px-4 pb-2 text-base font-bold text-gray-900">{{ label }}</h4>
+        <p v-if="!grouped[direction].length" class="px-4 text-sm text-gray-600">{{ label }}の送迎はありません。</p>
+        <div v-else class="transport-table-wrap overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50 text-gray-700"><tr>
+              <th scope="col" class="whitespace-nowrap px-4 py-2">時間</th>
+              <th scope="col" class="px-4 py-2">場所</th>
+              <th scope="col" class="px-4 py-2">担当職員</th>
+              <th scope="col" class="px-4 py-2">児童</th>
+            </tr></thead>
+            <tbody class="divide-y">
+              <tr v-for="group in grouped[direction]" :key="group.key">
+                <td class="whitespace-nowrap px-4 py-3 align-top font-semibold">{{ group.time || '時刻未登録' }}</td>
+                <td class="min-w-[8rem] break-words px-4 py-3 align-top">{{ group.location || '場所未登録' }}</td>
+                <td class="min-w-[8rem] px-4 py-3 align-top"><span class="block font-medium">{{ group.staff_name || '未割り当て' }}</span><span v-if="group.assistant_staff_name" class="mt-1 block">{{ group.assistant_staff_name }}</span></td>
+                <td class="min-w-[10rem] px-4 py-3 align-top">
+                  <ul class="space-y-2"><li v-for="row in group.rows" :key="row.reservation_id ?? row.child_id" class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span>{{ visitById.get(row.child_id)?.name || '氏名未登録' }}</span>
+                    <button v-if="canManage" type="button" :disabled="form.processing" @click="edit(row)" :aria-label="(visitById.get(row.child_id)?.name || '児童') + 'の' + label + '担当変更'" class="whitespace-nowrap text-primary-700 underline disabled:opacity-50">担当変更</button>
+                  </li></ul>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
 
     <DisclosurePanel v-if="canManage && syncState !== 'unavailable'" id="local-transport-editor" ref="editor" title="送迎担当を割り当てる" class="border-0 border-t">

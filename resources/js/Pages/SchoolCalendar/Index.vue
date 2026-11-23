@@ -77,12 +77,17 @@ onUnmounted(()=>{window.removeEventListener('beforeunload',beforeUnload);removeN
         <button type="button" class="text-sm text-primary-700 underline disabled:opacity-50" :disabled="busy" @click="navigate(true)">最新の状態に更新</button>
       </div>
       <div class="rounded-xl border bg-white p-4 text-sm text-gray-700">
-        サービス種別は、その日に有効な受給者証の登録を参照します。児童発達支援の学校日設定は対象外です。
+        <p>この画面では、放課後等デイサービスを利用する日の「学校日・休業日」を設定します。</p>
+        <p class="mt-2">放デイ・児童発達支援の区分は、各日付で有効な受給者証の登録内容から自動で判別します。児童発達支援の日は設定不要です。「未確認」の日は、受給者証のサービス種別・有効期間を確認してください。</p>
         <div class="mt-2"><MenuDestination prefix="受給者証の設定先：メニュー" label="児童の記録" :href="route('children.index')" /></div>
       </div>
       <p v-if="locked" role="alert" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">請求確定済みの月です。設定は変更できません。</p>
       <p v-if="error" role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-800">{{ error }}</p>
       <p v-if="message" role="status" class="text-sm text-primary-800">{{ message }}</p>
+      <div class="rounded-xl border bg-white p-4">
+      <label class="block text-sm text-gray-700">学校で絞り込み<select v-model="school" :disabled="busy" class="ml-2 max-w-full rounded-md border-gray-300"><option value="">すべて</option><option v-for="name in schools" :key="name">{{ name }}</option></select></label>
+        <p class="mt-2 text-sm text-gray-600">学校を選ぶと、下の表を絞り込めます。一括設定する児童は、表のチェック欄で選択してください。学校を切り替えると児童の選択は解除されます。入力済みの変更は残ります。</p>
+      </div>
       <DisclosurePanel id="school-calendar-bulk" title="一括設定・コピペの使い方">
         <fieldset :disabled="locked || busy" class="space-y-4 text-sm">
           <div class="flex flex-wrap gap-3"><label>開始日<input type="date" v-model="start" :min="days[0].date" :max="days.at(-1).date" class="ml-2 rounded-md border-gray-300" /></label><label>終了日<input type="date" v-model="end" :min="days[0].date" :max="days.at(-1).date" class="ml-2 rounded-md border-gray-300" /></label></div>
@@ -92,10 +97,9 @@ onUnmounted(()=>{window.removeEventListener('beforeunload',beforeUnload);removeN
           <p class="text-gray-600">学校の予定を確認して設定してください。祝日・振替休日も個別に確認します。Excelから「学校日」「休業日」「未設定」を複数セルまとめて貼り付けできます。</p>
         </fieldset>
       </DisclosurePanel>
-      <label class="block text-sm text-gray-700">学校で絞り込み<select v-model="school" :disabled="busy" class="ml-2 max-w-full rounded-md border-gray-300"><option value="">すべて</option><option v-for="name in schools" :key="name">{{ name }}</option></select></label>
       <p class="text-sm text-gray-600">✓ 学校日　□ 休業日　− 未設定<span class="ml-3">チェックで学校日、外すと休業日になります。</span></p>
       <div class="overflow-x-auto rounded-xl border bg-white" tabindex="0" aria-label="児童別の月次学校日設定表">
-        <table class="min-w-max text-sm"><thead class="bg-gray-50"><tr><th class="sticky left-0 z-20 w-10 min-w-[40px] max-w-[40px] bg-gray-50 px-2 py-3"><input type="checkbox" aria-label="表示中の児童を全選択" :disabled="locked||busy" @change="toggleAll" /></th><th class="sticky left-10 z-20 bg-gray-50 px-2 text-left sm:px-3"><div class="w-[96px] whitespace-normal break-words sm:w-[180px]">児童・学校・サービス種別</div></th><th v-for="day in days" :key="day.date" class="min-w-[44px] px-1 py-3 text-center" :class="day.weekday===0?'text-red-600':day.weekday===6?'text-blue-600':''"><span class="block">{{ day.day }}</span><span class="block text-xs">{{ ['日','月','火','水','木','金','土'][day.weekday] }}</span></th></tr></thead>
+        <table class="min-w-max text-sm"><thead class="bg-gray-50"><tr><th class="sticky left-0 z-20 w-10 min-w-[40px] max-w-[40px] bg-gray-50 px-2 py-3"><input type="checkbox" aria-label="表示中の児童を全選択" :checked="visible.length > 0 && visible.every(row=>selected.includes(row.id))" :indeterminate="selected.length > 0 && !visible.every(row=>selected.includes(row.id))" :disabled="locked||busy" @change="toggleAll" /></th><th class="sticky left-10 z-20 bg-gray-50 px-2 text-left sm:px-3"><div class="w-[96px] whitespace-normal break-words sm:w-[180px]">児童・学校・サービス種別</div></th><th v-for="day in days" :key="day.date" class="min-w-[44px] px-1 py-3 text-center" :class="day.weekday===0?'text-red-600':day.weekday===6?'text-blue-600':''"><span class="block">{{ day.day }}</span><span class="block text-xs">{{ ['日','月','火','水','木','金','土'][day.weekday] }}</span></th></tr></thead>
           <tbody><tr v-for="(row,rowIndex) in visible" :key="row.id" class="border-t">
             <td class="sticky left-0 z-10 w-10 min-w-[40px] max-w-[40px] bg-white px-2"><input type="checkbox" :value="row.id" v-model="selected" :aria-label="row.name+'を選択'" :disabled="locked||busy" /></td>
             <th class="sticky left-10 z-10 bg-white px-2 py-3 text-left sm:px-3"><div class="w-[96px] whitespace-normal break-words sm:w-[180px]"><p class="font-semibold">{{ row.name }}</p><p class="text-xs font-normal text-gray-600">{{ row.school || '学校未登録' }}</p><p class="mt-1 text-xs font-normal">{{ [...new Set(days.map(day=>row.services[day.date].label))].join('／') }}</p><p v-if="missing(row)" class="text-xs font-normal text-amber-800">未設定 {{ missing(row) }}日</p><p v-if="unknown(row)" class="text-xs font-normal text-red-700">受給者証を確認</p></div></th>
@@ -110,7 +114,7 @@ onUnmounted(()=>{window.removeEventListener('beforeunload',beforeUnload);removeN
         </table>
         <p v-if="!visible.length" class="p-5 text-sm text-gray-600">対象の児童はいません。</p>
       </div>
-      <div class="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4 shadow-sm"><p class="text-sm text-gray-600">未設定の放デイ利用日は、請求計算・確定時に確認が必要です。</p><button type="button" @click="save" :disabled="!dirty||locked||busy" class="rounded-lg bg-primary-600 px-5 py-3 font-semibold text-white disabled:opacity-40">{{ busy?'保存中…':'変更をまとめて保存' }}</button></div>
+      <div class="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4 shadow-sm"><p class="text-sm text-gray-600">放デイを利用した日に「未設定」が残っていると、請求計算・確定はできません。学校日か休業日を設定し、保存してください。</p><button type="button" @click="save" :disabled="!dirty||locked||busy" class="rounded-lg bg-primary-600 px-5 py-3 font-semibold text-white disabled:opacity-40">{{ busy?'保存中…':'変更をまとめて保存' }}</button></div>
     </div>
   </Layout>
 </template>

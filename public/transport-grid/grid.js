@@ -40,6 +40,7 @@ export function resolveCell(field, text, row, config) {
     : staffLabels(config.staff)
   let matches = options.filter(option => option.label.normalize('NFKC') === value || String(option.value) === value)
   if (field.endsWith('_location') && value === '学校(名称未登録)' && !row.school_name) matches = options.filter(option => option.value === 'school')
+  if (field.endsWith('_location') && row.school_name?.normalize('NFKC') === value) matches = options.filter(option => option.value === 'school')
   if (field.endsWith('_location') && row.location_aliases?.[text.trim()]) matches = options.filter(option => option.value === row.location_aliases[text.trim()])
   if (matches.length === 1) return { value: matches[0].value, text: matches[0].value === 'school' && row.school_name ? row.school_name : matches[0].label, error: '' }
   return { value, text, error: field.endsWith('_location') ? '候補にある場所を選択してください。登録済みの学校・方面名も貼り付けできます。' : '候補にある職員を選択してください。' }
@@ -149,7 +150,10 @@ export function mountTransportGrid(root, options) {
   }
   const cell = (row, col) => resolveCell(fields[col], rows[row][fields[col]], rows[row], config)
   const readText = (row, field) => {
-    if (field.endsWith('_location')) return row[field] === 'school' ? row.school_name || '学校（名称未登録）' : config.locations[row[field]] ?? row[field] ?? ''
+    if (field.endsWith('_location')) {
+      const resolved = resolveCell(field, row[field], row, config)
+      return resolved.error ? row[field] ?? '' : resolved.value === 'school' ? row.school_name || '学校（名称未登録）' : resolved.text
+    }
     if (field.endsWith('_staff_id')) return staffLabels(config.staff).find(person => String(person.value) === String(row[field]))?.label ?? row[field] ?? ''
     return row[field] ?? ''
   }
@@ -182,8 +186,8 @@ export function mountTransportGrid(root, options) {
       <div class="tg-toolbar"><strong>送迎一覧</strong><span data-count role="status"></span><button type="button" data-reload>最新の一覧を確認</button></div>
       ${disclosure('guide', '入力・コピペの使い方', '<p class="tg-help">▼で全候補を表示。文字入力で絞り込み。Excelの複数セルを貼り付けできます。範囲コピーはShift＋クリックで選択します。</p><p class="tg-help">時刻は設定範囲内の5分刻み、場所・担当は候補にあるものだけ保存できます。行の削除は当日の予約の取り消しです。</p>')}
       <p role="status" class="tg-message">${escape(message)}</p>
-      ${editable ? disclosure('tools', '予約の追加・削除／一括変更', `<div class="tg-toolbar"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !person.is_absent && !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button><button type="button" data-add-all>未予約の児童をまとめて追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div>
-      <div class="tg-toolbar"><label>一括変更する列 <select data-bulk-field>${fields.map((field, i) => `<option value="${i}">${headings[i]}</option>`).join('')}</select></label><label>入力値 <span class="tg-picker"><input data-bulk-value aria-label="一括変更の入力値" list="${uid}-bulk" autocomplete="off"></span></label><datalist id="${uid}-bulk"></datalist><button type="button" data-apply>選択した児童に適用</button></div>`) : ''}
+      ${editable ? disclosure('tools', '予約の追加・削除／一括変更', `<fieldset class="tg-tool-group"><legend>予約の追加・削除</legend><div class="tg-toolbar tg-add-row"><label>追加する児童 <select data-child aria-label="追加する児童"><option value="">選択してください</option>${config.rows.filter(person => !person.is_absent && !rows.some(row => row.user_id === person.user_id)).map(person => `<option value="${person.user_id}">${escape(person.name)}</option>`).join('')}</select></label><button type="button" data-add>行を追加</button></div><div class="tg-toolbar tg-reservation-actions"><button type="button" data-add-all>未予約の児童をまとめて追加</button><button type="button" data-delete>選択した予約を削除</button><button type="button" data-restore>削除を取り消す</button></div></fieldset>
+      <fieldset class="tg-tool-group tg-bulk-group"><legend>選択した児童の一括変更</legend><p class="tg-help">表で児童にチェックを付け、変更する列と入力値を選んで適用してください。</p><div class="tg-toolbar tg-bulk-controls"><label>一括変更する列 <select data-bulk-field aria-label="一括変更する列">${fields.map((field, i) => `<option value="${i}">${headings[i]}</option>`).join('')}</select></label><label>入力値 <span class="tg-picker"><input data-bulk-value aria-label="一括変更の入力値" list="${uid}-bulk" autocomplete="off"></span></label><datalist id="${uid}-bulk"></datalist><button type="button" data-apply>選択した児童に適用</button></div></fieldset>`) : ''}
       <div class="tg-scroll"><table><thead><tr><th scope="col">選択${editable ? '<input type="checkbox" data-select-all aria-label="表示中の児童をすべて選択">' : ''}</th><th scope="col">児童</th>${headings.map(name => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody>${rows.map((row, i) => `<tr class="${deleted.has(row.user_id) ? 'tg-deleted' : ''}"><td><input type="checkbox" data-select="${row.user_id}" aria-label="${escape(row.name)}を選択" ${selected.has(row.user_id) ? 'checked' : ''} ${!editable ? 'disabled' : ''}></td><th scope="row">${escape(row.name)}${deleted.has(row.user_id) ? '<small>保存時に予約を削除</small>' : ''}</th>${fields.map((field, col) => {
         const error = errors[`${i}.${field}`]
         return `<td><div class="tg-picker"><input data-cell data-row="${i}" data-col="${col}" aria-label="${escape(row.name)} ${headings[col]}" aria-invalid="${!!error}" aria-describedby="${uid}-${i}-${col}-error" value="${escape(readText(row, field))}" list="${uid}-${field}" autocomplete="off" ${!editable || deleted.has(row.user_id) || busy || uncertain ? 'disabled' : ''} class="${dirty(row) ? 'tg-dirty' : ''}"></div><small id="${uid}-${i}-${col}-error">${escape(error || '')}</small></td>`
@@ -233,7 +237,7 @@ export function mountTransportGrid(root, options) {
     root.querySelector('[data-apply]').onclick = () => {
       if (!selected.size) { message = '変更する児童にチェックを付けてください。'; render(); return }
       const field = fields[+root.querySelector('[data-bulk-field]').value], text = root.querySelector('[data-bulk-value]').value
-      rows.forEach(row => { if (selected.has(row.user_id) && !deleted.has(row.user_id)) row[field] = text })
+      rows.forEach(row => { if (selected.has(row.user_id) && !deleted.has(row.user_id)) row[field] = resolveCell(field, text, row, config).value })
       validate(); message = '選択した児童に適用しました。まだ保存していません。'; render()
     }
     root.querySelector('[data-save]').onclick = save

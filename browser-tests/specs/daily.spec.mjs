@@ -511,7 +511,10 @@ test('dashboard shows all staff transport read-only and editing has one sidebar 
   await expect(transport.getByRole('cell',{name:'架空職員a-staff',exact:true})).toBeVisible();
   await expect(transport.getByRole('button',{name:'担当変更',exact:true})).toHaveCount(0);
   const headerBox=await transport.locator('.transport-section-header').boundingBox();
-  const tableBox=await transport.locator('table').boundingBox();
+  const tableBox=await transport.locator('table').first().boundingBox();
+  await expect(transport.getByRole('region',{name:'迎えの送迎',exact:true})).toBeVisible();
+  await expect(transport.getByRole('region',{name:'送りの送迎',exact:true})).toBeVisible();
+  expect(await transport.locator('table').first().locator('thead th').allTextContents()).toEqual(['時間','場所','担当職員','児童']);
   expect(tableBox.y-headerBox.y-headerBox.height).toBeGreaterThanOrEqual(12);
   await expect(transport).not.toContainText('p-yoyakuと共通の担当です');
 });
@@ -754,6 +757,9 @@ test('contact delivery shows safe reasons, retries without changing publication 
 test('monthly school calendar supports cells, Excel paste and bulk settings and attendance is read-only',async({page})=>{
   fixture('school-calendar');await login(page);
   await visit(page,'/school-calendar?month=2026-07','学校日・休業日設定');
+  const filterBox=await page.getByLabel('学校で絞り込み',{exact:true}).boundingBox();
+  const bulkBox=await page.getByRole('button',{name:'一括設定・コピペの使い方',exact:true}).boundingBox();
+  expect(filterBox.y+filterBox.height).toBeLessThan(bulkBox.y);
   const first=page.getByRole('checkbox',{name:ownChild().name+' 2026-07-01',exact:true});
   await expect(first).toHaveJSProperty('indeterminate',true);
   await first.evaluate(node=>{const data=new DataTransfer();data.setData('text/plain','学校日\t休業日');node.dispatchEvent(new ClipboardEvent('paste',{clipboardData:data,bubbles:true,cancelable:true}))});
@@ -762,6 +768,12 @@ test('monthly school calendar supports cells, Excel paste and bulk settings and 
   await page.getByRole('button',{name:'変更をまとめて保存',exact:true}).click();
   await expect(page.getByRole('status')).toHaveText('学校日・休業日を保存しました。');
   await page.reload();await expect(first).toBeChecked();
+  const schoolFilter=page.getByLabel('学校で絞り込み',{exact:true});
+  const selectAll=page.getByRole('checkbox',{name:'表示中の児童を全選択',exact:true});
+  await schoolFilter.selectOption('学校未登録');await selectAll.check();
+  await schoolFilter.selectOption('');await expect(selectAll).not.toBeChecked();
+  await expect(page.getByRole('checkbox',{name:ownChild().name+'を選択',exact:true})).not.toBeChecked();
+  await expect(first).toBeChecked();
   await page.getByRole('checkbox',{name:ownChild().name+'を選択',exact:true}).check();
   await page.getByRole('button',{name:'一括設定・コピペの使い方',exact:true}).click();
   await page.getByLabel('開始日',{exact:true}).fill('2026-07-03');await page.getByLabel('終了日',{exact:true}).fill('2026-07-03');
@@ -819,5 +831,26 @@ test('school bulk settings cover December 1 through 31 and preserve dates and ch
   await expect(cell(ownChild().name,7)).toBeChecked();await expect(cell(ownChild().name,1)).not.toBeChecked();
   await expect(cell(ownChild().name,1)).toHaveJSProperty('indeterminate',false);
   expect(await cell(ownChild().name,1).locator('..').evaluate(node=>node.closest('td').getBoundingClientRect().width)).toBeLessThan(65);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
+
+
+test('transport overview separates directions and shows matching trip details once with all children', async ({page}) => {
+  fixture('transport-summary');await login(page,'staff');
+  await visit(page,'/dashboard?date=2026-07-01','業務内容確認');
+  const transport=page.locator('#transport-work');
+  for(const [direction,time,location] of [['迎え','14:30','架空学校a'],['送り','17:30','自宅']]) {
+    const section=transport.getByRole('region',{name:direction+'の送迎',exact:true});
+    expect(await section.locator('thead th').allTextContents()).toEqual(['時間','場所','担当職員','児童']);
+    await expect(section.locator('tbody tr')).toHaveCount(1);
+    await expect(section.getByRole('cell',{name:time,exact:true})).toHaveCount(1);
+    await expect(section.getByRole('cell',{name:location,exact:true})).toHaveCount(1);
+    await expect(section.locator('tbody tr td').nth(2)).toContainText('架空職員a-staff');
+    await expect(section.locator('tbody tr td').nth(2)).toContainText('架空職員a-leader');
+    await expect(section.locator('tbody li')).toHaveCount(2);
+    await expect(section).toContainText(ownChild().name);
+    await expect(section).toContainText('同乗の第二児童');
+  }
+  await expect(transport.getByRole('button',{name:/担当変更/})).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
