@@ -1,3 +1,4 @@
+import {assertRegisteredChoiceClipboard} from '../choice-clipboard-check.mjs'
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -130,7 +131,7 @@ test('edit displays existing dates and persists an unrelated change without losi
 });
 
 test('invalid child form reports errors and writes no child', async ({page}) => {
-  await login(page); await visit(page,'/children/create','児童登録');
+  await login(page); await visit(page,'/children/create');
   await page.getByPlaceholder('例：ヤマダ タロウ').fill('invalid kana');
   await page.getByRole('button',{name:'登録する',exact:true}).click();
   await expect(page.locator('li').filter({hasText:'児童名'}).first()).toBeVisible();
@@ -963,4 +964,14 @@ test('sample covers two months, paid leave, part time, drivers and visible short
     }
     await expect(page.locator('.shift-table thead').getByText('【デモ】05 午前パート',{exact:true})).toBeVisible()
   }
+})
+
+test('all native selects share registered clipboard behavior, including an actual child form and dynamic controls',async({page,context})=>{
+  await login(page)
+  await visit(page,'/children/create')
+  await assertRegisteredChoiceClipboard(page,context)
+  const schoolSelect=page.locator('select').filter({has:page.locator('option',{hasText:'架空学校a'})}).first()
+  await page.evaluate(()=>navigator.clipboard.writeText('架空学校a'))
+  await schoolSelect.focus();await schoolSelect.press('Control+V')
+  await expect(schoolSelect).toHaveValue(String(school('a').id))
 })
