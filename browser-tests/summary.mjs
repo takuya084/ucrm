@@ -6,7 +6,7 @@ export default class Summary {
 
   }
   onEnd(result) {
-    const passed=result.status==='passed' && this.passed===80 && !this.failed && !this.skipped;
+    const passed=result.status==='passed' && this.passed===88 && !this.failed && !this.skipped;
     fs.writeFileSync('summary.json',JSON.stringify({state:passed?'passed':'failed',passed:this.passed||0,
       failed:this.failed||0,skipped:this.skipped||0,automaticRetry:false})+'\n');
     if (!passed) return {status:'failed'};

@@ -124,3 +124,5 @@
 @media(max-width:767px){.workspace-shell .ab-add-row :is(select,button){min-height:44px;height:44px}}
 
 @media(max-width:767px){.workspace-shell #main-content .workspace-inline-action{min-height:44px}}
+
+.workspace-shell #main-content select.shift-clipboard-selected { background-color: #dbeafe; outline: 2px solid #2563eb; outline-offset: -2px; }

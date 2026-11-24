@@ -1,4 +1,5 @@
 import './bootstrap';
+import '../../public/input-clipboard.js';
 import './micromodal';
 import '../css/app.css';
 import '../css/micromodal.css';

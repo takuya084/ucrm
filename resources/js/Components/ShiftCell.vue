@@ -4,12 +4,18 @@ const props = defineProps({
   disabled: Boolean,
   labels: Array,        // [{ name, is_off }]
   timeOptions: Array,
+  rowIndex: Number,
+  colOffset: Number,
+  contextLabel: String,
+  selected: Function,
 })
 
 const emit = defineEmits(['update:modelValue'])
 
 const update = (field, value) => {
-  emit('update:modelValue', { ...props.modelValue, [field]: value })
+  const next = { ...props.modelValue, [field]: value }
+  if (field === 'work_type' && isOff(value)) next.start_time = null
+  emit('update:modelValue', next)
 }
 
 const isOff = (type) => {
@@ -22,12 +28,15 @@ const isOff = (type) => {
 <template>
   <div class="flex flex-col gap-0.5">
     <select
+      data-shift-cell :data-clip-row="rowIndex" :data-clip-col="colOffset"
+      :aria-label="`${contextLabel} 勤務区分`"
       :value="modelValue.work_type"
       @change="update('work_type', $event.target.value)"
       :disabled="disabled"
       :class="[
         'w-full text-xs px-1 py-0.5',
         isOff(modelValue.work_type) ? 'bg-gray-100 text-gray-500' : 'bg-transparent text-gray-400',
+        selected?.(rowIndex, colOffset) ? 'shift-clipboard-selected' : '',
         disabled ? 'cursor-default' : '',
       ]"
     >
@@ -35,6 +44,9 @@ const isOff = (type) => {
       <option v-for="l in labels" :key="l.name" :value="l.name" class="text-gray-700">{{ l.name }}</option>
     </select>
     <select
+      data-shift-cell :data-clip-row="rowIndex" :data-clip-col="colOffset + 1"
+      :aria-label="`${contextLabel} 開始時刻`"
+      :class="{'shift-clipboard-selected': selected?.(rowIndex, colOffset + 1)}"
       v-if="!isOff(modelValue.work_type)"
       :value="modelValue.start_time || ''"
       @change="update('start_time', $event.target.value || null)"

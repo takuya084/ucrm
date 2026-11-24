@@ -53,8 +53,22 @@ export function pasteRange(rows, startRow, startCol, matrix) {
   return result
 }
 
+export function pasteRegisteredRange(rows, startRow, startCol, matrix, config) {
+  if (!matrix.length || matrix.some(line => line.length !== matrix[0].length)) throw new Error('行ごとの列数が異なります。')
+  const staged = pasteRange(rows, startRow, startCol, matrix)
+  matrix.forEach((line, ri) => line.forEach((text, ci) => {
+    const field = fields[startCol + ci]
+    const resolved = resolveCell(field, text, staged[startRow + ri], config)
+    if (resolved.error) throw new Error(`${ri + 1}行${ci + 1}列目：${resolved.error} 入力内容は変更していません。`)
+    staged[startRow + ri][field] = resolved.value
+  }))
+  return staged
+}
+
 // Keep the current value when opening the complete candidate list.
 export function bindCandidatePicker(input, values) {
+  const previousChoices = input.clipboardChoices
+  input.clipboardChoices = values
   const button = document.createElement('button')
   button.type = 'button'; button.className = 'tg-picker-toggle'; button.textContent = '▾'
   button.setAttribute('aria-label', input.getAttribute('aria-label') + 'の候補をすべて表示')
@@ -126,6 +140,7 @@ export function bindCandidatePicker(input, values) {
   window.addEventListener('resize', scrolled); window.addEventListener('scroll', scrolled, true)
   close()
   return () => {
+    if (input.clipboardChoices === values) { if (previousChoices) input.clipboardChoices = previousChoices; else delete input.clipboardChoices }
     close(); list.remove(); button.remove(); input.removeEventListener('input', typed); input.removeEventListener('keydown', key)
     input.removeEventListener('blur', blur); document.removeEventListener('pointerdown', outside)
     window.removeEventListener('resize', scrolled); window.removeEventListener('scroll', scrolled, true)
@@ -266,10 +281,10 @@ export function mountTransportGrid(root, options) {
           if (window.matchMedia('(max-width: 767px)').matches && direction !== 'all' && matrix.some(line => col + line.length > (direction === 'pickup' ? 4 : 8))) throw new Error('表示中の送迎の範囲内に貼り付けてください。')
           // Never write into a row marked for deletion.
           if (matrix.some((line, offset) => deleted.has(rows[row + offset]?.user_id))) throw new Error('削除予定の行には貼り付けできません。')
-          rows = pasteRange(rows, row, col, matrix)
+          rows = pasteRegisteredRange(rows, row, col, matrix, config)
           validate(); message = '貼り付けました。まだ保存していません。'; render()
           root.querySelector(`[data-row="${row}"][data-col="${col}"]`)?.focus()
-        } catch (error) { message = error.message; root.querySelector('.tg-message').textContent = message }
+        } catch (error) { message = error.message; root.querySelector('.tg-message').textContent = message; root.querySelector('.tg-message').setAttribute('role', 'alert') }
       }
       input.oncopy = event => {
         const box = bounds() ?? { top: row, bottom: row, left: col, right: col }

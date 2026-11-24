@@ -1,4 +1,7 @@
 <script setup>
+import {shiftTimes} from '@/lib/shiftClipboard.mjs'
+import {useShiftClipboard} from '@/lib/useShiftClipboard.mjs'
+import ValidationErrors from '@/Components/ValidationErrors.vue'
 import DisclosurePanel from '@/Components/DisclosurePanel.vue'
 import BreezeAuthenticatedLayout from '@/Layouts/Authenticated.vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
@@ -53,13 +56,13 @@ props.entries.forEach(e => {
 
 const notes = reactive({ ...props.dayNotes })
 
-// 15分刻みの時刻選択肢を生成 (06:00〜22:00)
-const timeOptions = []
-for (let h = 6; h <= 22; h++) {
-  for (let m = 0; m < 60; m += 15) {
-    timeOptions.push(String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'))
-  }
-}
+const timeOptions = shiftTimes()
+const clipboard = useShiftClipboard({
+  rows: () => props.dates.length, cols: () => props.staffMembers.length * 2,
+  read: (row, col) => grid[props.dates[row].date][props.staffMembers[Math.floor(col / 2)].id][col % 2 ? 'start_time' : 'work_type'],
+  write: (row, col, value) => { grid[props.dates[row].date][props.staffMembers[Math.floor(col / 2)].id][col % 2 ? 'start_time' : 'work_type'] = value },
+  labels: () => props.labels, times: timeOptions, canEdit: () => props.canEdit,
+})
 
 const DOW_COLORS = {
   sat: 'bg-blue-50',
@@ -250,6 +253,11 @@ const dailyCheck = computed(() => {
       <div class="mx-auto sm:px-4 lg:px-6">
         <div class="bg-white border border-gray-200 sm:rounded-lg p-4">
           <FlashMessage />
+          <ValidationErrors class="mb-3" />
+          <DisclosurePanel id="shift-copy-help" title="コピー・貼り付けの使い方" class="mb-3">
+            <p class="p-3 text-sm">勤務区分や時刻を選び、⌘／Ctrl＋C・Vでコピー・貼り付けできます。Shift＋クリック、またはShift＋矢印キーで範囲を選べます。Excelは職員ごとに「勤務区分・開始時刻」の2列で貼り付けてください。未登録の区分・選択肢にない時刻・はみ出す範囲は、全体を変更せず拒否します。</p>
+          </DisclosurePanel>
+          <p role="status" aria-live="polite" class="text-sm text-gray-600 mb-2">{{ clipboard.status.value }}</p>
 
           <!-- 配置基準ルール -->
           <DisclosurePanel id="staffing-rules" title="配置基準チェックのルール" class="mb-3">
@@ -304,7 +312,8 @@ const dailyCheck = computed(() => {
           </DisclosurePanel>
 
           <div class="overflow-x-auto">
-            <table class="shift-table w-full text-xs border-collapse">
+            <table class="shift-table w-full text-xs border-collapse" aria-label="月間シフト入力表"
+              @focusin="clipboard.focus" @pointerdown="clipboard.pointer" @copy="clipboard.copy" @paste="clipboard.paste" @keydown="clipboard.keydown">
               <thead>
                 <tr class="bg-gray-50">
                   <th class="border px-1 py-1.5 text-center w-10 sticky left-0 bg-gray-50 z-10">日</th>
@@ -323,7 +332,7 @@ const dailyCheck = computed(() => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="d in dates" :key="d.date"
+                <tr v-for="(d, rowIndex) in dates" :key="d.date"
                   :class="d.date === billingDate ? 'bg-primary-100' : DOW_COLORS[d.day_of_week] || ''">
                   <td class="border px-1 py-1 text-center font-medium sticky left-0 z-10"
                     :class="[DOW_COLORS[d.day_of_week] || 'bg-white']">
@@ -361,13 +370,15 @@ const dailyCheck = computed(() => {
                       </div>
                     </div>
                   </td>
-                  <td v-for="s in staffMembers" :key="s.id" class="border px-1 py-1">
+                  <td v-for="(s, staffIndex) in staffMembers" :key="s.id" class="border px-1 py-1">
                     <ShiftCell
                       :modelValue="grid[d.date][s.id]"
                       @update:modelValue="grid[d.date][s.id] = $event"
                       :disabled="!canEdit"
                       :labels="labels"
                       :timeOptions="timeOptions"
+                      :rowIndex="rowIndex" :colOffset="staffIndex * 2" :selected="clipboard.selected"
+                      :contextLabel="`${d.day}日 ${s.name}`"
                     />
                   </td>
                 </tr>
