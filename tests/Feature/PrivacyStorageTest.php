@@ -39,6 +39,10 @@ class PrivacyStorageTest extends TestCase
         $this->artisan('privacy:migrate')->assertSuccessful();
         $this->assertSame('旧データ保持',$u->fresh()->name);$this->artisan('privacy:migrate',['--verify'=>true])->assertSuccessful();
     }
+    public function test_required_personal_columns_remain_required_after_migration(): void {
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        User::factory()->create(['name'=>null]);
+    }
     public function test_missing_data_or_lookup_key_refuses_writes(): void {
         foreach(['key','index_key'] as $key) {
             $old=config('privacy.'.$key);config(['privacy.'.$key=>null]);

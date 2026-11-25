@@ -24,7 +24,10 @@ final class Migrator
             }
             Schema::table($table,function(Blueprint $t)use($fields,$columns){foreach($fields as $column=>$type)if(!in_array(Registry::indexColumn($column),$columns,true))$t->char(Registry::indexColumn($column),64)->nullable();});
             if($sqlite)self::rebuildSqlite($table,$fields,$changed);
-            else Schema::table($table,function(Blueprint $t)use($fields){foreach($fields as $column=>$type)$t->longText($column)->nullable()->default(null)->change();});
+            else {
+                $metadata=$pdo->query('SHOW COLUMNS FROM '.self::quote($table))->fetchAll(\PDO::FETCH_ASSOC);$nullable=array_column($metadata,'Null','Field');
+                Schema::table($table,function(Blueprint $t)use($fields,$nullable){foreach($fields as $column=>$type)$t->longText($column)->nullable(($nullable[$column]??'YES')==='YES')->default(null)->change();});
+            }
             $primary=[];foreach($indexes as $index)if($index['primary']){$primary=$index['columns'];break;}self::encryptTable($table,array_keys($fields),false,$primary);
             foreach($changed as $index) {
                 if($sqlite&&($index['primary']||str_starts_with($index['name'],'sqlite_autoindex_')))continue;
