@@ -91,7 +91,7 @@ final class Migrator
     public static function quote(string $name): string {return DB::connection()->getQueryGrammar()->wrap($name);}
     public static function encryptTable(string $table,array $columns,bool $dry=false,array $originalKeys=[]): array {
         $pdo=DB::connection()->getPdo();$sqlite=DB::getDriverName()==='sqlite';$names=Schema::getColumnListing($table);
-        $keys=$originalKeys;foreach(($keys?[]:self::indexes($table)) as $index)if($index['primary']){$keys=$index['columns'];break;}if(!$keys)throw new RuntimeException('A primary key is required for privacy migration: '.$table);
+        $keys=$originalKeys;foreach(($keys?[]:self::indexes($table)) as $index)if($index['primary']){$keys=$index['columns'];break;}
         $rows=$pdo->query('SELECT '.($sqlite?'rowid AS privacy_rowid,':'').'* FROM '.self::quote($table))->fetchAll(\PDO::FETCH_ASSOC);
         $counts=['encrypted'=>0,'verified'=>0];
         foreach($rows as $row) {
@@ -114,8 +114,8 @@ final class Migrator
                 $updates[Registry::indexColumn($column)]=Cipher::index($table.'.'.$column,$plain);
             }
             if($dry||!$updates)continue;
-            $identities=$sqlite?['rowid'=>$row['privacy_rowid']]:array_intersect_key($row,array_flip($keys));
-            $sql='UPDATE '.self::quote($table).' SET '.implode(',',array_map(fn($c)=>self::quote($c).'=?',array_keys($updates))).' WHERE '.implode(' AND ',array_map(fn($c)=>self::quote($c).'=?',array_keys($identities)));
+            $identities=$sqlite?['rowid'=>$row['privacy_rowid']]:($keys?array_intersect_key($row,array_flip($keys)):$row);
+            $sql='UPDATE '.self::quote($table).' SET '.implode(',',array_map(fn($c)=>self::quote($c).'=?',array_keys($updates))).' WHERE '.implode(' AND ',array_map(fn($c)=>!$sqlite&&!$keys?'BINARY '.self::quote($c).' <=> BINARY ?':self::quote($c).'=?',array_keys($identities))).(!$sqlite&&!$keys?' LIMIT 1':'');
             $statement=$pdo->prepare($sql);$statement->execute([...array_values($updates),...array_values($identities)]);
         }
         return $counts;
