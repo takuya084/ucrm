@@ -21,6 +21,8 @@ class PrivacyRelationsTest extends TestCase
         RecipientCertificate::create(['child_id'=>$child->id,'valid_from'=>'2025-01-01','status'=>'active']);
         $plan=SupportPlan::create(['child_id'=>$child->id,'plan_date'=>'2026-10-01']);
         SupportPlan::create(['child_id'=>$child->id,'plan_date'=>'2025-01-01']);
+        $this->assertSame([$new->id],RecipientCertificate::whereBetween('valid_from',[\Carbon\Carbon::parse('2026-10-01'),\Carbon\Carbon::parse('2026-10-01')->endOfDay()])->pluck('id')->all());
+        $this->assertSame([$new->id],RecipientCertificate::where('valid_from','>=',\Carbon\Carbon::parse('2026-10-01'))->pluck('id')->all());
         $this->assertSame($new->id,$child->fresh()->activeRecipientCertificate->id);
         $this->assertSame($plan->id,$child->fresh()->latestSupportPlan->id);
         $loaded=Child::with(['activeRecipientCertificate','latestSupportPlan'])->findOrFail($child->id);

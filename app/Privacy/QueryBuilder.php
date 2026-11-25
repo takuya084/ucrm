@@ -52,12 +52,14 @@ class QueryBuilder extends Builder
     }
     public function where($column,$operator=null,$value=null,$boolean='and') {
         if (func_num_args()===2) {$value=$operator;$operator='=';}
-        if ($value instanceof \DateTimeInterface) $value=$value->format('Y-m-d H:i:s');
-        if (($info=$this->privateColumn($column)) && !($value instanceof Expression) && $value!==null && !is_object($value)) {
+        $temporal=$value instanceof \DateTimeInterface;
+        if (($info=$this->privateColumn($column)) && !($value instanceof Expression) && $value!==null && (!is_object($value)||$temporal)) {
+            if($temporal)$value=Registry::normalize($info[0],$info[1],$value);
             $op=strtolower((string)$operator);
             if (in_array($op,['=','!=','<>'],true)) return parent::where($this->rewriteIndex($column,$info),$operator,Cipher::index($info[0].'.'.$info[1],$value),$boolean);
             return $this->privateMatch($info,fn($v)=>$this->compare($v,$op,$value),$boolean);
         }
+        if($temporal)$value=$value->format('Y-m-d H:i:s');
         return parent::where($column,$operator,$value,$boolean);
     }
     public function whereIn($column,$values,$boolean='and',$not=false) {
@@ -69,7 +71,7 @@ class QueryBuilder extends Builder
     }
     public function whereBetween($column,iterable $values,$boolean='and',$not=false) {
         if ($info=$this->privateColumn($column)) {
-            $v=collect($values)->values()->all();
+            $v=collect($values)->map(fn($value)=>$value instanceof \DateTimeInterface?Registry::normalize($info[0],$info[1],$value):$value)->values()->all();
             return $this->privateMatch($info,fn($p)=>(($this->compare($p,'>=',$v[0])&&$this->compare($p,'<=',$v[1]))!==$not),$boolean);
         }
         return parent::whereBetween($column,$values,$boolean,$not);
