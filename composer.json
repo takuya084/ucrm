@@ -2,7 +2,10 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The Laravel Framework.",
-    "keywords": ["framework", "laravel"],
+    "keywords": [
+        "framework",
+        "laravel"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -15,7 +18,9 @@
         "laravel/tinker": "^2.7",
         "league/csv": "^9.28",
         "stripe/stripe-php": "^19.4",
-        "tightenco/ziggy": "^1.0"
+        "tightenco/ziggy": "^1.0",
+        "ext-sodium": "*",
+        "ext-bcmath": "*"
     },
     "require-dev": {
         "askdkc/breezejp": "^2.5",

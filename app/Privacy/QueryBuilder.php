@@ -9,7 +9,7 @@ class QueryBuilder extends Builder
     private function privateColumn($column): ?array {
         if (State::$legacyMigration) return null;
         if (!is_string($column)||!is_string($this->from)) return null;
-        $base=Registry::table($this->from);$name=$column;$table=$base;$qualifier=$base;
+        $base=Registry::table($this->from);$parts=preg_split('/\s+(?:as\s+)?/i',trim($this->from));$name=$column;$table=$base;$qualifier=$parts[1]??$base;
         if (str_contains($column,'.')) {
             [$prefix,$name]=explode('.',$column,2);$qualifier=$prefix;
             $sources=[$this->from];foreach($this->joins??[] as $join) if(is_string($join->table))$sources[]=$join->table;
@@ -93,11 +93,10 @@ class QueryBuilder extends Builder
         }
         return match($op){'='=>$left==$right,'!=','<>'=>$left!=$right,'>'=>$left>$right,'>='=>$left>=$right,'<'=>$left<$right,'<='=>$left<=$right,default=>throw new RuntimeException('Unsupported comparison on encrypted field: '.$op)};
     }
-    private function privateRows(array $info): array {
+    private function privateRows(array $info): \Generator {
         [$table,$column]=$info;$pdo=$this->connection->getPdo();$grammar=$this->grammar;
-        $key=$this->privatePrimaryKey($table);$query=$pdo->query('SELECT '.$grammar->wrap($key).','.$grammar->wrap($column).' FROM '.$grammar->wrapTable($table));$rows=[];
-        while($r=$query->fetch(\PDO::FETCH_ASSOC))$rows[]=['id'=>$r[$key],'value'=>Cipher::decrypt($table.'.'.$column,$r[$column])];
-        return $rows;
+        $key=$this->privatePrimaryKey($table);$query=$pdo->query('SELECT '.$grammar->wrap($key).','.$grammar->wrap($column).' FROM '.$grammar->wrapTable($table));
+        while($r=$query->fetch(\PDO::FETCH_ASSOC))yield ['id'=>$r[$key],'value'=>Cipher::decrypt($table.'.'.$column,$r[$column])];
     }
     private function privatePrimaryKey(string $table): string {
         return match($table){'cache'=>'key',default=>'id'};
@@ -111,13 +110,17 @@ class QueryBuilder extends Builder
     public function orderBy($column,$direction='asc') {
         if ($info=$this->privateColumn($column)) {
             $direction=strtolower($direction);if(!in_array($direction,['asc','desc'],true))throw new RuntimeException('Invalid ordering');
-            $rows=$this->privateRows($info);usort($rows,fn($a,$b)=>is_numeric($a['value'])&&is_numeric($b['value'])?($a['value']<=>$b['value']):strnatcasecmp((string)$a['value'],(string)$b['value']));
+            $rows=iterator_to_array($this->privateRows($info));usort($rows,fn($a,$b)=>is_numeric($a['value'])&&is_numeric($b['value'])?($a['value']<=>$b['value']):strnatcasecmp((string)$a['value'],(string)$b['value']));
             if(!$rows)return $this;
             $key=$this->grammar->wrap($info[2].'.'.$this->privatePrimaryKey($info[0]));$sql='CASE '.$key;$bindings=[];
             foreach($rows as $rank=>$row){$sql.=' WHEN ? THEN '.$rank;$bindings[]=$row['id'];}
             return parent::orderByRaw($sql.' ELSE '.count($rows).' END '.$direction,$bindings);
         }
         return parent::orderBy($column,$direction);
+    }
+    public function selectRaw($expression,array $bindings=[]) {
+        if(!State::$legacyMigration&&is_string($this->from))foreach(Registry::fields(Registry::table($this->from)) as $field=>$type)if(preg_match('/\\b'.preg_quote($field,'/').'\\b/i',$expression))throw new RuntimeException('Raw SQL cannot compute on a private column: '.$field);
+        return parent::selectRaw($expression,$bindings);
     }
     public function aggregate($function,$columns=['*']) {
         if (count($columns)===1 && ($info=$this->privateColumn($columns[0])) && in_array(strtolower($function),['sum','avg','min','max','count'],true)) {

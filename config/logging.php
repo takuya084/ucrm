@@ -55,12 +55,14 @@ return [
         ],
 
         'single' => [
+            'tap' => [\App\Privacy\ProtectLogs::class],
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
         'daily' => [
+            'tap' => [\App\Privacy\ProtectLogs::class],
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
@@ -87,6 +89,7 @@ return [
         ],
 
         'stderr' => [
+            'tap' => [\App\Privacy\ProtectLogs::class],
             'driver' => 'monolog',
             'level' => env('LOG_LEVEL', 'debug'),
             'handler' => StreamHandler::class,
@@ -102,6 +105,7 @@ return [
         ],
 
         'errorlog' => [
+            'tap' => [\App\Privacy\ProtectLogs::class],
             'driver' => 'errorlog',
             'level' => env('LOG_LEVEL', 'debug'),
         ],

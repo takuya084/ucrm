@@ -123,7 +123,7 @@ class PreflightMay2026BillingTest extends TestCase
                 ->assertOk()
                 ->assertDownload('K112605.CSV')
                 ->assertHeader('Content-Type', 'application/octet-stream');
-            $this->assertSame($csv, file_get_contents($download->baseResponse->getFile()->getPathname()));
+            $this->assertSame($csv, $download->streamedContent());
 
             $this->get($url.'/export-performance')
                 ->assertOk()

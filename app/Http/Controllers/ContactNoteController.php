@@ -81,8 +81,9 @@ class ContactNoteController extends Controller
             ? "strftime('%Y', date)"
             : 'YEAR(date)';
         $years = ContactNote::where('facility_id', $facilityId)
-            ->selectRaw("DISTINCT {$yearExpr} as y")
-            ->pluck('y')
+            ->pluck('date')
+            ->map(fn($date)=>$date?->format('Y'))
+            ->unique()
             ->filter()
             ->map(fn ($y) => (string) $y)
             ->sortDesc()

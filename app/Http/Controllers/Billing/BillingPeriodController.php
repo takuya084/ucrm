@@ -540,15 +540,13 @@ class BillingPeriodController extends Controller
 
         $usage = UsageRecord::where('facility_id', $period->facility_id)
             ->whereBetween('date', [$from, $to])
-            ->selectRaw("
-                COUNT(*)                                                                          AS scheduled,
-                SUM(CASE WHEN status = 'attended' THEN 1 ELSE 0 END)                              AS attended,
-                SUM(CASE WHEN status IN ('absent','absent_notice','cancel') THEN 1 ELSE 0 END)    AS absent,
-                SUM(CASE WHEN pickup_done  = 1 THEN 1 ELSE 0 END)                                 AS pickups,
-                SUM(CASE WHEN dropoff_done = 1 THEN 1 ELSE 0 END)                                 AS dropoffs,
-                COUNT(DISTINCT date)                                                              AS business_days
-            ")
-            ->first();
+            ->get();
+        $usage=(object)[
+            'scheduled'=>$usage->count(),'attended'=>$usage->where('status','attended')->count(),
+            'absent'=>$usage->whereIn('status',['absent','absent_notice','cancel'])->count(),
+            'pickups'=>$usage->where('pickup_done',true)->count(),'dropoffs'=>$usage->where('dropoff_done',true)->count(),
+            'business_days'=>$usage->map(fn($r)=>$r->date->format('Y-m-d'))->unique()->count(),
+        ];
 
         $capacity = (int) optional($period->facility)->capacity_per_day;
         $businessDays = (int) ($usage->business_days ?? 0);

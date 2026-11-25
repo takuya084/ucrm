@@ -42,10 +42,9 @@ class ClaimReturnController extends Controller
 
         // サマリー
         $summary = ClaimReturn::where('facility_id', $facilityId)
-            ->selectRaw('status, COUNT(*) AS cnt, SUM(original_amount) AS total')
-            ->groupBy('status')
             ->get()
-            ->keyBy('status');
+            ->groupBy('status')
+            ->map(fn($rows)=>(object)['cnt'=>$rows->count(),'total'=>$rows->sum('original_amount')]);
 
         $stats = [
             'returned'     => (int) ($summary['returned']->cnt     ?? 0),
