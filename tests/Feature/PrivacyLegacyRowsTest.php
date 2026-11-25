@@ -9,11 +9,11 @@ class PrivacyLegacyRowsTest extends TestCase
 {
     use RefreshDatabase;
     public function test_legacy_rows_without_a_primary_key_keep_duplicates_and_exact_values(): void {
+        while(DB::transactionLevel())DB::commit();
         Schema::create('privacy_legacy_reset',function(Blueprint $table){$table->string('email')->index();$table->string('token');});
         $pdo=DB::connection()->getPdo();$stmt=$pdo->prepare('INSERT INTO '.Migrator::quote('privacy_legacy_reset').' (email,token) VALUES (?,?)');
         foreach(['KeepX@example.test','KeepX@example.test','keepx@example.test'] as $email)$stmt->execute([$email,'synthetic-hash']);
         $tables=config('privacy.tables');$tables['privacy_legacy_reset']=['email'=>'text'];config(['privacy.tables'=>$tables]);
-        while(DB::transactionLevel())DB::commit();
         try {
             Migrator::prepare();$values=DB::table('privacy_legacy_reset')->pluck('email')->all();sort($values);
             $this->assertSame(['KeepX@example.test','KeepX@example.test','keepx@example.test'],$values);

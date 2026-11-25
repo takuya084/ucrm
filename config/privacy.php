@@ -31,6 +31,7 @@ return [
         'support_plan_consents' => ['method' => 'paper'],
     ],
     'tables' => [
+        'personal_access_tokens' => ['name' => 'text'],
         'absence_calendars' => ['payload' => 'text'],
         'absence_notice_versions' => ['payload' => 'text'],
         'absence_notices' => ['date' => 'date', 'payload' => 'text'],
@@ -61,7 +62,7 @@ return [
         'facilities' => ['address' => 'text', 'administrator_name' => 'text', 'area_unit_price' => 'decimal', 'designated_date' => 'date', 'fax' => 'text', 'name' => 'text', 'stripe_checkout_session_id' => 'text', 'stripe_customer_id' => 'text', 'stripe_subscription_id' => 'text', 'subscription_ended_at' => 'datetime', 'tel' => 'text', 'yoyaku_api_token' => 'text', 'yoyaku_webhook_secret' => 'text'],
         'failed_jobs' => ['exception' => 'text', 'payload' => 'text'],
         'guardian_invoices' => ['copayment_amount' => 'integer', 'due_date' => 'date', 'notes' => 'text', 'other_charges' => 'integer', 'paid_amount' => 'integer', 'paid_at' => 'datetime', 'payment_method' => 'text', 'pdf_path' => 'text', 'total_amount' => 'integer'],
-        'guardians' => ['address' => 'text', 'email' => 'text', 'memo' => 'text', 'name' => 'text', 'name_kana' => 'text', 'postcode' => 'text', 'preferred_contact' => 'text', 'relationship' => 'text', 'tel_primary' => 'text', 'tel_secondary' => 'text'],
+        'guardians' => ['line_id' => 'text', 'address' => 'text', 'email' => 'text', 'memo' => 'text', 'name' => 'text', 'name_kana' => 'text', 'postcode' => 'text', 'preferred_contact' => 'text', 'relationship' => 'text', 'tel_primary' => 'text', 'tel_secondary' => 'text'],
         'inquiries' => ['contact_method' => 'text', 'contacted_at' => 'datetime', 'content' => 'text', 'response' => 'text', 'subject' => 'text'],
         'jobs' => ['payload' => 'text'],
         'monitoring_records' => ['challenges' => 'text', 'environmental_notes' => 'text', 'guardian_needs' => 'text', 'monitoring_date' => 'date', 'next_review_date' => 'date', 'period_from' => 'date', 'period_to' => 'date', 'strengths' => 'text', 'support_summary' => 'text'],
