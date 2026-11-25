@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Database\Events\MigrationEnded::class,fn()=>\App\Privacy\State::$legacyMigration=false);
 
         \App\Privacy\StorageProvider::boot();
-        if ($this->app->runningInConsole()) $this->commands([\App\Privacy\MaintenanceCommand::class,\App\Privacy\KeyCommand::class,\App\Privacy\FileCommand::class,\App\Privacy\BackupCommand::class,\App\Privacy\RestoreCommand::class,\App\Privacy\LogsCommand::class,\App\Privacy\SessionsCommand::class]);
+        if ($this->app->runningInConsole()) $this->commands([\App\Privacy\MaintenanceCommand::class,\App\Privacy\KeyCommand::class,\App\Privacy\FileCommand::class,\App\Privacy\BackupCommand::class,\App\Privacy\RestoreCommand::class,\App\Privacy\LogsCommand::class,\App\Privacy\CacheCommand::class,\App\Privacy\SessionsCommand::class]);
 
         UsageRecord::observe(UsageRecordObserver::class);
     }

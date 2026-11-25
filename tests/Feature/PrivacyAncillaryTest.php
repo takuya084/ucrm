@@ -21,6 +21,16 @@ class PrivacyAncillaryTest extends TestCase
         $line=$formatter->format($record);$this->assertStringNotContainsString('private@example.test',$line);$this->assertStringNotContainsString('秘密',$line);$this->assertStringContainsString('private@example.test',Cipher::unseal('logs',rtrim($line,"\n")));
         config(['privacy.key'=>null]);$this->assertSame("[private-log-unavailable]\n",$formatter->format($record));
     }
+    public function test_legacy_file_cache_is_detected_and_only_obsolete_values_are_cleared(): void {
+        $root=sys_get_temp_dir().'/privacy-cache-'.bin2hex(random_bytes(8));mkdir($root,0700);
+        config(['cache.default'=>'legacy-file','cache.stores.legacy-file'=>['driver'=>'file','path'=>$root]]);
+        $files=new Filesystem();$backend=new \Illuminate\Cache\FileStore($files,$root);
+        $backend->put('old-personal-key','秘密の旧キャッシュ',60);
+        $private=new \App\Privacy\CacheStore($backend);$private->put('new-personal-key','新キャッシュ',60);
+        $this->artisan('privacy:cache')->assertFailed();$this->artisan('privacy:cache',['--clear-legacy'=>true])->assertSuccessful();
+        $this->assertNull($backend->get('old-personal-key'));$this->assertSame('新キャッシュ',$private->get('new-personal-key'));
+        $files->deleteDirectory($root);
+    }
     public function test_previous_data_key_allows_reading_old_ciphertext_but_new_writes_use_the_current_key(): void {
         $old=config('privacy.key');$stored=Cipher::encrypt('users.name','旧暗号文');
         config(['privacy.previous_keys'=>[$old],'privacy.key'=>'base64:'.base64_encode(str_repeat('D',32))]);$this->assertSame('旧暗号文',Cipher::decrypt('users.name',$stored));

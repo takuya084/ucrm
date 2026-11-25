@@ -281,10 +281,9 @@ class ShiftController extends Controller
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->whereIn('status', ['attended', 'absent_notice'])
-            ->select('date', DB::raw('COUNT(*) as cnt'))
-            ->groupBy('date')
-            ->pluck('cnt', 'date')
-            ->mapWithKeys(fn ($cnt, $date) => [Carbon::parse($date)->toDateString() => $cnt]);
+            ->get(['date'])
+            ->groupBy(fn ($row) => Carbon::parse($row->date)->toDateString())
+            ->map(fn ($rows) => $rows->count());
 
         $counts = [];
         foreach ($dates as $d) {
