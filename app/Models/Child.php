@@ -75,7 +75,7 @@ class Child extends Model
 
     public function activeRecipientCertificate(): HasOne
     {
-        return $this->hasOne(RecipientCertificate::class)->where('status', 'active')->latestOfMany('valid_from');
+        return $this->hasOne(RecipientCertificate::class)->where('status', 'active')->orderByDesc('valid_from')->orderByDesc('id');
     }
 
     public function schedules(): HasMany
@@ -135,7 +135,7 @@ class Child extends Model
 
     public function latestSupportPlan(): HasOne
     {
-        return $this->hasOne(SupportPlan::class)->latestOfMany('plan_date');
+        return $this->hasOne(SupportPlan::class)->orderByDesc('plan_date')->orderByDesc('id');
     }
 
     // 年齢を計算
