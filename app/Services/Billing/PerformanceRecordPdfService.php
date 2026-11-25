@@ -62,15 +62,15 @@ class PerformanceRecordPdfService
         if (!is_dir($tmpDir)) mkdir($tmpDir, 0775, true);
 
         $zipPath = "performance-records/performance_{$period->facility_id}_" . str_replace('-', '', $period->year_month) . '.zip';
-        $zipAbs  = Storage::disk('local')->path($zipPath);
-        if (!is_dir(dirname($zipAbs))) mkdir(dirname($zipAbs), 0775, true);
+        $zipAbs  = $zipPath;
 
-        $zip = new ZipArchive();
+
+        $zip = new \App\Privacy\PrivateZip();
         $zip->open($zipAbs, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         foreach ($period->billingDetails as $detail) {
             $path    = $this->generate($detail);
-            $absPath = Storage::disk('local')->path($path);
+            $absPath = $path;
             $childName = preg_replace('/[\/\\\\:\*\?"<>\|]/', '_', $detail->child->name ?? "child_{$detail->child_id}");
             $zip->addFile($absPath, "{$childName}.pdf");
         }

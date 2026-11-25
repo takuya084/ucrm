@@ -300,7 +300,7 @@ class BillingPeriodController extends Controller
     private function downloadNhifCsv(string $path)
     {
         // 国保連向けのCP932ファイルをバイナリの添付ファイルとして返す。
-        return response()->download(Storage::disk('local')->path($path), basename($path), [
+        return Storage::disk('local')->download($path, basename($path), [
             'Content-Type' => 'application/octet-stream',
         ]);
     }

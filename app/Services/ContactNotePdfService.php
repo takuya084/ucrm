@@ -67,9 +67,9 @@ class ContactNotePdfService
 
         $zipPath = "contact-notes/{$year}/contact_notes_{$facility->id}_{$year}.zip";
         Storage::disk('local')->makeDirectory("contact-notes/{$year}");
-        $zipFullPath = Storage::disk('local')->path($zipPath);
+        $zipFullPath = $zipPath;
 
-        $zip = new \ZipArchive();
+        $zip = new \App\Privacy\PrivateZip();
         if ($zip->open($zipFullPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             throw new \RuntimeException('ZIPファイルを作成できませんでした。');
         }
@@ -79,7 +79,7 @@ class ContactNotePdfService
             if ($pdfPath) {
                 // ZIP 内のファイル名は人が読める形式にする
                 $zip->addFile(
-                    Storage::disk('local')->path($pdfPath),
+                    $pdfPath,
                     "連絡帳_{$year}年_{$child->name}.pdf"
                 );
             }

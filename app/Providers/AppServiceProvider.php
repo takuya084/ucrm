@@ -18,6 +18,14 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        \App\Privacy\State::$legacyMigration=false;
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Database\Events\MigrationStarted::class,function($event){
+            $name=basename((new \ReflectionClass($event->migration))->getFileName());
+            \App\Privacy\State::$legacyMigration=$event->method==='up' && $name<'2026_11_25_120000_encrypt_personal_data.php';
+        });
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Database\Events\MigrationEnded::class,fn()=>\App\Privacy\State::$legacyMigration=false);
+
+        \App\Privacy\StorageProvider::boot();
         if ($this->app->runningInConsole()) $this->commands([\App\Privacy\MaintenanceCommand::class,\App\Privacy\KeyCommand::class]);
 
         UsageRecord::observe(UsageRecordObserver::class);

@@ -57,15 +57,15 @@ class CopaymentCapPdfService
             ->get();
 
         $zipPath = "cap-management/cap_{$facilityId}_" . str_replace('-', '', $yearMonth) . '.zip';
-        $zipAbs  = Storage::disk('local')->path($zipPath);
-        if (!is_dir(dirname($zipAbs))) mkdir(dirname($zipAbs), 0775, true);
+        $zipAbs  = $zipPath;
 
-        $zip = new ZipArchive();
+
+        $zip = new \App\Privacy\PrivateZip();
         $zip->open($zipAbs, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         foreach ($managements as $m) {
             $path      = $this->generate($m);
-            $absPath   = Storage::disk('local')->path($path);
+            $absPath   = $path;
             $childName = preg_replace('/[\/\\\\:\*\?"<>\|]/', '_', $m->child->name ?? "child_{$m->child_id}");
             $zip->addFile($absPath, "{$childName}.pdf");
         }

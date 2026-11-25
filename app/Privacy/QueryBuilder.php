@@ -7,6 +7,7 @@ use RuntimeException;
 class QueryBuilder extends Builder
 {
     private function privateColumn($column): ?array {
+        if (State::$legacyMigration) return null;
         if (!is_string($column)||!is_string($this->from)) return null;
         $base=Registry::table($this->from);$name=$column;$table=$base;$qualifier=$base;
         if (str_contains($column,'.')) {
@@ -24,7 +25,7 @@ class QueryBuilder extends Builder
         return str_contains($column,'.')?$info[2].'.'.Registry::indexColumn($info[1]):Registry::indexColumn($info[1]);
     }
     protected function runSelect() {
-        $rows=parent::runSelect();$base=is_string($this->from)?Registry::table($this->from):'';$aliases=[];
+        $rows=parent::runSelect();if(State::$legacyMigration)return $rows;$base=is_string($this->from)?Registry::table($this->from):'';$aliases=[];
         foreach($this->columns??[] as $column) if (is_string($column)&&preg_match('/^([a-z_][a-z0-9_.]*)\s+as\s+([a-z_][a-z0-9_]*)$/i',$column,$m)) $aliases[$m[2]]=$this->privateColumn($m[1]);
         foreach($rows as $row) foreach((array)$row as $field=>$value) {
             if (str_starts_with($field,'pii_i_')) {if(is_object($row))unset($row->$field);continue;}
@@ -34,6 +35,7 @@ class QueryBuilder extends Builder
         return $rows;
     }
     private function valuesForWrite(array $values): array {
+        if(State::$legacyMigration)return $values;
         $table=is_string($this->from)?Registry::table($this->from):'';
         if (!$values) return $values;
         if (!is_array(reset($values))) return Registry::encode($table,$values,true);
@@ -42,7 +44,7 @@ class QueryBuilder extends Builder
     public function insert(array $values) {return parent::insert($this->valuesForWrite($values));}
     public function insertOrIgnore(array $values) {return parent::insertOrIgnore($this->valuesForWrite($values));}
     public function insertGetId(array $values,$sequence=null) {return parent::insertGetId($this->valuesForWrite($values),$sequence);}
-    public function update(array $values) {return parent::update(Registry::encode(Registry::table($this->from),$values));}
+    public function update(array $values) {return parent::update(State::$legacyMigration?$values:Registry::encode(Registry::table($this->from),$values));}
     public function upsert(array $values,$uniqueBy,$update=null) {
         $table=Registry::table($this->from);$uniqueBy=array_map(fn($c)=>Registry::protected($table,$c)?Registry::indexColumn($c):$c,(array)$uniqueBy);
         if($update!==null)foreach($update as $column)if(Registry::protected($table,$column))$update[]=Registry::indexColumn($column);
