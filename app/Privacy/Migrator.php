@@ -45,9 +45,9 @@ final class Migrator
     }
     private static function rebuildSqlite(string $table,array $fields,array $changed): void {
         $pdo=DB::connection()->getPdo();$q=self::quote($table);
-        $statement=$pdo->prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?");$statement->execute([$table]);$original=$statement->fetchColumn();
+        $statement=$pdo->prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?");$statement->execute([$table]);$original=$statement->fetchColumn();$statement->closeCursor();
         $statement=$pdo->prepare("SELECT name,sql FROM sqlite_master WHERE tbl_name=? AND type IN ('index','trigger') AND sql IS NOT NULL");$statement->execute([$table]);$objects=$statement->fetchAll(\PDO::FETCH_ASSOC);
-        $seq=null;if($pdo->query("SELECT count(*) FROM sqlite_master WHERE name='sqlite_sequence'")->fetchColumn()){ $st=$pdo->prepare('SELECT seq FROM sqlite_sequence WHERE name=?');$st->execute([$table]);$v=$st->fetchColumn();if($v!==false)$seq=$v;}
+        $seq=null;if($pdo->query("SELECT count(*) FROM sqlite_master WHERE name='sqlite_sequence'")->fetchColumn()){ $st=$pdo->prepare('SELECT seq FROM sqlite_sequence WHERE name=?');$st->execute([$table]);$v=$st->fetchColumn();$st->closeCursor();if($v!==false)$seq=$v;}
         $body=substr($original,strpos($original,'(')+1);$body=substr($body,0,strrpos($body,')'));$parts=[];$part='';$depth=0;$quote=null;
         for($i=0;$i<strlen($body);$i++){
             $ch=$body[$i];
