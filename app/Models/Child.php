@@ -44,10 +44,6 @@ class Child extends Model
         'contract_start_date'   => 'date:Y-m-d',
         'contract_end_date'     => 'date:Y-m-d',
         'ai_draft_consented_at' => 'datetime',
-        // 要配慮個人情報は保存時に暗号化（既存平文は app:encrypt-sensitive-data で移行）
-        'disability_note'       => \App\Casts\EncryptedOrPlainText::class,
-        'allergy_note'          => \App\Casts\EncryptedOrPlainText::class,
-        'care_note'             => \App\Casts\EncryptedOrPlainText::class,
     ];
 
     public function facility(): BelongsTo

@@ -9,6 +9,9 @@
     </testsuite>
   </testsuites>
   <php>
+        <env name="DATA_ENCRYPTION_KEY" value="base64:EREREREREREREREREREREREREREREREREREREREREREQ=" force="true"/>
+        <env name="DATA_LOOKUP_KEY" value="base64:IiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI=" force="true"/>
+        <env name="DATA_BACKUP_KEY" value="base64:MzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM=" force="true"/>
     <env name="APP_ENV" value="testing"/>
     <env name="BCRYPT_ROUNDS" value="4"/>
     <env name="CACHE_DRIVER" value="array"/>
