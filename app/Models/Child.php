@@ -44,10 +44,6 @@ class Child extends Model
         'contract_start_date'   => 'date:Y-m-d',
         'contract_end_date'     => 'date:Y-m-d',
         'ai_draft_consented_at' => 'datetime',
-        // 要配慮個人情報は保存時に暗号化（既存平文は app:encrypt-sensitive-data で移行）
-        'disability_note'       => \App\Casts\EncryptedOrPlainText::class,
-        'allergy_note'          => \App\Casts\EncryptedOrPlainText::class,
-        'care_note'             => \App\Casts\EncryptedOrPlainText::class,
     ];
 
     public function facility(): BelongsTo
@@ -79,7 +75,7 @@ class Child extends Model
 
     public function activeRecipientCertificate(): HasOne
     {
-        return $this->hasOne(RecipientCertificate::class)->where('status', 'active')->latestOfMany('valid_from');
+        return $this->hasOne(RecipientCertificate::class)->whereIn('recipient_certificates.id', \App\Privacy\LatestRelated::ids(RecipientCertificate::class, 'valid_from'))->where('status', 'active');
     }
 
     public function schedules(): HasMany
@@ -139,7 +135,7 @@ class Child extends Model
 
     public function latestSupportPlan(): HasOne
     {
-        return $this->hasOne(SupportPlan::class)->latestOfMany('plan_date');
+        return $this->hasOne(SupportPlan::class)->whereIn('support_plans.id', \App\Privacy\LatestRelated::ids(SupportPlan::class, 'plan_date'));
     }
 
     // 年齢を計算

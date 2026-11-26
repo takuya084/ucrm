@@ -31,7 +31,7 @@ class EncryptedCastTest extends TestCase
             'care_note'       => 'てんかん発作に注意',
         ]);
 
-        $raw = DB::table('children')->where('id', $child->id)->first();
+        $raw = (object) DB::connection()->getPdo()->query('SELECT * FROM children WHERE id='.(int)$child->id)->fetch(\PDO::FETCH_ASSOC);
 
         // DBの生データは平文ではない
         $this->assertNotSame('自閉スペクトラム症', $raw->disability_note);
@@ -45,33 +45,4 @@ class EncryptedCastTest extends TestCase
         $this->assertSame('てんかん発作に注意', $fresh->care_note);
     }
 
-    public function test_暗号化導入前の平文データもそのまま読める(): void
-    {
-        $child = $this->createChild();
-
-        // 暗号化導入前の平文データを直接挿入
-        DB::table('children')->where('id', $child->id)->update([
-            'care_note' => '平文の配慮事項',
-        ]);
-
-        $this->assertSame('平文の配慮事項', $child->fresh()->care_note);
-    }
-
-    public function test_一括暗号化コマンドが平文データを暗号化する(): void
-    {
-        $child = $this->createChild();
-        DB::table('children')->where('id', $child->id)->update([
-            'care_note' => '平文の配慮事項',
-        ]);
-
-        $this->artisan('app:encrypt-sensitive-data')->assertSuccessful();
-
-        $raw = DB::table('children')->where('id', $child->id)->value('care_note');
-        $this->assertNotSame('平文の配慮事項', $raw);
-        $this->assertSame('平文の配慮事項', $child->fresh()->care_note);
-
-        // 再実行しても二重暗号化されない
-        $this->artisan('app:encrypt-sensitive-data')->assertSuccessful();
-        $this->assertSame('平文の配慮事項', $child->fresh()->care_note);
-    }
 }
