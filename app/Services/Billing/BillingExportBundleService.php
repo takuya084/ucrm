@@ -118,11 +118,11 @@ class BillingExportBundleService
 
         // ZIP にまとめる
         $zipRelative = "billing_csv/{$baseName}.zip";
-        $zipAbsolute = $zipRelative;
+        $zipAbsolute = Storage::disk('local')->path($zipRelative);
 
+        @mkdir(dirname($zipAbsolute), 0755, true);
 
-
-        $zip = new \App\Privacy\PrivateZip();
+        $zip = new ZipArchive();
         if ($zip->open($zipAbsolute, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new \RuntimeException('ZIP ファイルを作成できませんでした。');
         }
@@ -135,8 +135,8 @@ class BillingExportBundleService
         ];
 
         foreach ($included as $localName => $srcRelative) {
-            $srcAbsolute = $srcRelative;
-            if (Storage::disk('local')->exists($srcAbsolute)) {
+            $srcAbsolute = Storage::disk('local')->path($srcRelative);
+            if (file_exists($srcAbsolute)) {
                 $zip->addFile($srcAbsolute, $localName);
             }
         }
@@ -148,7 +148,7 @@ class BillingExportBundleService
             'kind'              => 'bundle',
             'file_path'         => $zipRelative,
             'file_name'         => "{$baseName}.zip",
-            'file_size'         => Storage::disk('local')->size($zipRelative) ?: 0,
+            'file_size'         => filesize($zipAbsolute) ?: 0,
             'included_files'    => array_keys($included),
             'warnings'          => $warnings,
             'created_by'        => $userId,

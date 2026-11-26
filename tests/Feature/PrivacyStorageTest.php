@@ -33,20 +33,27 @@ class PrivacyStorageTest extends TestCase
         $pdo->exec('UPDATE users SET email=name WHERE id='.(int)$u->id);
         $this->expectExceptionMessage('Personal data authentication failed.');$u->fresh();
     }
-    public function test_legacy_plaintext_is_detected_and_migrated_without_losing_values(): void {
-        $u=User::factory()->create();$pdo=DB::connection()->getPdo();$s=$pdo->prepare('UPDATE users SET name=? WHERE id=?');$s->execute(['旧データ保持',$u->id]);
-        $this->artisan('privacy:migrate',['--verify'=>true])->assertFailed();
-        $this->artisan('privacy:migrate')->assertSuccessful();
-        $this->assertSame('旧データ保持',$u->fresh()->name);$this->artisan('privacy:migrate',['--verify'=>true])->assertSuccessful();
+    public function test_plaintext_is_detected_and_cannot_be_read_as_an_encrypted_value(): void {
+        $u=User::factory()->create();$pdo=DB::connection()->getPdo();$s=$pdo->prepare('UPDATE users SET name=? WHERE id=?');$s->execute(['平文の検査',$u->id]);
+        $this->artisan('privacy:verify')->assertFailed();
+        $this->expectExceptionMessage('Unencrypted personal data detected.');$u->fresh();
+    }
+    public function test_schema_setup_requires_an_empty_database_and_does_not_change_existing_records(): void {
+        $u=User::factory()->create(['name'=>'新規登録の個人情報']);$pdo=DB::connection()->getPdo();$before=$pdo->query('SELECT name FROM users WHERE id='.(int)$u->id)->fetchColumn();
+        try {\App\Privacy\SchemaSetup::prepare();$this->fail('Nonempty database was accepted.');}
+        catch(\RuntimeException $e){$this->assertStringContainsString('Fresh database required.',$e->getMessage());}
+        $this->assertSame($before,$pdo->query('SELECT name FROM users WHERE id='.(int)$u->id)->fetchColumn());$this->assertSame('新規登録の個人情報',$u->fresh()->name);
+        $this->artisan('privacy:verify')->assertSuccessful();
+    }
+    public function test_duplicate_email_is_refused_even_though_ciphertexts_are_randomized(): void {
+        User::factory()->create(['email'=>'same-person@example.test']);
+        $this->expectException(\Illuminate\Database\QueryException::class);User::factory()->create(['email'=>'SAME-PERSON@example.test']);
     }
     public function test_required_personal_columns_remain_required_after_migration(): void {
         $this->expectException(\Illuminate\Database\QueryException::class);
         User::factory()->create(['name'=>null]);
     }
-    public function test_missing_data_or_lookup_key_refuses_writes(): void {
-        foreach(['key','index_key'] as $key) {
-            $old=config('privacy.'.$key);config(['privacy.'.$key=>null]);
-            try {User::factory()->create();$this->fail('missing key must stop writes');}catch(\RuntimeException $e){$this->assertStringContainsString('Privacy key missing or invalid',$e->getMessage());}finally{config(['privacy.'.$key=>$old]);}
-        }
+    public function test_missing_application_key_refuses_personal_writes(): void {
+        config(['app.key'=>null]);$this->expectExceptionMessage('APP_KEY is missing or invalid.');User::factory()->create();
     }
 }

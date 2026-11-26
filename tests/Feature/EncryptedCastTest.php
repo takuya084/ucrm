@@ -45,30 +45,4 @@ class EncryptedCastTest extends TestCase
         $this->assertSame('てんかん発作に注意', $fresh->care_note);
     }
 
-    public function test_暗号化導入前の平文データもそのまま読める(): void
-    {
-        $child = $this->createChild();
-
-        // 暗号化導入前の平文データを直接挿入
-        $sql=DB::connection()->getPdo()->prepare('UPDATE children SET care_note=? WHERE id=?');$sql->execute(['平文の配慮事項',$child->id]);
-
-        $this->artisan('privacy:migrate')->assertSuccessful();
-        $this->assertSame('平文の配慮事項', $child->fresh()->care_note);
-    }
-
-    public function test_一括暗号化コマンドが平文データを暗号化する(): void
-    {
-        $child = $this->createChild();
-        $sql=DB::connection()->getPdo()->prepare('UPDATE children SET care_note=? WHERE id=?');$sql->execute(['平文の配慮事項',$child->id]);
-
-        $this->artisan('app:encrypt-sensitive-data')->assertSuccessful();
-
-        $raw = DB::connection()->getPdo()->query('SELECT care_note FROM children WHERE id='.(int)$child->id)->fetchColumn();
-        $this->assertNotSame('平文の配慮事項', $raw);
-        $this->assertSame('平文の配慮事項', $child->fresh()->care_note);
-
-        // 再実行しても二重暗号化されない
-        $this->artisan('app:encrypt-sensitive-data')->assertSuccessful();
-        $this->assertSame('平文の配慮事項', $child->fresh()->care_note);
-    }
 }

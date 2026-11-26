@@ -61,15 +61,17 @@ class ProxyReceiptNoticePdfService
         $period->load('billingDetails.child');
 
         $zipPath = "proxy-receipts/proxy_receipts_{$period->facility_id}_" . str_replace('-', '', $period->year_month) . '.zip';
-        $zipAbs  = $zipPath;
+        $zipAbs  = Storage::disk('local')->path($zipPath);
+        if (!is_dir(dirname($zipAbs))) {
+            mkdir(dirname($zipAbs), 0775, true);
+        }
 
-
-        $zip = new \App\Privacy\PrivateZip();
+        $zip = new ZipArchive();
         $zip->open($zipAbs, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         foreach ($period->billingDetails as $detail) {
             $pdfPath   = $this->generate($detail);
-            $absPath   = $pdfPath;
+            $absPath   = Storage::disk('local')->path($pdfPath);
             $childName = preg_replace('/[\/\\\\:*?"<>|]/u', '_', $detail->child->name ?? "child_{$detail->child_id}");
             $zip->addFile($absPath, "{$childName}.pdf");
         }

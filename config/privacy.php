@@ -1,9 +1,5 @@
 <?php
 return [
-    'key' => env('DATA_ENCRYPTION_KEY'),
-    'index_key' => env('DATA_LOOKUP_KEY'),
-    'backup_key' => env('DATA_BACKUP_KEY'),
-    'previous_keys' => array_filter(explode(',', (string) env('DATA_PREVIOUS_KEYS', ''))),
     'defaults' => [
         'staff' => ['employment_type' => 'full_time'],
         'absence_supports' => ['contact_method' => 'tel'],

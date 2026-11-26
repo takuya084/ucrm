@@ -5,11 +5,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
-final class Migrator
+final class SchemaSetup
 {
     public static function prepare(): void {
         Cipher::key('key');Cipher::key('index_key');
         $pdo=DB::connection()->getPdo();$sqlite=DB::getDriverName()==='sqlite';
+        // Check every target before the first DDL change. Never erase an existing database implicitly.
+        foreach(Registry::tables() as $table=>$fields)if(Schema::hasTable($table)&&array_intersect(array_keys($fields),Schema::getColumnListing($table))){
+            if($pdo->query('SELECT 1 FROM '.self::quote($table).' LIMIT 1')->fetchColumn()!==false)throw new RuntimeException('Fresh database required. Existing data was not modified.');
+        }
         if($sqlite){$pdo->exec('PRAGMA foreign_keys=OFF');DB::beginTransaction();}
         try {foreach(Registry::tables() as $table=>$fields) {
             if(!Schema::hasTable($table))continue;
@@ -28,7 +32,6 @@ final class Migrator
                 $metadata=$pdo->query('SHOW COLUMNS FROM '.self::quote($table))->fetchAll(\PDO::FETCH_ASSOC);$nullable=array_column($metadata,'Null','Field');
                 Schema::table($table,function(Blueprint $t)use($fields,$nullable){foreach($fields as $column=>$type)$t->longText($column)->nullable(($nullable[$column]??'YES')==='YES')->default(null)->change();});
             }
-            $primary=[];foreach($indexes as $index)if($index['primary']){$primary=$index['columns'];break;}self::encryptTable($table,array_keys($fields),false,$primary);
             foreach($changed as $index) {
                 if($sqlite&&($index['primary']||str_starts_with($index['name'],'sqlite_autoindex_')))continue;
                 $new=array_map(fn($c)=>isset($fields[$c])?Registry::indexColumn($c):$c,$index['columns']);
@@ -50,7 +53,6 @@ final class Migrator
         $pdo=DB::connection()->getPdo();$q=self::quote($table);
         $statement=$pdo->prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?");$statement->execute([$table]);$original=$statement->fetchColumn();$statement->closeCursor();
         $statement=$pdo->prepare("SELECT name,sql FROM sqlite_master WHERE tbl_name=? AND type IN ('index','trigger') AND sql IS NOT NULL");$statement->execute([$table]);$objects=$statement->fetchAll(\PDO::FETCH_ASSOC);
-        $seq=null;if($pdo->query("SELECT count(*) FROM sqlite_master WHERE name='sqlite_sequence'")->fetchColumn()){ $st=$pdo->prepare('SELECT seq FROM sqlite_sequence WHERE name=?');$st->execute([$table]);$v=$st->fetchColumn();$st->closeCursor();if($v!==false)$seq=$v;}
         $body=substr($original,strpos($original,'(')+1);$body=substr($body,0,strrpos($body,')'));$parts=[];$part='';$depth=0;$quote=null;
         for($i=0;$i<strlen($body);$i++){
             $ch=$body[$i];
@@ -66,11 +68,9 @@ final class Migrator
                 foreach(array_keys($fields) as $column)$definition=preg_replace('/(["`])'.preg_quote($column,'/').'\1/', '"'.Registry::indexColumn($column).'"',$definition);
             }
         }unset($definition);
-        $temp='privacy_rebuild_'.substr(hash('sha256',$table),0,16);$columns=Schema::getColumnListing($table);$names=implode(',',array_map([self::class,'quote'],$columns));
+        $temp='privacy_schema_'.substr(hash('sha256',$table),0,16);
         $pdo->exec('CREATE TABLE '.self::quote($temp).' ('.implode(',',$parts).')');
-        $pdo->exec('INSERT INTO '.self::quote($temp).' ('.$names.') SELECT '.$names.' FROM '.$q);
         $pdo->exec('DROP TABLE '.$q);$pdo->exec('ALTER TABLE '.self::quote($temp).' RENAME TO '.$q);
-        if($seq!==null){$pdo->prepare('DELETE FROM sqlite_sequence WHERE name=?')->execute([$table]);$pdo->prepare('INSERT INTO sqlite_sequence(name,seq) VALUES(?,?)')->execute([$table,$seq]);}
         $excluded=array_column($changed,'name');foreach($objects as $object)if(!in_array($object['name'],$excluded,true))$pdo->exec($object['sql']);
     }
     private static function indexes(string $table): array {
@@ -92,49 +92,4 @@ final class Migrator
         return array_values($out);
     }
     public static function quote(string $name): string {return DB::connection()->getQueryGrammar()->wrap($name);}
-    public static function encryptTable(string $table,array $columns,bool $dry=false,array $originalKeys=[]): array {
-        $pdo=DB::connection()->getPdo();$sqlite=DB::getDriverName()==='sqlite';$names=Schema::getColumnListing($table);
-        $keys=$originalKeys;foreach(($keys?[]:self::indexes($table)) as $index)if($index['primary']){$keys=$index['columns'];break;}
-        $rows=$pdo->query('SELECT '.($sqlite?'rowid AS privacy_rowid,':'').'* FROM '.self::quote($table))->fetchAll(\PDO::FETCH_ASSOC);
-        $counts=['encrypted'=>0,'verified'=>0];
-        foreach($rows as $row) {
-            $updates=[];
-            foreach($columns as $column) {
-                $raw=$row[$column]??null;
-                if($raw===null){$updates[Registry::indexColumn($column)]=null;continue;}
-                if(is_string($raw)&&str_starts_with($raw,Cipher::PREFIX)){$plain=Cipher::decrypt($table.'.'.$column,$raw);$counts['verified']++;}
-                else {
-                    $plain=$raw;
-                    if($table==='children'&&in_array($column,['disability_note','allergy_note','care_note'],true)) {
-                        $candidate=json_decode(base64_decode((string)$raw,true)?:'',true);
-                        if(is_array($candidate)&&isset($candidate['iv'],$candidate['value'])) {
-                            try {$plain=\Illuminate\Support\Facades\Crypt::decryptString($raw);}catch(\Throwable){throw new RuntimeException('Legacy child-data encryption key does not match.');}
-                        }
-                    }
-                    $plain=Registry::normalize($table,$column,$plain);
-                    $updates[$column]=Cipher::encrypt($table.'.'.$column,$plain);$counts['encrypted']++;
-                }
-                $updates[Registry::indexColumn($column)]=Cipher::index($table.'.'.$column,$plain);
-            }
-            if($dry||!$updates)continue;
-            $identities=$sqlite?['rowid'=>$row['privacy_rowid']]:($keys?array_intersect_key($row,array_flip($keys)):$row);
-            $sql='UPDATE '.self::quote($table).' SET '.implode(',',array_map(fn($c)=>self::quote($c).'=?',array_keys($updates))).' WHERE '.implode(' AND ',array_map(fn($c)=>!$sqlite&&!$keys?'BINARY '.self::quote($c).' <=> BINARY ?':self::quote($c).'=?',array_keys($identities))).(!$sqlite&&!$keys?' LIMIT 1':'');
-            $statement=$pdo->prepare($sql);$statement->execute([...array_values($updates),...array_values($identities)]);
-        }
-        return $counts;
-    }
-    public static function scan(bool $rewrite=false,bool $dry=false): array {
-        Cipher::key('key');Cipher::key('index_key');$result=['encrypted'=>0,'verified'=>0,'plaintext'=>0];
-        foreach(Registry::tables() as $table=>$fields) {
-            if(!Schema::hasTable($table))continue;
-            $columns=array_intersect(array_keys($fields),Schema::getColumnListing($table));
-            if(!$columns)continue;
-            if($rewrite){$counts=self::encryptTable($table,$columns,$dry);$result['encrypted']+=$counts['encrypted'];$result['verified']+=$counts['verified'];continue;}
-            $selected=array_merge($columns,array_map([Registry::class,'indexColumn'],$columns));$rows=DB::connection()->getPdo()->query('SELECT '.implode(',',array_map([self::class,'quote'],$selected)).' FROM '.self::quote($table));
-            while($row=$rows->fetch(\PDO::FETCH_ASSOC))foreach($columns as $column){$value=$row[$column];if($value===null){if($row[Registry::indexColumn($column)]!==null)throw new RuntimeException('Private lookup verification failed: '.$table.'.'.$column);continue;}
-                if(is_string($value)&&str_starts_with($value,Cipher::PREFIX)){$plain=Cipher::decrypt($table.'.'.$column,$value);if(!hash_equals(Cipher::index($table.'.'.$column,$plain),(string)$row[Registry::indexColumn($column)]))throw new RuntimeException('Private lookup verification failed: '.$table.'.'.$column);$result['verified']++;}else$result['plaintext']++;
-            }
-        }
-        return $result;
-    }
 }

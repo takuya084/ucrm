@@ -6,20 +6,18 @@ use RuntimeException;
 final class Cipher
 {
     public const PREFIX='pii:v1:';
-    public static function key(string $name): string {
-        $value=(string) config('privacy.'.$name);
-        $raw=str_starts_with($value,'base64:')?base64_decode(substr($value,7),true):false;
-        if (!is_string($raw)||strlen($raw)!==32) throw new RuntimeException('Privacy key missing or invalid: '.$name);
-        return $raw;
+    public static function key(string $name='key'): string {
+        $value=(string) config('app.key');
+        $raw=str_starts_with($value,'base64:')?base64_decode(substr($value,7),true):$value;
+        if(!is_string($raw)||strlen($raw)!==32)throw new RuntimeException('APP_KEY is missing or invalid.');
+        return $name==='index_key'?hash_hkdf('sha256',$raw,32,'personal-data/lookup'):$raw;
     }
     private static function encrypter(string $purpose): Encrypter {
         return new Encrypter(hash_hkdf('sha256',self::key('key'),32,'personal-data/'.$purpose),'AES-256-GCM');
     }
     private static function decryptString(string $purpose,string $value): string {
-        $keys=[self::key('key')];
-        foreach(config('privacy.previous_keys',[]) as $previous){$raw=str_starts_with($previous,'base64:')?base64_decode(substr($previous,7),true):false;if(!is_string($raw)||strlen($raw)!==32)throw new RuntimeException('Invalid previous data key.');$keys[]=$raw;}
-        foreach($keys as $key){try{return (new Encrypter(hash_hkdf('sha256',$key,32,'personal-data/'.$purpose),'AES-256-GCM'))->decryptString($value);}catch(\Illuminate\Contracts\Encryption\DecryptException){}}
-        throw new RuntimeException('Personal data authentication failed.');
+        try {return self::encrypter($purpose)->decryptString($value);}
+        catch(\Illuminate\Contracts\Encryption\DecryptException){throw new RuntimeException('Personal data authentication failed.');}
     }
     public static function encrypt(string $context, mixed $value): string {
         if ($value instanceof \DateTimeInterface) $value=$value->format('Y-m-d H:i:s');
@@ -27,7 +25,7 @@ final class Cipher
     }
     public static function decrypt(string $context, mixed $value): mixed {
         if ($value===null) return null;
-        if (!is_string($value)||!str_starts_with($value,self::PREFIX)) throw new RuntimeException('Unencrypted personal data detected; run privacy:migrate before opening the application.');
+        if (!is_string($value)||!str_starts_with($value,self::PREFIX)) throw new RuntimeException('Unencrypted personal data detected. This installation requires a fresh database.');
         try {
             $decoded=json_decode(self::decryptString('database',substr($value,strlen(self::PREFIX))),true,512,JSON_THROW_ON_ERROR);
             if (($decoded['context']??null)!==$context || !array_key_exists('value',$decoded)) throw new RuntimeException();
@@ -53,13 +51,5 @@ final class Cipher
         $value=mb_strtolower(trim((string)$value),'UTF-8');
         if (str_ends_with($context,'.email')||str_ends_with($context,'.active_email')) $value=trim($value);
         return hash_hmac('sha256',$context."\0".$value,self::key('index_key'));
-    }
-    public static function seal(string $purpose,string $value): string {
-        return 'sealed:v1:'.self::encrypter($purpose)->encryptString($value);
-    }
-    public static function unseal(string $purpose,string $value): string {
-        if (!str_starts_with($value,'sealed:v1:')) throw new RuntimeException('Unencrypted private file/cache detected.');
-        try {return self::decryptString($purpose,substr($value,10));}
-        catch (\Throwable) {throw new RuntimeException('Private file/cache authentication failed.');}
     }
 }

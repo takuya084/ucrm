@@ -58,17 +58,19 @@ class PerformanceRecordPdfService
         app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
         $period->load('billingDetails.child');
 
+        $tmpDir = storage_path('app/performance-records/tmp_' . $period->id . '_' . time());
+        if (!is_dir($tmpDir)) mkdir($tmpDir, 0775, true);
 
         $zipPath = "performance-records/performance_{$period->facility_id}_" . str_replace('-', '', $period->year_month) . '.zip';
-        $zipAbs  = $zipPath;
+        $zipAbs  = Storage::disk('local')->path($zipPath);
+        if (!is_dir(dirname($zipAbs))) mkdir(dirname($zipAbs), 0775, true);
 
-
-        $zip = new \App\Privacy\PrivateZip();
+        $zip = new ZipArchive();
         $zip->open($zipAbs, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         foreach ($period->billingDetails as $detail) {
             $path    = $this->generate($detail);
-            $absPath = $path;
+            $absPath = Storage::disk('local')->path($path);
             $childName = preg_replace('/[\/\\\\:\*\?"<>\|]/', '_', $detail->child->name ?? "child_{$detail->child_id}");
             $zip->addFile($absPath, "{$childName}.pdf");
         }

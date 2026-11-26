@@ -1,9 +1,6 @@
 # Sourced by CI before sudo/unshare. Pass only named fixture values as arguments;
 # do not rely on sudo --preserve-env (some runner policies ignore that option).
 isolated_env=(env -i
-  DATA_ENCRYPTION_KEY=base64:ERERERERERERERERERERERERERERERERERERERERERE=
-  DATA_LOOKUP_KEY=base64:IiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI=
-  DATA_BACKUP_KEY=base64:MzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM=
 )
 
 for fixture_name in PATH LANG LC_ALL GITHUB_ACTIONS CI RUNNER_TEMP GITHUB_WORKSPACE \
