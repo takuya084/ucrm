@@ -25,6 +25,9 @@ class PdfRuntimeTest extends TestCase
         config(['dompdf.options.font_dir'=>storage_path('unprepared-pdf-fonts'), 'dompdf.options.font_cache'=>storage_path('unprepared-pdf-fonts')]);
         $this->assertDirectoryDoesNotExist(storage_path('unprepared-pdf-fonts'));
         $facility=$this->facility();
+        $admin=User::factory()->create();
+        Staff::create(['facility_id'=>$facility->id,'user_id'=>$admin->id,'name'=>$admin->name,'role'=>'admin','is_active'=>true]);
+        $this->actingAs($admin);
         foreach(range(1,2) as $index){
             $child=Child::create(['facility_id'=>$facility->id,'name'=>'架空同姓同名','contract_status'=>'active']);
             CopaymentCapManagement::create(['child_id'=>$child->id,'year_month'=>'2026-11','managing_facility_id'=>$facility->id,'cap_amount'=>4600,'management_result'=>'2','status'=>'draft']);
@@ -38,6 +41,8 @@ class PdfRuntimeTest extends TestCase
         $listPath=app(BeneficiaryPaymentListPdfService::class)->generate($facility->id,'2026-11');
         $this->assertStringStartsWith('%PDF',Storage::disk('local')->get($listPath));
         $this->assertDirectoryExists(storage_path('framework/cache/dompdf'));
+        $this->get('/billing/cap-management/payment-list?year_month=2026-11')->assertOk();
+        $this->get('/billing/cap-management/pdf-bundle?year_month=2026-11')->assertOk();
     }
 
     public function test_empty_cap_bundle_gives_a_validation_message_instead_of_a_missing_zip(): void
@@ -96,5 +101,18 @@ class PdfRuntimeTest extends TestCase
         $invoice=GuardianInvoice::where('year_month','2026-11')->firstOrFail();
         $path=app(GuardianInvoicePdfService::class)->generateInvoice($invoice);
         $this->assertStringStartsWith('%PDF',Storage::disk('local')->get($path));
+    }
+
+    public function test_changed_copayment_on_a_paid_invoice_requires_review_without_overwriting_payment(): void
+    {
+        $period=$this->calculatedPeriod();$service=app(GuardianInvoicePdfService::class);
+        $invoice=$service->createInvoicesFromBillingPeriod($period)[0];
+        $invoice->update(['payment_status'=>'paid','paid_amount'=>$invoice->total_amount,'paid_at'=>'2026-11-10']);
+        $invoice->billingDetail->update(['copayment_cap_applied'=>$invoice->copayment_amount+1]);
+        try{$service->createInvoicesFromBillingPeriod($period);$this->fail('Paid invoice was silently changed');}
+        catch(ValidationException $error){$this->assertStringContainsString('入金記録',$error->getMessage());}
+        $this->assertSame('paid',$invoice->fresh()->payment_status);
+        $this->assertSame((int)$invoice->paid_amount,(int)$invoice->fresh()->paid_amount);
+        $this->assertSame((int)$invoice->copayment_amount,(int)$invoice->fresh()->copayment_amount);
     }
 }

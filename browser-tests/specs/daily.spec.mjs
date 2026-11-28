@@ -960,7 +960,7 @@ test('sample covers two months, paid leave, part time, drivers and visible short
     await expect(shortage.getByText('配置1',{exact:true})).toBeVisible()
     for(const [key,message] of [['no-leader','児発管不在'],['no-qualified','有資格者不足']]) {
       const row=page.locator('.shift-table tbody tr').nth(Number(s.examples[key].slice(-2))-1)
-      await expect(row.getByText(message,{exact:false})).toBeVisible()
+      await expect(row.getByText(message,{exact:true})).toBeVisible()
     }
     await expect(page.locator('.shift-table thead').getByText('【デモ】05 午前パート',{exact:true})).toBeVisible()
   }
@@ -978,8 +978,7 @@ test('all native selects share registered clipboard behavior, including an actua
 
 
 test('shift print excludes operation help and wraps names inside all ten staff columns', async ({page}) => {
-  const demo=fixture('shift-demo').shift_demo
-  await login(page)
+  const demo=await loginShiftDemo(page)
   await visit(page,`/shifts/${demo.shifts[0].id}/edit`)
   await page.setViewportSize({width:1047,height:740})
   await page.locator('.shift-staff-name').first().evaluate(el=>{el.textContent='AlexandraVeryLongUnbrokenFamilyNameExample'})
