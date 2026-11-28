@@ -1,0 +1,7 @@
+.git
+.env
+.env.*
+node_modules
+browser-tests/node_modules
+storage
+bootstrap/cache

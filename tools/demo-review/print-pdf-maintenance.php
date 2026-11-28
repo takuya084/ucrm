@@ -6,7 +6,7 @@ try {
     $app=require '/demo/bootstrap.php';
     require_once '/app/tools/demo-review/download-probe.php';
     $phase=$argv[1]??'';
-    $main='/data/database.sqlite';$stage='/data/print-pdf-fix-v3.staging.sqlite';$before='/data/print-pdf-fix-v3.before.sqlite';$record='/data/print-pdf-fix-v3.json';
+    $main='/data/database.sqlite';$stage='/data/print-pdf-fix-v4.staging.sqlite';$before='/data/print-pdf-fix-v4.before.sqlite';$record='/data/print-pdf-fix-v4.json';
     $checkpoint=static function(){
         $r=DB::connection()->getPdo()->query('PRAGMA wal_checkpoint(TRUNCATE)')->fetch(PDO::FETCH_NUM);
         if((int)$r[0]!==0)throw new RuntimeException('DBの書込みが完了していません。');
@@ -32,6 +32,7 @@ try {
     };
     if($phase==='prepare'){
         if(file_exists('/data/print-pdf-fix.before.sqlite'))throw new RuntimeException('以前のDB切替記録があるため停止します。');
+        if(file_exists('/data/print-pdf-fix-v3.before.sqlite'))throw new RuntimeException('v3のDB切替記録があるため停止します。');
         if(file_exists('/data/print-pdf-fix-v2.before.sqlite'))throw new RuntimeException('v2のDB切替記録があるため停止します。');
         foreach([$stage,$before,$record] as $path)if(file_exists($path)||is_link($path))throw new RuntimeException('修正処理の途中記録があります。再実行しないでください。');
         $receipt=json_decode(file_get_contents('/data/review-samples.json'),true,512,JSON_THROW_ON_ERROR);

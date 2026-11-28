@@ -55,6 +55,19 @@ jobs:
                 -d memory_limit=128M /checks/tests/Fixtures/download-probe-check.php /checks
             done
           done
+      - name: Test native demo preparation with full fixtures and bounded temporary storage
+        run: |
+          set -euo pipefail
+          python3 tests/Fixtures/build-review-data.py 2026-11-28 > tests/Fixtures/manual-demo/dataset.json
+          docker build -t ucrm-native-pdf-check -f tests/Fixtures/manual-demo/Dockerfile .
+          for storage_size in 64m 256m; do
+            docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+              --memory 768m --pids-limit 128 --tmpfs /tmp:rw,nosuid,size=128m \
+              --tmpfs /app/storage:rw,nosuid,size=$storage_size --tmpfs /app/bootstrap/cache:rw,nosuid,size=8m \
+              --tmpfs /data:rw,nosuid,size=192m --env DEMO_APP=u --env MANUAL_DEMO=1 \
+              --env APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+              ucrm-native-pdf-check sh /demo/run-native.sh
+          done
       - name: Test without any network interface or external database
         run: |
           runner_user="$(id -un)"

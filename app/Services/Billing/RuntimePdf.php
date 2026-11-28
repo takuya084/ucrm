@@ -13,7 +13,10 @@ final class RuntimePdf
         $cache = storage_path('framework/cache/dompdf');
         File::ensureDirectoryExists($cache);
 
-        return Pdf::setOptions(['fontDir' => $cache, 'fontCache' => $cache], true)
+        return Pdf::setOptions([
+            'fontDir' => $cache, 'fontCache' => $cache,
+            'isFontSubsettingEnabled' => true,
+        ], true)
             ->loadView($view, $data);
     }
 }

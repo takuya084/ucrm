@@ -101,6 +101,15 @@ class PdfRuntimeTest extends TestCase
         $invoice=GuardianInvoice::where('year_month','2026-11')->firstOrFail();
         $path=app(GuardianInvoicePdfService::class)->generateInvoice($invoice);
         $this->assertStringStartsWith('%PDF',Storage::disk('local')->get($path));
+        $this->actingAs($user);
+        $this->get('/billing/cap-management/pdf-bundle?year_month=2026-11')->assertOk();
+        $this->get('/billing/cap-management/payment-list?year_month=2026-11')->assertOk();
+        $exportBytes=0;
+        foreach(Storage::disk('local')->allFiles('cap-management') as $file)$exportBytes+=Storage::disk('local')->size($file);
+        $this->assertLessThan(8*1024*1024,$exportBytes,'Japanese fonts must be subset instead of filling temporary storage.');
+        $paymentPdf=Storage::disk('local')->get('cap-management/beneficiary_payment_list_'.$facility->id.'_202611.pdf');
+        $this->assertStringStartsWith('%PDF',$paymentPdf);
+        $this->assertStringContainsString('/ToUnicode',$paymentPdf);
     }
 
     public function test_changed_copayment_on_a_paid_invoice_requires_review_without_overwriting_payment(): void
