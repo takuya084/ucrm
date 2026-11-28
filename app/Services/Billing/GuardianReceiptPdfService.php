@@ -3,7 +3,6 @@
 namespace App\Services\Billing;
 
 use App\Models\GuardianInvoice;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -19,7 +18,7 @@ class GuardianReceiptPdfService
 
         [$y, $m] = explode('-', $invoice->year_month);
 
-        $pdf = Pdf::loadView('billing.receipt-pdf', [
+        $pdf = RuntimePdf::loadView('billing.receipt-pdf', [
             'invoice'        => $invoice,
             'child'          => $invoice->child,
             'guardian'       => $invoice->guardian,

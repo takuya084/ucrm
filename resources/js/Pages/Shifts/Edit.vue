@@ -249,9 +249,10 @@ const dailyCheck = computed(() => {
       </div>
     </template>
 
-    <div class="py-4">
-      <div class="mx-auto sm:px-4 lg:px-6">
-        <div class="bg-white border border-gray-200 sm:rounded-lg p-4">
+    <div class="shift-print-page py-4">
+      <div class="shift-print-frame mx-auto sm:px-4 lg:px-6">
+        <div class="shift-print-card bg-white border border-gray-200 sm:rounded-lg p-4">
+          <div class="shift-print-controls">
           <FlashMessage />
           <ValidationErrors class="mb-3" />
           <DisclosurePanel id="shift-copy-help" title="コピー・貼り付けの使い方" class="mb-3">
@@ -311,9 +312,17 @@ const dailyCheck = computed(() => {
             </div>
           </DisclosurePanel>
 
-          <div class="overflow-x-auto">
+          </div>
+
+          <div class="shift-table-scroll overflow-x-auto">
             <table class="shift-table w-full text-xs border-collapse" aria-label="月間シフト入力表"
               @focusin="clipboard.focus" @pointerdown="clipboard.pointer" @copy="clipboard.copy" @paste="clipboard.paste" @keydown="clipboard.keydown">
+              <colgroup>
+                <col class="shift-day-column" />
+                <col class="shift-weekday-column" />
+                <col class="shift-notes-column" />
+                <col v-for="s in staffMembers" :key="s.id" />
+              </colgroup>
               <thead>
                 <tr class="bg-gray-50">
                   <th class="border px-1 py-1.5 text-center w-10 sticky left-0 bg-gray-50 z-10">日</th>
@@ -321,7 +330,7 @@ const dailyCheck = computed(() => {
                   <th class="border px-1 py-1.5 text-center min-w-[110px]">備考</th>
                   <th v-for="s in staffMembers" :key="s.id"
                     class="border px-1 py-1.5 text-center min-w-[90px]">
-                    <div class="whitespace-nowrap">{{ s.name }}</div>
+                    <div class="shift-staff-name">{{ s.name }}</div>
                     <div v-if="staffTags[s.id]?.length" class="flex flex-wrap justify-center gap-0.5 mt-0.5">
                       <span v-for="(tag, ti) in staffTags[s.id]" :key="ti"
                         :class="[tag.colorClass, 'px-1 py-0 rounded-md text-[9px] leading-tight font-normal']">
@@ -351,10 +360,11 @@ const dailyCheck = computed(() => {
                       type="text"
                       :disabled="!canEdit"
                       placeholder=""
-                      class="w-full text-xs px-1 py-0.5"
+                      class="shift-screen-only w-full text-xs px-1 py-0.5"
                     />
+                    <div class="shift-print-value shift-print-notes" aria-hidden="true">{{ notes[d.date] || '\u00a0' }}</div>
                     <div v-if="dailyCheck[d.date] && !dailyCheck[d.date].noChildren"
-                      class="mt-0.5 text-[11px] leading-tight whitespace-nowrap"
+                      class="shift-staffing-summary mt-0.5 text-[11px] leading-tight whitespace-nowrap"
                       :class="dailyCheck[d.date].ok ? 'text-green-600' : 'text-red-600 font-medium'">
                       <span>{{ dailyCheck[d.date].childCount }}名</span>
                       <span class="mx-0.5">/</span>
@@ -371,7 +381,7 @@ const dailyCheck = computed(() => {
                     </div>
                   </td>
                   <td v-for="(s, staffIndex) in staffMembers" :key="s.id" class="border px-1 py-1">
-                    <ShiftCell
+                    <ShiftCell class="shift-screen-only"
                       :modelValue="grid[d.date][s.id]"
                       @update:modelValue="grid[d.date][s.id] = $event"
                       :disabled="!canEdit"
@@ -380,6 +390,10 @@ const dailyCheck = computed(() => {
                       :rowIndex="rowIndex" :colOffset="staffIndex * 2" :selected="clipboard.selected"
                       :contextLabel="`${d.day}日 ${s.name}`"
                     />
+                    <div class="shift-print-value" aria-hidden="true">
+                      <div>{{ grid[d.date][s.id].work_type || '―' }}</div>
+                      <div v-if="!offLabels.has(grid[d.date][s.id].work_type)">{{ grid[d.date][s.id].start_time?.slice(0, 5) || '--:--' }}</div>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -412,38 +426,75 @@ const dailyCheck = computed(() => {
   --tw-ring-shadow: none;
 }
 
+/* Values are ordinary text on paper, so names, notes and shift labels can wrap. */
+.shift-staff-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.25;
+}
+.shift-print-value { display: none; }
+
 @media print {
-  @page {
-    size: A4 landscape;
-    margin: 10mm;
-  }
-  nav, .no-print, header button {
+  @page { size: A4 landscape; margin: 10mm; }
+
+  body:has(.shift-print-page) .workspace-sidebar,
+  body:has(.shift-print-page) .workspace-accountbar,
+  body:has(.shift-print-page) #workspace-menu,
+  body:has(.shift-print-page) .workspace-shell > a,
+  body:has(.shift-print-page) .no-print,
+  body:has(.shift-print-page) #main-content > [role="alert"],
+  .shift-print-page .shift-print-controls,
+  .shift-print-page .shift-screen-only {
     display: none !important;
   }
-  .shift-table {
-    font-size: 7pt;
+  body:has(.shift-print-page) .workspace-shell,
+  body:has(.shift-print-page) .workspace-shell > div,
+  .shift-print-page,
+  .shift-print-page .shift-print-frame,
+  .shift-print-page .shift-print-card {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    max-width: none !important;
+    background: white !important;
+    box-shadow: none !important;
   }
-  .shift-table td,
-  .shift-table th {
-    padding: 1px 2px;
-    border: 0.5pt solid #333;
+  body:has(.shift-print-page) .workspace-page-header {
+    position: static !important;
+    padding: 0 0 3mm !important;
+    border: 0;
   }
-  .shift-table select,
-  .shift-table input {
-    border: none;
-    background: transparent;
-    font-size: 7pt;
-    padding: 0;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .shift-table {
+  .shift-print-page .shift-table-scroll { overflow: visible !important; }
+  .shift-print-page .shift-table {
     width: 100%;
     table-layout: fixed;
+    font-size: 7pt;
+    line-height: 1.15;
   }
-  .bg-white.shadow-sm {
-    box-shadow: none;
-    padding: 0;
+  .shift-print-page .shift-day-column { width: 7mm; }
+  .shift-print-page .shift-weekday-column { width: 6mm; }
+  .shift-print-page .shift-notes-column { width: 40mm; }
+  .shift-print-page .shift-table thead { display: table-header-group; }
+  .shift-print-page .shift-table tr { break-inside: avoid; page-break-inside: avoid; }
+  .shift-print-page .shift-table th,
+  .shift-print-page .shift-table td {
+    min-width: 0 !important;
+    width: auto;
+    padding: 0.35mm 0.4mm;
+    border: 0.5pt solid #333;
+    position: static !important;
+    overflow-wrap: anywhere;
+  }
+  .shift-print-page .shift-table th { vertical-align: top; }
+  .shift-print-page .shift-print-value { display: block; }
+  .shift-print-page .shift-print-notes { white-space: pre-wrap; }
+  .shift-print-page .shift-staffing-summary {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    font-size: 6pt;
+    line-height: 1.15;
   }
 }
 </style>

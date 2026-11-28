@@ -4,7 +4,6 @@ namespace App\Services\Billing;
 
 use App\Models\BillingDetail;
 use App\Models\BillingPeriod;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
@@ -34,7 +33,7 @@ class ProxyReceiptNoticePdfService
         $guardian = $detail->child->guardians->firstWhere('pivot.is_primary', true)
             ?? $detail->child->guardians->first();
 
-        $pdf = Pdf::loadView('billing.proxy-receipt-notice-pdf', [
+        $pdf = RuntimePdf::loadView('billing.proxy-receipt-notice-pdf', [
             'detail'         => $detail,
             'child'          => $detail->child,
             'guardian'       => $guardian,

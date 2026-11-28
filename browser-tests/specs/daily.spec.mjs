@@ -975,3 +975,32 @@ test('all native selects share registered clipboard behavior, including an actua
   await schoolSelect.focus();await schoolSelect.press('Control+V')
   await expect(schoolSelect).toHaveValue(String(school('a').id))
 })
+
+
+test('shift print excludes operation help and wraps names inside all ten staff columns', async ({page}) => {
+  const demo=fixture('shift-demo').shift_demo
+  await login(page)
+  await visit(page,`/shifts/${demo.shifts[0].id}/edit`)
+  await page.setViewportSize({width:1047,height:740})
+  await page.locator('.shift-staff-name').first().evaluate(el=>{el.textContent='AlexandraVeryLongUnbrokenFamilyNameExample'})
+  await page.locator('.shift-table tbody tr input').first().fill('印刷用の長い備考です。途中で切れずに印刷します。')
+  await page.emulateMedia({media:'print'})
+  await expect(page.locator('#shift-copy-help')).toBeHidden()
+  await expect(page.locator('#staffing-rules')).toBeHidden()
+  await expect(page.locator('.workspace-sidebar')).toBeHidden()
+  await expect(page.locator('.workspace-accountbar')).toBeHidden()
+  await expect(page.locator('.shift-table select').first()).toBeHidden()
+  const geometry=await page.locator('.shift-staff-name').evaluateAll(names=>names.map(el=>{
+    const r=el.getBoundingClientRect(),p=el.closest('th').getBoundingClientRect()
+    return {fits:el.scrollWidth<=el.clientWidth+1 && r.left>=p.left && r.right<=p.right+1,height:r.height,line:parseFloat(getComputedStyle(el).lineHeight)}
+  }))
+  expect(geometry).toHaveLength(10)
+  expect(geometry.every(g=>g.fits)).toBe(true)
+  expect(geometry[0].height).toBeGreaterThan(geometry[0].line*1.5)
+  await expect(page.locator('.shift-print-notes').first()).toHaveText('印刷用の長い備考です。途中で切れずに印刷します。')
+  const text=await page.locator('body').innerText()
+  expect(text).not.toContain('コピー・貼り付けの使い方')
+  expect(text).not.toContain('配置基準チェックのルール')
+  const pdf=await page.pdf({format:'A4',landscape:true,preferCSSPageSize:true})
+  expect(pdf.subarray(0,4).toString()).toBe('%PDF')
+})
