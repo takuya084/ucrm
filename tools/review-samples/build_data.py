@@ -59,7 +59,7 @@ def build(today=None):
         status = 'active' if i < 14 else ('suspended' if i < 16 else 'ended')
         add(f'child{i}', 'children', id=cid, facility_id=ref('facility'), school_id=schools_u[school], name=name,
             name_kana=f'カクウ ジドウ{i+1:02d}', gender=['male','female','other',None][i%4],
-            birthdate=f'{today.year-(4 if school==3 else 7+i%7)}-04-02', grade='年中' if school==3 else ['小1','小3','中1'][i%3],
+            birthdate=f'{today.year-([7+i%5,13+i%3,8+i%5,4+i%2][school])}-04-02', grade=(['小'+str(1+i%5),'中'+str(1+i%3),'小'+str(2+i%5),'年中' if i%2==0 else '年長'][school]),
             contract_status=status, contract_start_date=fmt(month(today,-12)), contract_end_date=fmt(previous-timedelta(days=1)) if status=='ended' else None,
             yoyaku_user_id=cid, pickup_required=i%4!=3, pickup_area=['東','西','保護者'][i%3],
             pickup_address='【架空】サンプル市テスト町1-1' if i%4!=3 else None,
@@ -126,7 +126,7 @@ def build(today=None):
         day=fmt(d);ym=d.strftime('%Y-%m');base_count=11 if d.day==5 else (10 if d.day==10 else 8)
         selection=[(di+i)%14 for i in range(base_count)]
         if d==today:selection=list(range(10))
-        add('slot'+day,'available_slots',facility_id=ref('facility'),date=day,day_of_week=['mon','tue','wed','thu','fri','sat'][d.weekday()],total_capacity=10,booked_count=len(selection),notes='【架空】'+('定員超過の警告確認' if len(selection)>10 else '空き状況の確認'))
+        add('slot'+day,'available_slots',facility_id=ref('facility'),date=day,day_of_week=['mon','tue','wed','thu','fri','sat'][d.weekday()],total_capacity=10,booked_count=sum(d>today or d.day==5 or d==today and i<4 or (i+di)%8!=7 for i in selection),notes='【架空】'+('定員超過の警告確認' if len(selection)>10 else '空き状況の確認'))
         add('activity'+day,'daily_activity_plans',facility_id=ref('facility'),program_id=programs[di%6],staff_id=staff[di%8],activity_date=day,category='main',title='【架空】'+['運動あそび','制作活動','協力ゲーム'][di%3],starts_at='14:30',materials='【架空】ボール、カード、筆記用具')
         for i in range(14):
             # Deliberately leave one child's school-day setting unset on most dates.
@@ -139,7 +139,7 @@ def build(today=None):
             pt=None if mode in [2,3] else pickup;dt=None if mode in [1,3] else dropoff
             # mode 4 deliberately leaves the second driver unset; all values remain valid.
             status=['attended','attended','attended','attended','attended','absent_notice','absent','cancel'][(i+di)%8]
-            if d==today and i<4:status='attended'
+            if d==today and i<4 or d.day==5:status='attended'
             if d<=today and status=='cancel':cancelled.append({'user_id':cid,'date':day})
             if d>today or status!='cancel':put('p',f'booking{day}-{i}','yoyakus',business_id=ref('business'),user_id=cid,date=day,pickup_time=pt,dropoff_time=dt,
                 pickup_location='school' if school_day else 'home',dropoff_location='parents' if mode==3 else 'home',
@@ -149,7 +149,7 @@ def build(today=None):
             if d>today:continue # Future reservations are not fabricated attendance.
             status=['attended','attended','attended','attended','attended','absent_notice','absent','cancel'][(i+di)%8]
             # Keep today's first four rows useful for a walkthrough.
-            if d==today and i<4:status='attended'
+            if d==today and i<4 or d.day==5:status='attended'
             attended=status=='attended'
             ur=add(f'usage{day}-{i}','usage_records',facility_id=ref('facility'),child_id=cid,staff_id=staff[1],date=day,status=status,
                 check_in_time=pickup if attended else None,check_out_time=(None if d==today and i==2 else dropoff) if attended else None,
@@ -172,7 +172,7 @@ def build(today=None):
                 published_at=day+' 17:45:00' if published else None,published_by=staff[2] if published else None,
                 home_temperature='36.5' if i%3==0 else None,home_sleep='21:00〜06:30' if i%3==0 else None,
                 guardian_comment='【架空】昨夜はよく眠れました。' if i%3==0 else None,guardian_submitted_at=day+' 08:00:00' if i%3==0 else None,
-                guardian_source_revision=1 if i%3==0 else None)
+                guardian_source_revision=None)
             if published:notes.append(nid)
     for m in [previous,first,following]:add('calendar'+m.strftime('%Y-%m'),'school_calendar_months',facility_id=ref('facility'),month=m.strftime('%Y-%m'),revision=1)
     # Same absence schema in both apps. Staff IDs intentionally refer to each app's own staff.
