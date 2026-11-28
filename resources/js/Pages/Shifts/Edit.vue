@@ -458,6 +458,7 @@ const dailyCheck = computed(() => {
     border: 0 !important;
     border-radius: 0 !important;
     max-width: none !important;
+    min-height: 0 !important;
     background: white !important;
     box-shadow: none !important;
   }
@@ -470,7 +471,7 @@ const dailyCheck = computed(() => {
   .shift-print-page .shift-table {
     width: 100%;
     table-layout: fixed;
-    font-size: 7pt;
+    font-size: 7pt !important;
     line-height: 1.15;
   }
   .shift-print-page .shift-day-column { width: 7mm; }
@@ -482,7 +483,7 @@ const dailyCheck = computed(() => {
   .shift-print-page .shift-table td {
     min-width: 0 !important;
     width: auto;
-    padding: 0.35mm 0.4mm;
+    padding: 0.35mm 0.4mm !important;
     border: 0.5pt solid #333;
     position: static !important;
     overflow-wrap: anywhere;

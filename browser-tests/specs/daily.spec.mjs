@@ -989,6 +989,10 @@ test('shift print excludes operation help and wraps names inside all ten staff c
   await expect(page.locator('.workspace-sidebar')).toBeHidden()
   await expect(page.locator('.workspace-accountbar')).toBeHidden()
   await expect(page.locator('.shift-table select').first()).toBeHidden()
+  const tableStyle=await page.locator('.shift-table').evaluate(el=>({font:parseFloat(getComputedStyle(el).fontSize),padding:parseFloat(getComputedStyle(el.querySelector('td')).paddingTop),fits:el.getBoundingClientRect().right<=document.documentElement.clientWidth+1}))
+  expect(tableStyle.font).toBeLessThan(10)
+  expect(tableStyle.padding).toBeLessThan(2)
+  expect(tableStyle.fits).toBe(true)
   const geometry=await page.locator('.shift-staff-name').evaluateAll(names=>names.map(el=>{
     const r=el.getBoundingClientRect(),p=el.closest('th').getBoundingClientRect()
     return {fits:el.scrollWidth<=el.clientWidth+1 && r.left>=p.left && r.right<=p.right+1,height:r.height,line:parseFloat(getComputedStyle(el).lineHeight)}
