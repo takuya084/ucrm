@@ -1,0 +1,13 @@
+ARG PHP_IMAGE=php:8.3.37-cli
+FROM ${PHP_IMAGE}
+COPY extensions.json /tmp/runtime-extensions.json
+COPY install-extensions.php /tmp/install-runtime-extensions.php
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libpng-dev libzip-dev libonig-dev libcurl4-openssl-dev libsqlite3-dev libicu-dev \
+      libjpeg62-turbo-dev libfreetype6-dev libwebp-dev libavif-dev libxpm-dev && \
+    docker-php-source extract && php /tmp/install-runtime-extensions.php > /tmp/runtime-extensions.list && \
+    while IFS= read -r ext; do \
+      if [ "$ext" = gd ]; then docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif --with-xpm || exit 1; fi; \
+      docker-php-ext-install -j2 "$ext" || exit 1; \
+    done < /tmp/runtime-extensions.list && \
+    docker-php-source delete && rm -rf /var/lib/apt/lists/* /tmp/runtime-extensions* /tmp/install-runtime-extensions.php

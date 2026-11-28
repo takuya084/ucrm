@@ -1,0 +1,7 @@
+ARG RUNTIME_IMAGE
+FROM ${RUNTIME_IMAGE}
+WORKDIR /app
+COPY app/ /app/
+COPY demo/ /demo/
+RUN printf '%s' local-manual-demo-v1 > /opt/manual-demo-marker
+ENTRYPOINT ["sh", "/demo/entrypoint.sh"]
