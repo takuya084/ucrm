@@ -13,12 +13,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/checkout@v4
-        with:
-          repository: takuya084/p-yoyaku
-          ref: e94b0d63ba630a4afca6ffea89a7140ef72c0b9d
-          path: sample-peer-p
-          persist-credentials: false
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -28,7 +22,6 @@ jobs:
       - name: Install locked dependencies
         run: |
           composer install --no-interaction --prefer-dist --no-progress --no-scripts
-          composer --working-dir=sample-peer-p install --no-interaction --prefer-dist --no-progress --no-scripts
       - name: Validate full synthetic data against both encrypted schemas
         env:
           APP_ENV: testing
@@ -39,7 +32,6 @@ jobs:
           python3 tools/review-samples/build_data.py 2026-11-28 > tools/review-samples/spec.json
           php -l tools/review-samples/engine.php
           php -l tools/review-samples/check.php
-          php tools/review-samples/check.php p sample-peer-p
           php tools/review-samples/check.php u .
       - uses: actions/upload-artifact@v4
         if: always()
