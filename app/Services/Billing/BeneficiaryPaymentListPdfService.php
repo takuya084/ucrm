@@ -5,7 +5,6 @@ namespace App\Services\Billing;
 use App\Models\BillingPeriod;
 use App\Models\CopaymentCapManagement;
 use App\Models\Facility;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -58,7 +57,7 @@ class BeneficiaryPaymentListPdfService
 
         $ymJa = \Carbon\Carbon::parse($yearMonth . '-01')->format('Y年n月');
 
-        $pdf = Pdf::loadView('billing.beneficiary-payment-list-pdf', [
+        $pdf = RuntimePdf::loadView('billing.beneficiary-payment-list-pdf', [
             'facility' => $facility,
             'rows'     => $rows,
             'yearMonth' => $yearMonth,

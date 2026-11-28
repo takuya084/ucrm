@@ -5,8 +5,9 @@ namespace App\Services\Billing;
 use App\Models\BillingDetail;
 use App\Models\BillingPeriod;
 use App\Models\GuardianInvoice;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * 利用者向けPDF請求書生成
@@ -28,10 +29,7 @@ class GuardianInvoicePdfService
             'facility',
         ]);
 
-        // Leave DomPDF's local file restrictions intact and use writable runtime storage.
-        $fontCache = storage_path('framework/cache');
-        $pdf = Pdf::setOptions(['fontDir' => $fontCache, 'fontCache' => $fontCache], true);
-        $pdf->loadView('billing.invoice-pdf', [
+        $pdf = RuntimePdf::loadView('billing.invoice-pdf', [
             'invoice'  => $invoice,
             'detail'   => $invoice->billingDetail,
             'child'    => $invoice->child,
@@ -77,44 +75,42 @@ class GuardianInvoicePdfService
     public function createInvoicesFromBillingPeriod(BillingPeriod $period): array
     {
 
-        app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
-        $period->load('billingDetails.child.guardians');
+        return DB::transaction(function () use ($period) {
+            BillingPeriod::whereKey($period->id)->lockForUpdate()->firstOrFail();
+            app(\App\Services\Billing\BillingCompletenessGuard::class)->assertPeriod($period);
+            $period->load('billingDetails.child.guardians');
+            $invoices = [];
 
-        $invoices = [];
+            foreach ($period->billingDetails as $detail) {
+                $child = $detail->child;
+                $guardian = $child->guardians()->wherePivot('is_primary', true)->first()
+                    ?? $child->guardians()->first();
+                if (!$guardian) continue;
 
-        foreach ($period->billingDetails as $detail) {
-            $child = $detail->child;
-            $primaryGuardian = $child->guardians()
-                ->wherePivot('is_primary', true)
-                ->first();
-
-            if (!$primaryGuardian) {
-                $primaryGuardian = $child->guardians()->first();
-            }
-
-            if (!$primaryGuardian) {
-                continue;
-            }
-
-            $invoice = GuardianInvoice::updateOrCreate(
-                [
-                    'billing_detail_id' => $detail->id,
-                    'child_id'          => $child->id,
-                ],
-                [
-                    'guardian_id'       => $primaryGuardian->id,
-                    'facility_id'      => $period->facility_id,
-                    'year_month'       => $period->year_month,
+                $invoice = GuardianInvoice::where('billing_detail_id', $detail->id)
+                    ->where('child_id', $child->id)->lockForUpdate()->first();
+                if ($invoice && (in_array($invoice->payment_status, ['paid', 'partial'], true)
+                        || (int) $invoice->paid_amount > 0 || $invoice->paid_at)
+                    && (int) $invoice->copayment_amount !== (int) $detail->copayment_cap_applied) {
+                    throw ValidationException::withMessages(['billing' => $period->year_month
+                        . '：入金記録のある請求書の負担額が変更されています。入金・訂正内容を確認してください。']);
+                }
+                if (!$invoice) {
+                    $invoice = new GuardianInvoice([
+                        'billing_detail_id' => $detail->id, 'child_id' => $child->id,
+                        'other_charges' => 0, 'payment_status' => 'unpaid',
+                        'due_date' => now()->addMonth()->startOfMonth()->addDays(14),
+                    ]);
+                }
+                $invoice->fill([
+                    'guardian_id' => $guardian->id, 'facility_id' => $period->facility_id,
+                    'year_month' => $period->year_month,
                     'copayment_amount' => $detail->copayment_cap_applied,
-                    'total_amount'     => $detail->copayment_cap_applied,
-                    'payment_status'   => 'unpaid',
-                    'due_date'         => now()->addMonth()->startOfMonth()->addDays(14),
-                ]
-            );
-
-            $invoices[] = $invoice;
-        }
-
-        return $invoices;
+                    'total_amount' => (int) $detail->copayment_cap_applied + (int) $invoice->other_charges,
+                ])->save();
+                $invoices[] = $invoice;
+            }
+            return $invoices;
+        });
     }
 }

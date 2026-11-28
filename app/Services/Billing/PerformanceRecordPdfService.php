@@ -4,7 +4,6 @@ namespace App\Services\Billing;
 
 use App\Models\BillingDetail;
 use App\Models\BillingPeriod;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
@@ -32,7 +31,7 @@ class PerformanceRecordPdfService
         $yearMonth = $detail->billingPeriod->year_month;
         $rows = $this->buildCalendarRows($detail, $yearMonth);
 
-        $pdf = Pdf::loadView('billing.performance-record-pdf', [
+        $pdf = RuntimePdf::loadView('billing.performance-record-pdf', [
             'detail'      => $detail,
             'child'       => $detail->child,
             'facility'    => $detail->billingPeriod->facility,

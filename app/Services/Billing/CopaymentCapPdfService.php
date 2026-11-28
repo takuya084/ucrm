@@ -3,9 +3,9 @@
 namespace App\Services\Billing;
 
 use App\Models\CopaymentCapManagement;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
+use Illuminate\Validation\ValidationException;
 
 /**
  * 利用者負担上限額管理結果票PDFを生成
@@ -29,7 +29,7 @@ class CopaymentCapPdfService
             ->first(fn ($g) => (bool) ($g->pivot->is_primary ?? false))
             ?? $management->child->guardians->first();
 
-        $pdf = Pdf::loadView('billing.copayment-cap-pdf', [
+        $pdf = RuntimePdf::loadView('billing.copayment-cap-pdf', [
             'management'     => $management,
             'child'          => $management->child,
             'facility'       => $management->managingFacility,
@@ -56,18 +56,24 @@ class CopaymentCapPdfService
             ->with('child')
             ->get();
 
+        if ($managements->isEmpty()) {
+            throw ValidationException::withMessages(['billing' => '対象月の上限管理記録がありません。対象月と管理記録を確認してください。']);
+        }
+
         $zipPath = "cap-management/cap_{$facilityId}_" . str_replace('-', '', $yearMonth) . '.zip';
         $zipAbs  = Storage::disk('local')->path($zipPath);
         if (!is_dir(dirname($zipAbs))) mkdir(dirname($zipAbs), 0775, true);
 
         $zip = new ZipArchive();
-        $zip->open($zipAbs, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        if ($zip->open($zipAbs, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new \RuntimeException('管理結果票ZIPの保存先を開けません。');
+        }
 
         foreach ($managements as $m) {
             $path      = $this->generate($m);
             $absPath   = Storage::disk('local')->path($path);
             $childName = preg_replace('/[\/\\\\:\*\?"<>\|]/', '_', $m->child->name ?? "child_{$m->child_id}");
-            $zip->addFile($absPath, "{$childName}.pdf");
+            $zip->addFile($absPath, "{$childName}_{$m->child_id}.pdf");
         }
         $zip->close();
 
