@@ -40,6 +40,21 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress --no-scripts
       - name: PHP syntax
         run: git ls-files -z '*.php' | xargs -0 -n1 php -l
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - name: Test 128MB file inspection in official PHP Docker images
+        run: |
+          set -euo pipefail
+          for platform in linux/amd64 linux/arm64; do
+            for version in 8.3 8.4; do
+              docker run --rm --platform "$platform" --pull always --network none --read-only \
+                --tmpfs /tmp:rw,nosuid,size=96m --memory 256m --cap-drop ALL \
+                --security-opt no-new-privileges:true \
+                --mount "type=bind,src=$PWD,dst=/checks,readonly" --entrypoint php "php:$version-cli" \
+                -d memory_limit=128M /checks/tests/Fixtures/download-probe-check.php /checks
+            done
+          done
       - name: Test without any network interface or external database
         run: |
           runner_user="$(id -un)"
