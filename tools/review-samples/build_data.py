@@ -18,6 +18,8 @@ def days(first):
 def build(today=None):
     today = today or datetime.now(timezone(timedelta(hours=9))).date()
     first, previous, following = month(today), month(today, -1), month(today, 1)
+    closure=following+timedelta(days=22)
+    while closure.weekday()==6:closure+=timedelta(days=1)
     fmt = lambda d: d.isoformat()
     stamp = lambda d: fmt(d) + ' 10:00:00'
     ops = {'p': [], 'u': []}
@@ -46,6 +48,7 @@ def build(today=None):
             end_time_regular='14:30' if i != 1 else '15:30', end_time_early='13:00', memo='【架空】短縮授業・学校選択の確認用'))
     for i, name in enumerate(['【架空】東コース','【架空】西コース','【架空】徒歩・保護者対応']):
         put('p', f'direction{i}', 'directions', business_id=ref('business'), name=name)
+    put('p','closure','holidays',business_id=ref('business'),date=fmt(closure))
     names = ['青空 はると','若葉 ひまり','星野 そうた','小川 ゆい','虹野 みなと','春風 あおい','月見 りく','花園 つむぎ','森野 かえで','朝日 いおり','水辺 なぎ','雪原 こはる','青空 はると','小鳥 ひなた（長い氏名の表示確認用）','菜の花 すず','風見 いつき','日向 そら','夕空 ほのか']
     guardians, certificates = {}, {}
     for i, short in enumerate(names):
@@ -120,7 +123,8 @@ def build(today=None):
         for level in range(1,4):
             item=add(f'item{i}-{level}','program_items',program_id=program,name=['補助を受けて取り組む','一人で取り組む','友達と交代して取り組む'][level-1],difficulty_order=level)
             for ci in range(4):add(f'progress{i}-{level}-{ci}','child_program_progress',child_id=1001+ci,program_item_id=item,status='mastered' if level==1 else 'practicing',achieved_at=fmt(today-timedelta(days=7)) if level==1 else None)
-    all_dates=[d for m in [previous,first,following] for d in days(m) if d.weekday()!=6]
+    add('inactive-program','programs',facility_id=ref('facility'),name='【架空】旧プログラム（停止）',category='other',duration_minutes=15,is_active=False)
+    all_dates=[d for m in [previous,first,following] for d in days(m) if d.weekday()!=6 and d!=closure]
     usages={};last_attended={};notes=[];cancelled=[]
     for di,d in enumerate(all_dates):
         day=fmt(d);ym=d.strftime('%Y-%m');base_count=11 if d.day==5 else (10 if d.day==10 else 8)
@@ -177,7 +181,7 @@ def build(today=None):
     for m in [previous,first,following]:add('calendar'+m.strftime('%Y-%m'),'school_calendar_months',facility_id=ref('facility'),month=m.strftime('%Y-%m'),revision=1)
     # Same absence schema in both apps. Staff IDs intentionally refer to each app's own staff.
     for kind,tenant in [('p',ref('business')),('u',ref('facility'))]:
-        put(kind,'absence-calendar','absence_calendars',tenant_id=tenant,revision=1,payload={'weekdays':[1,2,3,4,5,6],'closed_dates':[],'confirmed':True})
+        put(kind,'absence-calendar','absence_calendars',tenant_id=tenant,revision=1,payload={'weekdays':[1,2,3,4,5,6],'closed_dates':[fmt(closure)],'confirmed':True})
         for i in range(6):
             d=today-timedelta(days=i)
             while d.weekday()==6:d-=timedelta(days=1)
@@ -194,12 +198,12 @@ def build(today=None):
         plan=add(f'plan{i}','support_plans',child_id=cid,staff_id=staff[1],plan_date=fmt(today-timedelta(days=20)),valid_from=fmt(first),valid_to=fmt(month(today,6)-timedelta(days=1)),
             long_term_goal='【架空】安心して友達と活動に参加します。',short_term_goal='【架空】順番を待って交代できます。',support_policy='【架空】見通しを伝え、小さな成功を重ねます。',
             program_content='【架空】運動・生活・やり取りの練習',planned_start_time='14:00',planned_end_time='17:00',planned_duration_minutes=180,
-            five_domains=['health_life','motor_sensory','cognition_behavior','language_communication','social_relations'],status=['draft','approved','delivered'][done],
+            five_domains={'health_life':'【架空】生活の見通しを持ちます。','motor_sensory':'【架空】バランスと体幹を練習します。','cognition_behavior':'【架空】短い約束を守ります。','language_communication':'【架空】自分の気持ちを言葉で伝えます。','social_relations':'【架空】友達と順番に取り組みます。'},status=['draft','approved','delivered'][done],
             approved_by=staff[1] if done else None,approved_at=stamp(today-timedelta(days=15)) if done else None,guardian_agreement=done==2,guardian_agreement_date=fmt(today-timedelta(days=10)) if done==2 else None)
         add(f'assessment{i}','assessments',child_id=cid,staff_id=staff[1],assessed_at=fmt(today-timedelta(days=25)),physical_condition='【架空】運動に意欲があります。',child_intention='【架空】友達と遊びたい。',guardian_intention='【架空】落ち着いて過ごしてほしい。',five_domains={'motor_sensory':'【架空】体幹とバランスを練習'},notes='【架空】アセスメント確認用')
         add(f'monitoring{i}','monitoring_records',child_id=cid,staff_id=staff[1],monitoring_date=fmt(today-timedelta(days=3)),period_from=fmt(month(today,-3)),period_to=fmt(today),support_summary='【架空】活動に参加できる時間が延びました。',strengths='【架空】好きな運動に集中できます。',challenges='【架空】気持ちの切り替えを練習中です。',next_review_date=fmt(today+timedelta(days=30 if i%2 else 7)))
         if done:
-            add(f'meeting{i}','support_plan_meetings',support_plan_id=plan,held_at=stamp(today-timedelta(days=16)),attendees=[{'name':staff_names[1],'role':'児発管'},{'name':staff_names[2],'role':'児童指導員'}],minutes='【架空】本人・保護者の希望と5領域の支援を確認しました。')
+            add(f'meeting{i}','support_plan_meetings',support_plan_id=plan,held_at=stamp(today-timedelta(days=16)),attendees=[staff_names[1]+'（児発管）',staff_names[2]+'（児童指導員）'],minutes='【架空】本人・保護者の希望と5領域の支援を確認しました。')
         if done==2:add(f'consent{i}','support_plan_consents',support_plan_id=plan,guardian_id=guardians[i],consented_at=stamp(today-timedelta(days=10)),method='paper',delivered_at=stamp(today-timedelta(days=9)))
     # Clearly fictional amounts/codes are solely for screen-state review, not valid claims.
     code=add('demo-code','service_code_masters',revision_date=fmt(month(today,-12)),service_type='houday',service_code='999901',service_name='【架空・画面確認専用】基本サービス（正式請求不可）',unit_count=100,unit_type='per_day',category='base',conditions={'demo_only':True},valid_from=fmt(month(today,-12)))
@@ -237,7 +241,7 @@ def build(today=None):
     return {'version':VERSION,'anchor':fmt(today),'months':[previous.strftime('%Y-%m'),first.strftime('%Y-%m'),following.strftime('%Y-%m')],
         'operations':ops,'counts':summaries,'delivery_notes':notes[-6:],'cancelled':cancelled,
         'walkthrough':{'today':fmt(today),'capacity_warning':fmt(first.replace(day=5)),'staff_shortage':fmt(first.replace(day=12)),
-            'leave':fmt(first.replace(day=15)),'qualification_shortage':fmt(first.replace(day=20)),'holiday':fmt(first.replace(day=25))},
+            'leave':fmt(first.replace(day=15)),'qualification_shortage':fmt(first.replace(day=20)),'holiday':fmt(first.replace(day=25)),'facility_closure':fmt(closure)},
         'limits':['請求金額・コードは画面確認用の仮数値であり、正式請求・計算ロジックの合格判定には使用しません。','実際の添付ファイル、メール・LINEの実送信、Stripe決済は生成しません。']}
 
 if __name__=='__main__':
