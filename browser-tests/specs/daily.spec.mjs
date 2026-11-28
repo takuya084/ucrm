@@ -960,7 +960,7 @@ test('sample covers two months, paid leave, part time, drivers and visible short
     await expect(shortage.getByText('配置1',{exact:true})).toBeVisible()
     for(const [key,message] of [['no-leader','児発管不在'],['no-qualified','有資格者不足']]) {
       const row=page.locator('.shift-table tbody tr').nth(Number(s.examples[key].slice(-2))-1)
-      await expect(row.getByText(message,{exact:true})).toBeVisible()
+      await expect(row.locator('.shift-staffing-summary').getByText(message,{exact:false})).toBeVisible()
     }
     await expect(page.locator('.shift-table thead').getByText('【デモ】05 午前パート',{exact:true})).toBeVisible()
   }
