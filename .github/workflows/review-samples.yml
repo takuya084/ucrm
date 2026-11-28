@@ -1,0 +1,50 @@
+name: Review sample data
+on:
+  pull_request:
+    branches: [main]
+    paths: ['tools/review-samples/**', '.github/workflows/review-samples.yml']
+permissions:
+  contents: read
+jobs:
+  samples:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: takuya084/p-yoyaku
+          ref: e94b0d63ba630a4afca6ffea89a7140ef72c0b9d
+          path: sample-peer-p
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: bcmath, curl, dom, fileinfo, gd, intl, mbstring, openssl, pcntl, pdo_sqlite, sqlite3, tokenizer, xml, xmlwriter, zip
+          coverage: none
+          tools: composer:v2
+      - name: Install locked dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress --no-scripts
+          composer --working-dir=sample-peer-p install --no-interaction --prefer-dist --no-progress --no-scripts
+      - name: Validate full synthetic data against both encrypted schemas
+        env:
+          APP_ENV: testing
+          LOG_CHANNEL: stderr
+          STRIPE_KEY: pk_test_fixture
+          STRIPE_SECRET: sk_test_fixture
+        run: |
+          python3 tools/review-samples/build_data.py 2026-11-28 > tools/review-samples/spec.json
+          php -l tools/review-samples/engine.php
+          php -l tools/review-samples/check.php
+          php tools/review-samples/check.php p sample-peer-p
+          php tools/review-samples/check.php u .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: review-samples-counts
+          path: ${{ runner.temp }}/review-*-summary.json
+          if-no-files-found: ignore
+          retention-days: 7
