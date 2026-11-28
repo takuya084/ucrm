@@ -99,6 +99,7 @@ try {
         $tested=[];
         foreach(array_slice($sampleSpec['delivery_notes'],0,2) as $sourceId){
             $note=\App\Models\ContactNote::where('external_ref','ucrm:'.$sourceId)->sole();
+            if(!$note->isPublicNow()||str_contains(json_encode($note->toArray(),JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),'【内部専用】'))throw new RuntimeException('Sample public content check failed');
             $note->forceFill(['read_at'=>now(),'home_temperature'=>'36.5','home_sleep'=>'21:00〜06:30','guardian_comment'=>'【架空】家庭からの連絡と双方向連携の確認です。','guardian_submitted_at'=>now(),'guardian_revision'=>(int)$note->guardian_revision+1])->save();
             (new \App\Jobs\SendContactNoteWebhook((int)$note->id,'contact_note.read'))->handle();
             (new \App\Jobs\SendContactNoteWebhook((int)$note->id,'contact_note.guardian_entry'))->handle();
@@ -108,6 +109,13 @@ try {
             $tested[]=$sourceId;
         }
         $report=['guardian_webhooks'=>true,'contact_note_ids'=>$tested];
+    }elseif($samplePhase==='familycheck'){
+        if($kind!=='u')throw new RuntimeException('UCRM family verification only');
+        foreach(array_slice($sampleSpec['delivery_notes'],0,2) as $sourceId){
+            $note=\App\Models\ContactNote::findOrFail($sourceId);
+            if(!$note->read_at||!$note->guardian_submitted_at||!$note->guardian_confirmed_at||$note->guardian_confirmed_hash!==$note->publication_hash||$note->guardian_comment!=='【架空】家庭からの連絡と双方向連携の確認です。')throw new RuntimeException('Sample guardian webhook not reflected in UCRM');
+        }
+        $report=['guardian_input_read_and_confirmation'=>true];
     }else throw new RuntimeException('Unknown sample phase');
     echo json_encode($report,JSON_THROW_ON_ERROR)."\n";
 }catch(Throwable $error){fwrite(STDERR,'FAIL: '.get_class($error).': '.$error->getMessage()."\n");exit(1);}

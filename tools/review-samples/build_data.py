@@ -109,7 +109,7 @@ def build(today=None):
         for d in days(m):
             for i,s in enumerate(staff):
                 label=4 if d.weekday()==6 or i==9 or (i+d.weekday())%7==0 else (3 if i==8 else i%3)
-                if d.day==12 and 2<=i<=7 or d.day==20 and i<=6:label=4
+                if d.day==12 and i>=1 or d.day==20 and i<=6:label=4
                 if d.day==15 and i in [0,3]:label=5
                 if d.day==25 and i in [2,4]:label=6
                 time=labels[label][1]
@@ -173,7 +173,7 @@ def build(today=None):
             add(f'note{day}-{i}','contact_notes',id=nid,facility_id=ref('facility'),child_id=cid,support_record_id=support,staff_id=staff[2],date=day,
                 meal_note='【架空】おやつを食べました。',health_note='【架空】体調は安定していました。',guardian_message='【架空】友達と協力してボール運びを楽しみました。\n自分から挨拶できました。',
                 five_domain_tags=['motor_sensory','social_relations'],goal_progress=['achieved','partial','difficult'][i%3],status='published' if published else 'draft',
-                published_at=day+' 17:45:00' if published else None,published_by=staff[2] if published else None,
+                published_at=day+' 00:00:00' if published else None,published_by=staff[2] if published else None,
                 home_temperature='36.5' if i%3==0 else None,home_sleep='21:00〜06:30' if i%3==0 else None,
                 guardian_comment='【架空】昨夜はよく眠れました。' if i%3==0 else None,guardian_submitted_at=day+' 08:00:00' if i%3==0 else None,
                 guardian_source_revision=None)
