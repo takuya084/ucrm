@@ -51,6 +51,7 @@ function reviewSamplesVerify(string $kind,array $spec,bool $exact=true): array
         foreach(\App\Models\BillingDetail::with(['child','billingDetailLines'])->get() as $detail)$detail->toArray();
         foreach(\App\Models\MonthlyShift::with('entries')->get() as $shift)$shift->toArray();
         if(DB::table('usage_records')->where('date','>',$spec['anchor'])->exists())throw new RuntimeException('Future attendance fabricated');
+        if(DB::table('usage_records')->whereNull('is_school_day')->exists())throw new RuntimeException('Attendance school-day flag must be present');
         foreach(\App\Models\DailyActivityPlan::all() as $activity)if(!array_key_exists($activity->category,\App\Models\DailyActivityPlan::CATEGORIES))throw new RuntimeException('Unregistered activity category');
     }
     return ['version'=>$spec['version'],'anchor'=>$spec['anchor'],'counts'=>$counts,'encrypted'=>true,'foreign_keys'=>true];

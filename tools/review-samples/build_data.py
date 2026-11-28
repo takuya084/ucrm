@@ -6,7 +6,7 @@ import json
 import sys
 import uuid
 
-VERSION = 'review-samples-20261128-v1'
+VERSION = 'review-samples-20261128-v2'
 PASSWORD = 'Demo-local-2026!'
 
 def ref(name): return {'$ref': name}
@@ -165,7 +165,7 @@ def build(today=None):
             ur=add(f'usage{day}-{i}','usage_records',facility_id=ref('facility'),child_id=cid,staff_id=staff[1],date=day,status=status,
                 check_in_time=pickup if attended else None,check_out_time=(None if d==today and i==2 else dropoff) if attended else None,
                 pickup_done=attended and pt is not None,dropoff_done=attended and dt is not None and not(d==today and i==2),
-                billing_target=i not in [9,12,13],is_school_day=school_day if i!=13 else None,service_type=None,
+                billing_target=i not in [9,12,13],is_school_day=school_day,service_type=None,
                 absent_reason='【架空】発熱のため家庭で休養' if status=='absent_notice' else None,memo='【架空】'+('来所中・退所未入力' if d==today and i==2 else '画面確認用の利用実績'))
             usages[(day,i)]=ur
             if status=='absent_notice':add(f'absence-support{day}-{i}','absence_supports',usage_record_id=ur,staff_id=staff[1],contacted_at=day+' 08:30:00',contact_method='tel',support_content='【架空】体調と家庭での過ごし方を確認し、次回利用を調整しました。')

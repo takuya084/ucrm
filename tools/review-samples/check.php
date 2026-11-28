@@ -27,6 +27,21 @@ if($kind==='p'){
 }
 require $kit.'/engine.php';
 $spec=json_decode(file_get_contents($kit.'/spec.json'),true,512,JSON_THROW_ON_ERROR);
+
+// Reproduce the Mac schema constraint even when an older SQLite schema rewrite
+// has weakened nullability in a fresh CI database.
+if($kind==='u'){
+    \Illuminate\Support\Facades\DB::unprepared("CREATE TRIGGER review_school_day_required BEFORE INSERT ON usage_records WHEN NEW.is_school_day IS NULL BEGIN SELECT RAISE(ABORT,'NOT NULL constraint failed: usage_records.is_school_day'); END");
+    $bad=$spec;
+    foreach($bad['operations']['u'] as &$operation)if($operation['table']==='usage_records'&&$operation['values']['child_id']===1014)$operation['values']['is_school_day']=null;
+    unset($operation);
+    $reproduced=false;
+    try{reviewSamplesPopulate($kind,$bad);}
+    catch(\Illuminate\Database\QueryException $error){if(!str_contains($error->getMessage(),'usage_records.is_school_day'))throw $error;$reproduced=true;}
+    if(!$reproduced||\App\Models\Child::count()!==0||\App\Models\User::count()!==1)throw new RuntimeException('Original NOT NULL failure was not reproduced or transaction was not rolled back');
+    echo 'PASS: original Mac NOT NULL error reproduced; original rows preserved'.PHP_EOL;
+}
+
 // Retain a fresh baseline for the exact updater staging/activation test.
 $baseline=$file.'.baseline';\Illuminate\Support\Facades\DB::disconnect();copy($file,$baseline);
 $report=reviewSamplesPopulate($kind,$spec);
@@ -34,7 +49,7 @@ $hash=hash_file('sha256',$file);
 try{reviewSamplesPopulate($kind,$spec);throw new RuntimeException('Second insert was not refused');}
 catch(RuntimeException $error){if(!str_starts_with($error->getMessage(),'Existing records found'))throw $error;}
 if(hash_file('sha256',$file)!==$hash)throw new RuntimeException('Second insert modified existing database');
-$report['second_insert_refused']=true;
+$report['second_insert_refused']=true;$report['mac_school_day_constraint_reproduced_and_fixed']=($kind==='u');
 file_put_contents(getenv('RUNNER_TEMP').'/review-'.$kind.'-summary.json',json_encode($report,JSON_PRETTY_PRINT|JSON_THROW_ON_ERROR));
 echo 'PASS '.$kind.': encrypted sample rows, valid references, model relations and duplicate refusal'.PHP_EOL;
 
@@ -46,8 +61,8 @@ try {
     $kind=getenv('DEMO_APP');
     if(PHP_SAPI!=='cli'||getenv('MANUAL_DEMO')!=='1'||!in_array($kind,['p','u'],true)||@file_get_contents('/opt/manual-demo-marker')!=='local-manual-demo-v1'||is_file('/app/.env')||!is_file('/data/ready'))throw new RuntimeException('Review sample runner refused');
     $app=require '/demo/bootstrap.php';
-    if($sampleSpec['version']!=='review-samples-20261128-v1')throw new RuntimeException('Wrong sample version');
-    $main='/data/database.sqlite';$stage='/data/review-samples.staging.sqlite';$before='/data/review-samples.before.sqlite';$receipt='/data/review-samples.json';$prepared='/data/review-samples.prepared.json';
+    if($sampleSpec['version']!=='review-samples-20261128-v2')throw new RuntimeException('Wrong sample version');
+    $main='/data/database.sqlite';$stage='/data/review-samples-v2.staging.sqlite';$before='/data/review-samples-v2.before.sqlite';$receipt='/data/review-samples.json';$prepared='/data/review-samples-v2.prepared.json';
     $checkpoint=static function(){
         $result=DB::connection()->getPdo()->query('PRAGMA wal_checkpoint(TRUNCATE)')->fetch(PDO::FETCH_NUM);
         if((int)$result[0]!==0)throw new RuntimeException('Database has an active writer');
