@@ -131,7 +131,7 @@ def build(today=None):
         selection=[(di+i)%14 for i in range(base_count)]
         if d==today:selection=list(range(10))
         add('slot'+day,'available_slots',facility_id=ref('facility'),date=day,day_of_week=['mon','tue','wed','thu','fri','sat'][d.weekday()],total_capacity=10,booked_count=sum(d>today or d.day==5 or d==today and i<4 or (i+di)%8!=7 for i in selection),notes='【架空】'+('定員超過の警告確認' if len(selection)>10 else '空き状況の確認'))
-        add('activity'+day,'daily_activity_plans',facility_id=ref('facility'),program_id=programs[di%6],staff_id=staff[di%8],activity_date=day,category='main',title='【架空】'+['運動あそび','制作活動','協力ゲーム'][di%3],starts_at='14:30',materials='【架空】ボール、カード、筆記用具')
+        add('activity'+day,'daily_activity_plans',facility_id=ref('facility'),program_id=programs[di%6],staff_id=staff[di%8],activity_date=day,category=['event','support','exercise','learning'][di%4],title='【架空】'+['運動あそび','制作活動','協力ゲーム'][di%3],starts_at='14:30',materials='【架空】ボール、カード、筆記用具')
         for i in range(14):
             # Deliberately leave one child's school-day setting unset on most dates.
             if i!=13 and not (i==12 and d.day%2==0):
@@ -150,6 +150,13 @@ def build(today=None):
                 pickup_staff_id=None if mode==4 or pt is None else 2008,dropoff_staff_id=None if dt is None else 2007,
                 pickup_assistant_staff_id=2006 if mode==0 else None,dropoff_assistant_staff_id=2005 if mode==0 else None,transport_revision=1)
             put('p',f'revision{day}-{i}','reservation_revisions',user_id=cid,date=day,revision=str(uuid.uuid5(uuid.NAMESPACE_URL,VERSION+day+str(cid))))
+            if d>today or status!='cancel':
+                location=['【架空】第一小学校','【架空】第二中学校','【架空】ひかり特別支援学校','【架空】わかば園'][3 if i in [11,12] else i%3] if school_day else '自宅'
+                if pt is not None and mode!=4:
+                    add(f'pickup{day}-{i}','daily_transport_assignments',facility_id=ref('facility'),child_id=cid,staff_id=staff[8],assistant_staff_id=staff[6] if mode==0 else None,service_date=day,direction='pickup',scheduled_time=pt,location=location)
+                if dt is not None:
+                    add(f'dropoff{day}-{i}','daily_transport_assignments',facility_id=ref('facility'),child_id=cid,staff_id=staff[7],assistant_staff_id=staff[5] if mode==0 else None,service_date=day,direction='dropoff',scheduled_time=dt,location='自宅')
+
             if d>today:continue # Future reservations are not fabricated attendance.
             status=['attended','attended','attended','attended','attended','absent_notice','absent','cancel'][(i+di)%8]
             # Keep today's first four rows useful for a walkthrough.
@@ -215,6 +222,11 @@ def build(today=None):
             amount=1000*(i+1);share=min(amount//10,[0,4600,37200][i%3]);ds=['draft','confirmed','submitted','returned','corrected','draft'][i]
             detail=add(f'detail{ym}-{i}','billing_details',billing_period_id=period,child_id=1001+i,recipient_certificate_id=certificates[i],service_type='houday',total_days=i+1,total_units=100*(i+1),unit_price_yen='10.00',total_amount=amount,insurance_amount=amount-share,copayment_amount=share,copayment_cap=[0,4600,37200][i%3],copayment_cap_applied=share,status=ds)
             add(f'billline{ym}-{i}','billing_detail_lines',billing_detail_id=detail,service_code_master_id=code,service_code='999901',service_name='【架空・画面確認専用】基本サービス',count=i+1,units_per_count=100,total_units=100*(i+1))
+            historical=next((op for op in ops['u'] if op['table']=='usage_records' and op['values']['child_id']==1001+i and op['values']['date'].startswith(ym) and op['values']['status']=='attended'),None)
+            if historical:
+                values=historical['values']
+                add(f'dailyservice{ym}-{i}','daily_service_records',usage_record_id=ref(historical['key']),billing_detail_id=detail,service_code_master_id=code,service_code='999901',units=100,start_time=values['check_in_time'],end_time=values['check_out_time'],is_pickup=values['pickup_done'],is_dropoff=values['dropoff_done'],is_extension=False,memo='【架空・画面確認専用】日別算定欄の仮数値です。')
+
             pay=['unpaid','paid','partial','overdue'][i%4];total=share+200
             add(f'invoice{ym}-{i}','guardian_invoices',billing_detail_id=detail,guardian_id=guardians[i],child_id=1001+i,facility_id=ref('facility'),year_month=ym,copayment_amount=share,other_charges=200,total_amount=total,payment_status=pay,payment_method='cash' if i%2 else 'bank_transfer',paid_amount=total if pay=='paid' else (100 if pay=='partial' else 0),paid_at=stamp(today-timedelta(days=2)) if pay=='paid' else None,due_date=fmt(today-timedelta(days=1) if pay=='overdue' else today+timedelta(days=14)),notes='【架空】仮数値。請求書の実送信は行いません。')
             if i==3:add(f'return{ym}','claim_returns',facility_id=ref('facility'),billing_detail_id=detail,year_month=ym,child_id=1004,return_code='DEMO',return_reason='【架空】受給者証の内容確認が必要なケース',original_amount=amount,status=['returned','resubmitting','resubmitted','resolved'][mi],received_at=fmt(today-timedelta(days=5)))
